@@ -33,30 +33,7 @@ pub struct User {
 }
 
 impl User {
-    pub fn create_new_admin(username: String, display_name: String, password: String) -> Result<User, io::Error> {
-        if User::is_username_exists(&username) {
-            panic!("Username exists")
-        }
-        let hashed_password = bcrypt::hash(password).unwrap();
-        let user = User {
-            username,
-            display_name,
-            hashed_password,
-            role: UserRole::from_string(String::from("admin")),
-        };
-        user.insert_to_database();
-        Ok(user)
-    }
-
-    fn is_username_exists(username: &String) -> bool {
-        if let Ok(_) = User::get_user(username) {
-            true
-        } else {
-            false
-        }
-    }
-
-    fn get_user(username: &String) -> Result<User, io::Error> {
+    pub fn get(username: &String) -> Result<User, io::Error> {
         let connection = establish_connection();
         let user_row_wrapper = users::table
             .filter(users::username.eq(&username))
@@ -70,7 +47,41 @@ impl User {
         })
     }
 
-    fn insert_to_database(&self) {
+    pub fn create_new_admin(username: String, display_name: String, password: String) -> Result<User, io::Error> {
+        if User::is_username_exists(&username) {
+            panic!("Username exists")
+        }
+        let hashed_password = bcrypt::hash(password).unwrap();
+        let user = User {
+            username,
+            display_name,
+            hashed_password,
+            role: UserRole::from_string(String::from("admin")),
+        };
+        user.insert_to_database()?;
+        Ok(user)
+    }
+
+    fn is_username_exists(username: &String) -> bool {
+        if let Ok(_) = User::get(username) {
+            return true
+        }
+        false
+    }
+
+    pub fn login(username: String, password: String) -> Result<User, io::Error> {
+        let user = User::get(&username)?;
+        if user.is_password_correct(password) {
+            return Ok(user)
+        }
+        panic!("Password mismatch")
+    }
+
+    fn is_password_correct(&self, password: String) -> bool {
+        bcrypt::verify(password, &self.hashed_password)
+    }
+
+    pub fn insert_to_database(&self) -> Result<(), io::Error> {
         let connection = establish_connection();
         diesel::insert_into(users::table)
             .values(NewUserRowWrapper {
@@ -81,15 +92,8 @@ impl User {
             })
             .get_result::<UserRowWrapper>(&connection)
             .expect("Cannot create new user.");
+        Ok(())
     }
-
-//    pub fn login(username: String, password: String) -> Result<User, io::Error> {
-//
-//    }
-//
-//    fn is_password_correct(&self, password: String) -> bool {
-//
-//    }
 //
 //    pub fn generate_jwt_token(&self) -> String {
 //
