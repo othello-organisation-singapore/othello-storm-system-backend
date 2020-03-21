@@ -8,7 +8,6 @@ pub mod properties;
 
 
 fn main() {
-
 //    let connection = establish_connection();
 //    let results = schema::users::table.load::<models::UserRowWrapper>(&connection).expect("Error");
 //    diesel::insert_into(schema::users::table)
