@@ -8,92 +8,55 @@ use super::super::properties::UserRole;
 use super::super::utils::establish_connection;
 
 #[derive(Queryable)]
-struct UserRowWrapper {
-    pub id: i32,
+pub struct User {
+    id: i32,
     pub username: String,
     pub display_name: String,
-    pub hashed_password: String,
-    pub role: String,
+    hashed_password: String,
+    role: String,
 }
 
 #[derive(Insertable)]
 #[table_name = "users"]
-struct NewUserRowWrapper<'a> {
+struct NewUser<'a> {
     pub username: &'a str,
     pub display_name: &'a str,
     pub hashed_password: &'a str,
     pub role: &'a str,
 }
 
-pub struct User {
-    pub username: String,
-    pub display_name: String,
-    hashed_password: String,
-    role: UserRole,
-}
-
 impl User {
     pub fn get(username: &String) -> Result<User, io::Error> {
         let connection = establish_connection();
-        let user_row_wrapper = users::table
+        let user = users::table
             .filter(users::username.eq(&username))
-            .first::<UserRowWrapper>(&connection)
+            .first::<User>(&connection)
             .expect("User not found.");
-        Ok(User {
-            username: user_row_wrapper.username,
-            display_name: user_row_wrapper.display_name,
-            hashed_password: user_row_wrapper.hashed_password,
-            role: UserRole::from_string(user_row_wrapper.role),
-        })
-    }
-
-    pub fn save(&self) -> Result<(), io::Error> {
-        if User::is_username_exists(&self.username) {
-            self.update();
-        }
-        self.insert_to_database();
-        Ok(())
-    }
-
-    fn insert_to_database(&self) {
-        let connection = establish_connection();
-        diesel::insert_into(users::table)
-            .values(NewUserRowWrapper {
-                username: self.username.as_ref(),
-                display_name: self.display_name.as_ref(),
-                hashed_password: self.hashed_password.as_ref(),
-                role: self.role.to_string().as_ref(),
-            })
-            .get_result::<UserRowWrapper>(&connection)
-            .expect("Cannot create new user.");
-    }
-
-    fn update(&self) {
-        let connection = establish_connection();
-        diesel::update(users::table.filter(users::username.eq(&self.username)))
-            .set((
-                users::display_name.eq(&self.display_name),
-                users::hashed_password.eq(&self.hashed_password),
-            ))
-            .get_result::<UserRowWrapper>(&connection)
-            .expect("Failed to update.");
+        Ok(user)
     }
 }
 
 impl User {
+    pub fn create_new_superuser(username: String, display_name: String, password: String) -> Result<User, io::Error> {
+        User::create_new_user(username, display_name, password, UserRole::Superuser)
+    }
+
     pub fn create_new_admin(username: String, display_name: String, password: String) -> Result<User, io::Error> {
+        User::create_new_user(username, display_name, password, UserRole::Admin)
+    }
+
+    fn create_new_user(username: String, display_name: String, password: String, role: UserRole) -> Result<User, io::Error> {
         if User::is_username_exists(&username) {
             panic!("Username exists.")
         }
-        let hashed_password = bcrypt::hash(password).unwrap();
-        let user = User {
-            username,
-            display_name,
-            hashed_password,
-            role: UserRole::from_string(String::from("admin")),
+        let new_user = NewUser {
+            username: &username,
+            display_name: &display_name,
+            hashed_password: &User::hash_password(password),
+            role: &role.to_string(),
         };
-        user.save()?;
-        Ok(user)
+        User::insert_to_database(new_user);
+        User::get(&username)
     }
 
     fn is_username_exists(username: &String) -> bool {
@@ -101,6 +64,30 @@ impl User {
             return true;
         }
         false
+    }
+
+    fn hash_password(password: String) -> String {
+        bcrypt::hash(password).unwrap()
+    }
+
+    fn insert_to_database(new_user: NewUser) {
+        let connection = establish_connection();
+        diesel::insert_into(users::table)
+            .values(new_user)
+            .get_result::<User>(&connection)
+            .expect("Cannot create new user.");
+    }
+
+    pub fn update(username: String, display_name: String, password: String) {
+        let hashed_password = User::hash_password(password);
+        let connection = establish_connection();
+        diesel::update(users::table.filter(users::username.eq(&username)))
+            .set((
+                users::display_name.eq(&display_name),
+                users::hashed_password.eq(&hashed_password),
+            ))
+            .get_result::<User>(&connection)
+            .expect("Failed to update.");
     }
 
     pub fn login(username: String, password: String) -> Result<User, io::Error> {
@@ -113,14 +100,5 @@ impl User {
 
     fn is_password_correct(&self, password: String) -> bool {
         bcrypt::verify(password, &self.hashed_password)
-    }
-
-//
-//    pub fn generate_jwt_token(&self) -> String {
-//
-//    }
-
-    pub fn is_allowed_to_access(&self, allowed_role: Vec<UserRole>) -> bool {
-        allowed_role.contains(&self.role)
     }
 }
