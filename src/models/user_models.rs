@@ -143,5 +143,21 @@ mod tests {
             assert_eq!(user.username, "test_username");
             assert_eq!(user.display_name, "Test Name");
         }
+
+        #[test]
+        fn test_create_new_admin() {
+            let connection = establish_connection();
+            let _ = connection.begin_test_transaction();
+            let test_service = ExternalServices { connection };
+
+            let user = User::create_new_admin(
+                String::from("test_username"),
+                String::from("Test Name"),
+                String::from("test_password"),
+                &test_service,
+            ).unwrap();
+            assert_eq!(user.username, "test_username");
+            assert_eq!(user.display_name, "Test Name");
+        }
     }
 }
