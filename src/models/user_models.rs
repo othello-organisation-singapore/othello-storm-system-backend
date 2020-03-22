@@ -87,7 +87,12 @@ impl User {
             .expect("Cannot create new user.");
     }
 
-    pub fn update(username: String, updated_display_name: String, updated_password: String, service: &ExternalServices) {
+    pub fn update(username: String, updated_display_name: String, updated_password: String, service: &ExternalServices)
+                  -> Result<User, String> {
+        if !User::is_username_exists(&username, service) {
+            return Err(String::from("Username not exists"));
+        }
+
         let hashed_password = User::hash_password(updated_password);
         let connection = service.get_connection();
         diesel::update(users::table.filter(users::username.eq(&username)))
@@ -97,6 +102,7 @@ impl User {
             ))
             .get_result::<User>(connection)
             .expect("Failed to update.");
+        User::get(&username, service)
     }
 
     pub fn login(username: String, password: String, service: &ExternalServices) -> Result<User, String> {
@@ -126,6 +132,7 @@ mod tests {
     mod test_user_creation {
         use crate::models::User;
         use crate::utils::ExternalServices;
+        use crate::properties::UserRole;
 
         #[test]
         fn test_create_new_superuser() {
@@ -139,6 +146,7 @@ mod tests {
 
             assert_eq!(user.username, "test_username");
             assert_eq!(user.display_name, "Test Name");
+            assert_eq!(user.get_role(), UserRole::Superuser);
         }
 
         #[test]
@@ -153,6 +161,7 @@ mod tests {
 
             assert_eq!(user.username, "test_username");
             assert_eq!(user.display_name, "Test Name");
+            assert_eq!(user.get_role(), UserRole::Admin);
         }
 
         #[test]
@@ -165,11 +174,66 @@ mod tests {
                 String::from("test_password"),
                 &test_service,
             ).unwrap();
-            let user_with_same_username = User::create_new_superuser(
-                String::from("test_username"),
+            let _user_with_same_username = User::create_new_superuser(
+                user.username.clone(),
                 String::from("Another Name"),
                 String::from("another_password"),
                 &test_service,
+            ).unwrap();
+        }
+    }
+
+    mod test_user_update {
+        use crate::models::User;
+        use crate::utils::ExternalServices;
+
+        #[test]
+        fn test_user_update_without_changing() {
+            let test_service = ExternalServices::create_test_services();
+            let _user = User::create_new_admin(
+                String::from("test_username"),
+                String::from("Test Name"),
+                String::from("test_password"),
+                &test_service,
+            ).unwrap();
+            let updated_user = User::update(
+                _user.username.clone(),
+                _user.display_name.clone(),
+                String::from("test_password"),
+                &test_service
+            ).unwrap();
+            assert_eq!(_user.username.clone(), updated_user.username.clone());
+            assert_eq!(_user.display_name.clone(), updated_user.display_name.clone());
+        }
+
+        #[test]
+        fn test_user_update_with_changing() {
+            let test_service = ExternalServices::create_test_services();
+            let user = User::create_new_admin(
+                String::from("test_username"),
+                String::from("Test Name"),
+                String::from("test_password"),
+                &test_service,
+            ).unwrap();
+            let updated_user = User::update(
+                user.username.clone(),
+                String::from("New Display Name"),
+                String::from("new password"),
+                &test_service
+            ).unwrap();
+            assert_eq!(user.username.clone(), updated_user.username.clone());
+            assert_ne!(user.display_name.clone(), updated_user.display_name.clone());
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_user_update_not_found_username() {
+            let test_service = ExternalServices::create_test_services();
+            let _ = User::update(
+                String::from("test_username"),
+                String::from("New Display Name"),
+                String::from("new password"),
+                &test_service
             ).unwrap();
         }
     }
