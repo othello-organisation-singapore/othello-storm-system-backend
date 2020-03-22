@@ -14,6 +14,21 @@ pub struct ExternalServices {
 }
 
 impl ExternalServices {
+    pub fn create_live_services() -> ExternalServices {
+        let connection = establish_connection();
+        ExternalServices {
+            connection
+        }
+    }
+
+    pub fn create_test_services() -> ExternalServices {
+        let connection = establish_connection();
+        let _ = connection.begin_test_transaction();
+        ExternalServices {
+            connection
+        }
+    }
+
     pub fn get_connection(&self) -> &PgConnection {
         &self.connection
     }

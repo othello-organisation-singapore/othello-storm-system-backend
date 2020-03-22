@@ -87,12 +87,12 @@ impl User {
             .expect("Cannot create new user.");
     }
 
-    pub fn update(username: String, display_name: String, password: String, service: &ExternalServices) {
-        let hashed_password = User::hash_password(password);
+    pub fn update(username: String, updated_display_name: String, updated_password: String, service: &ExternalServices) {
+        let hashed_password = User::hash_password(updated_password);
         let connection = service.get_connection();
         diesel::update(users::table.filter(users::username.eq(&username)))
             .set((
-                users::display_name.eq(&display_name),
+                users::display_name.eq(&updated_display_name),
                 users::hashed_password.eq(&hashed_password),
             ))
             .get_result::<User>(connection)
@@ -125,39 +125,52 @@ impl User {
 mod tests {
     mod test_user_creation {
         use crate::models::User;
-        use crate::utils::{establish_connection, ExternalServices};
-        use diesel::Connection;
+        use crate::utils::ExternalServices;
 
         #[test]
         fn test_create_new_superuser() {
-            let connection = establish_connection();
-            let _ = connection.begin_test_transaction();
-            let test_service = ExternalServices { connection };
-
+            let test_service = ExternalServices::create_test_services();
             let user = User::create_new_superuser(
                 String::from("test_username"),
                 String::from("Test Name"),
                 String::from("test_password"),
                 &test_service,
             ).unwrap();
+
             assert_eq!(user.username, "test_username");
             assert_eq!(user.display_name, "Test Name");
         }
 
         #[test]
         fn test_create_new_admin() {
-            let connection = establish_connection();
-            let _ = connection.begin_test_transaction();
-            let test_service = ExternalServices { connection };
-
+            let test_service = ExternalServices::create_test_services();
             let user = User::create_new_admin(
                 String::from("test_username"),
                 String::from("Test Name"),
                 String::from("test_password"),
                 &test_service,
             ).unwrap();
+
             assert_eq!(user.username, "test_username");
             assert_eq!(user.display_name, "Test Name");
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_create_used_username() {
+            let test_service = ExternalServices::create_test_services();
+            let user = User::create_new_admin(
+                String::from("test_username"),
+                String::from("Test Name"),
+                String::from("test_password"),
+                &test_service,
+            ).unwrap();
+            let user_with_same_username = User::create_new_superuser(
+                String::from("test_username"),
+                String::from("Another Name"),
+                String::from("another_password"),
+                &test_service,
+            ).unwrap();
         }
     }
 }
