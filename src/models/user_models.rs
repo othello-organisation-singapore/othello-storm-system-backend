@@ -5,7 +5,7 @@ use super::super::schema::users;
 use super::super::properties::UserRole;
 use super::super::external_services::ExternalServices;
 
-#[derive(Queryable)]
+#[derive(PartialEq, Debug, Queryable)]
 pub struct User {
     id: i32,
     pub username: String,
@@ -229,7 +229,7 @@ mod tests {
         #[should_panic]
         fn test_user_update_not_found_username() {
             let test_service = ExternalServices::create_test_services();
-            let _ = User::update(
+            User::update(
                 String::from("test_username"),
                 String::from("New Display Name"),
                 String::from("new password"),
@@ -238,7 +238,56 @@ mod tests {
         }
     }
 
-    mod test_user_login {}
+    mod test_user_login {
+        use crate::models::User;
+        use crate::external_services::ExternalServices;
+
+        #[test]
+        fn test_login_success() {
+            let test_service = ExternalServices::create_test_services();
+            let username = String::from("test_username");
+            let password = String::from("test_password");
+            let created_user = User::create_new_admin(
+                username.clone(),
+                String::from("Test Name"),
+                password.clone(),
+                &test_service,
+            ).unwrap();
+            let logged_in_user = User::login(username.clone(), password.clone(), &test_service).unwrap();
+            assert_eq!(created_user, logged_in_user);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_login_failed() {
+            let test_service = ExternalServices::create_test_services();
+            let username = String::from("test_username");
+            let password = String::from("test_password");
+            User::create_new_admin(
+                username.clone(),
+                String::from("Test Name"),
+                password.clone(),
+                &test_service,
+            ).unwrap();
+            User::login(
+                username.clone(),
+                String::from("random_password"),
+                &test_service
+            ).unwrap();
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_login_no_user() {
+            let test_service = ExternalServices::create_test_services();
+            let username = String::from("test_username");
+            User::login(
+                username,
+                String::from("random_password"),
+                &test_service
+            ).unwrap();
+        }
+    }
 
     mod test_get_all_user {}
 }
