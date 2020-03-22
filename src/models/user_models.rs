@@ -3,7 +3,7 @@ use pwhash::bcrypt;
 
 use super::super::schema::users;
 use super::super::properties::UserRole;
-use super::super::utils::ExternalServices;
+use super::super::external_services::ExternalServices;
 
 #[derive(Queryable)]
 pub struct User {
@@ -131,7 +131,7 @@ impl User {
 mod tests {
     mod test_user_creation {
         use crate::models::User;
-        use crate::utils::ExternalServices;
+        use crate::external_services::ExternalServices;
         use crate::properties::UserRole;
 
         #[test]
@@ -185,7 +185,7 @@ mod tests {
 
     mod test_user_update {
         use crate::models::User;
-        use crate::utils::ExternalServices;
+        use crate::external_services::ExternalServices;
 
         #[test]
         fn test_user_update_without_changing() {
@@ -237,4 +237,8 @@ mod tests {
             ).unwrap();
         }
     }
+
+    mod test_user_login {}
+
+    mod test_get_all_user {}
 }
