@@ -289,5 +289,47 @@ mod tests {
         }
     }
 
-    mod test_get_all_user {}
+    mod test_get_all_admin_or_higher {
+        use crate::models::User;
+        use crate::external_services::ExternalServices;
+
+        #[test]
+        fn test_zero_user() {
+            let test_service = ExternalServices::create_test_services();
+            if let Ok(users) = User::get_all_admin_or_higher(&test_service) {
+                assert_eq!(users.len(), 0);
+            } else {
+                panic!("Should never reached here");
+            }
+        }
+
+        #[test]
+        fn test_get_all_admin_and_superuser() {
+            let test_service = ExternalServices::create_test_services();
+            User::create_new_superuser(
+                String::from("test_username_1"),
+                String::from("Test Name"),
+                String::from("test_password"),
+                &test_service,
+            ).unwrap();
+            User::create_new_admin(
+                String::from("test_username_2"),
+                String::from("Test Name"),
+                String::from("test_password"),
+                &test_service,
+            ).unwrap();
+            User::create_new_admin(
+                String::from("test_username_3"),
+                String::from("Test Name"),
+                String::from("test_password"),
+                &test_service,
+            ).unwrap();
+
+            if let Ok(users) = User::get_all_admin_or_higher(&test_service) {
+                assert_eq!(users.len(), 3);
+            } else {
+                panic!("Should never reached here");
+            }
+        }
+    }
 }
