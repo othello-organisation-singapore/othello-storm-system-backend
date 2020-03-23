@@ -3,6 +3,7 @@ use pwhash::bcrypt;
 
 use super::super::schema::users;
 use super::super::properties::UserRole;
+use super::super::utils;
 use super::super::utils::ExternalServices;
 
 #[derive(PartialEq, Debug, Queryable)]
@@ -39,6 +40,16 @@ impl User {
 
     pub fn get_role(&self) -> UserRole {
         return UserRole::from_string(self.role.clone());
+    }
+
+    pub fn get_random_visitor() -> User {
+        User {
+            id: utils::generate_random_number(),
+            username: utils::generate_random_string(30),
+            display_name: utils::generate_random_string(30),
+            hashed_password: utils::generate_random_string(30),
+            role: String::from("visitor")
+        }
     }
 }
 
@@ -132,35 +143,40 @@ mod tests {
     mod test_user_creation {
         use crate::models::User;
         use crate::properties::UserRole;
+        use crate::utils;
         use crate::utils::ExternalServices;
 
         #[test]
         fn test_create_new_superuser() {
             let test_service = ExternalServices::create_test_services();
+            let random_username = utils::generate_random_string(30);
+            let random_display_name = utils::generate_random_string(30);
             let user = User::create_new_superuser(
-                String::from("test_username"),
-                String::from("Test Name"),
-                String::from("test_password"),
+                random_username.clone(),
+                random_display_name.clone(),
+                utils::generate_random_string(30),
                 &test_service,
             ).unwrap();
 
-            assert_eq!(user.username, "test_username");
-            assert_eq!(user.display_name, "Test Name");
+            assert_eq!(user.username, random_username);
+            assert_eq!(user.display_name, random_display_name);
             assert_eq!(user.get_role(), UserRole::Superuser);
         }
 
         #[test]
         fn test_create_new_admin() {
             let test_service = ExternalServices::create_test_services();
+            let random_username = utils::generate_random_string(30);
+            let random_display_name = utils::generate_random_string(30);
             let user = User::create_new_admin(
-                String::from("test_username"),
-                String::from("Test Name"),
-                String::from("test_password"),
+                random_username.clone(),
+                random_display_name.clone(),
+                utils::generate_random_string(30),
                 &test_service,
             ).unwrap();
 
-            assert_eq!(user.username, "test_username");
-            assert_eq!(user.display_name, "Test Name");
+            assert_eq!(user.username, random_username);
+            assert_eq!(user.display_name, random_display_name);
             assert_eq!(user.get_role(), UserRole::Admin);
         }
 
@@ -185,21 +201,22 @@ mod tests {
 
     mod test_user_update {
         use crate::models::User;
+        use crate::utils;
         use crate::utils::ExternalServices;
 
         #[test]
         fn test_user_update_without_changing() {
             let test_service = ExternalServices::create_test_services();
             let _user = User::create_new_admin(
-                String::from("test_username"),
-                String::from("Test Name"),
-                String::from("test_password"),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
                 &test_service,
             ).unwrap();
             let updated_user = User::update(
                 _user.username.clone(),
                 _user.display_name.clone(),
-                String::from("test_password"),
+                utils::generate_random_string(30),
                 &test_service
             ).unwrap();
             assert_eq!(_user.username.clone(), updated_user.username.clone());
@@ -210,15 +227,15 @@ mod tests {
         fn test_user_update_with_changing() {
             let test_service = ExternalServices::create_test_services();
             let user = User::create_new_admin(
-                String::from("test_username"),
-                String::from("Test Name"),
-                String::from("test_password"),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
                 &test_service,
             ).unwrap();
             let updated_user = User::update(
                 user.username.clone(),
-                String::from("New Display Name"),
-                String::from("new password"),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
                 &test_service
             ).unwrap();
             assert_eq!(user.username.clone(), updated_user.username.clone());
@@ -230,9 +247,9 @@ mod tests {
         fn test_user_update_not_found_username() {
             let test_service = ExternalServices::create_test_services();
             User::update(
-                String::from("test_username"),
-                String::from("New Display Name"),
-                String::from("new password"),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
                 &test_service
             ).unwrap();
         }
@@ -240,16 +257,17 @@ mod tests {
 
     mod test_user_login {
         use crate::models::User;
+        use crate::utils;
         use crate::utils::ExternalServices;
 
         #[test]
         fn test_login_success() {
             let test_service = ExternalServices::create_test_services();
-            let username = String::from("test_username");
-            let password = String::from("test_password");
+            let username = utils::generate_random_string(30);
+            let password = utils::generate_random_string(30);
             let created_user = User::create_new_admin(
                 username.clone(),
-                String::from("Test Name"),
+                utils::generate_random_string(30),
                 password.clone(),
                 &test_service,
             ).unwrap();
@@ -261,17 +279,17 @@ mod tests {
         #[should_panic]
         fn test_login_failed() {
             let test_service = ExternalServices::create_test_services();
-            let username = String::from("test_username");
-            let password = String::from("test_password");
+            let username = utils::generate_random_string(30);
+            let password = utils::generate_random_string(30);
             User::create_new_admin(
                 username.clone(),
-                String::from("Test Name"),
+                utils::generate_random_string(30),
                 password.clone(),
                 &test_service,
             ).unwrap();
             User::login(
                 username.clone(),
-                String::from("random_password"),
+                utils::generate_random_string(30),
                 &test_service
             ).unwrap();
         }
@@ -280,10 +298,10 @@ mod tests {
         #[should_panic]
         fn test_login_no_user() {
             let test_service = ExternalServices::create_test_services();
-            let username = String::from("test_username");
+            let username = utils::generate_random_string(30);
             User::login(
                 username,
-                String::from("random_password"),
+                utils::generate_random_string(30),
                 &test_service
             ).unwrap();
         }
@@ -291,6 +309,7 @@ mod tests {
 
     mod test_get_all_admin_or_higher {
         use crate::models::User;
+        use crate::utils;
         use crate::utils::ExternalServices;
 
         #[test]
@@ -307,21 +326,21 @@ mod tests {
         fn test_get_all_admin_and_superuser() {
             let test_service = ExternalServices::create_test_services();
             User::create_new_superuser(
-                String::from("test_username_1"),
-                String::from("Test Name"),
-                String::from("test_password"),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
                 &test_service,
             ).unwrap();
             User::create_new_admin(
-                String::from("test_username_2"),
-                String::from("Test Name"),
-                String::from("test_password"),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
                 &test_service,
             ).unwrap();
             User::create_new_admin(
-                String::from("test_username_3"),
-                String::from("Test Name"),
-                String::from("test_password"),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
                 &test_service,
             ).unwrap();
 
