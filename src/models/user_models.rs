@@ -3,7 +3,7 @@ use pwhash::bcrypt;
 
 use super::super::schema::users;
 use super::super::properties::UserRole;
-use super::super::external_services::ExternalServices;
+use super::super::utils::ExternalServices;
 
 #[derive(PartialEq, Debug, Queryable)]
 pub struct User {
@@ -131,7 +131,7 @@ impl User {
 mod tests {
     mod test_user_creation {
         use crate::models::User;
-        use crate::external_services::ExternalServices;
+        use crate::utils::ExternalServices;
         use crate::properties::UserRole;
 
         #[test]
@@ -185,7 +185,7 @@ mod tests {
 
     mod test_user_update {
         use crate::models::User;
-        use crate::external_services::ExternalServices;
+        use crate::utils::ExternalServices;
 
         #[test]
         fn test_user_update_without_changing() {
@@ -240,7 +240,7 @@ mod tests {
 
     mod test_user_login {
         use crate::models::User;
-        use crate::external_services::ExternalServices;
+        use crate::utils::ExternalServices;
 
         #[test]
         fn test_login_success() {
@@ -291,7 +291,7 @@ mod tests {
 
     mod test_get_all_admin_or_higher {
         use crate::models::User;
-        use crate::external_services::ExternalServices;
+        use crate::utils::ExternalServices;
 
         #[test]
         fn test_zero_user() {

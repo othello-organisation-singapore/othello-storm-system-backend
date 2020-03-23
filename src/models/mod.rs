@@ -1,3 +1,3 @@
 mod user_models;
 
-pub use user_models::{User};
+pub use user_models::User;
