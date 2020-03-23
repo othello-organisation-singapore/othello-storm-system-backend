@@ -4,6 +4,7 @@ extern crate diesel;
 pub mod schema;
 pub mod models;
 pub mod utils;
+pub mod permissions;
 pub mod properties;
 
 

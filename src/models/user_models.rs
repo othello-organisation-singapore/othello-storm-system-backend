@@ -131,8 +131,8 @@ impl User {
 mod tests {
     mod test_user_creation {
         use crate::models::User;
-        use crate::utils::ExternalServices;
         use crate::properties::UserRole;
+        use crate::utils::ExternalServices;
 
         #[test]
         fn test_create_new_superuser() {
