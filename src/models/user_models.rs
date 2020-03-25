@@ -25,8 +25,8 @@ struct NewUser<'a> {
 }
 
 impl User {
-    pub fn get(username: &String, service: &ExternalServices) -> Result<User, String> {
-        let connection = service.get_connection();
+    pub fn get(username: &String, services: &ExternalServices) -> Result<User, String> {
+        let connection = services.get_connection();
         let mut filtered_users = users::table
             .filter(users::username.eq(&username))
             .load::<User>(connection)
@@ -54,19 +54,19 @@ impl User {
 }
 
 impl User {
-    pub fn create_new_superuser(username: String, display_name: String, password: String, service: &ExternalServices)
+    pub fn create_new_superuser(username: String, display_name: String, password: String, services: &ExternalServices)
                                 -> Result<User, String> {
-        User::create_new_user(username, display_name, password, UserRole::Superuser, service)
+        User::create_new_user(username, display_name, password, UserRole::Superuser, services)
     }
 
-    pub fn create_new_admin(username: String, display_name: String, password: String, service: &ExternalServices)
+    pub fn create_new_admin(username: String, display_name: String, password: String, services: &ExternalServices)
                             -> Result<User, String> {
-        User::create_new_user(username, display_name, password, UserRole::Admin, service)
+        User::create_new_user(username, display_name, password, UserRole::Admin, services)
     }
 
-    fn create_new_user(username: String, display_name: String, password: String, role: UserRole, service: &ExternalServices)
+    fn create_new_user(username: String, display_name: String, password: String, role: UserRole, services: &ExternalServices)
                        -> Result<User, String> {
-        if User::is_username_exists(&username, service) {
+        if User::is_username_exists(&username, services) {
             return Err(String::from("Username exists."));
         }
         let new_user = NewUser {
@@ -75,12 +75,12 @@ impl User {
             hashed_password: &User::hash_password(password),
             role: &role.to_string(),
         };
-        User::insert_to_database(new_user, service);
-        User::get(&username, service)
+        User::insert_to_database(new_user, services);
+        User::get(&username, services)
     }
 
-    fn is_username_exists(username: &String, service: &ExternalServices) -> bool {
-        if let Ok(_) = User::get(username, service) {
+    fn is_username_exists(username: &String, services: &ExternalServices) -> bool {
+        if let Ok(_) = User::get(username, services) {
             return true;
         }
         false
@@ -90,22 +90,22 @@ impl User {
         bcrypt::hash(password).unwrap()
     }
 
-    fn insert_to_database(new_user: NewUser, service: &ExternalServices) {
-        let connection = service.get_connection();
+    fn insert_to_database(new_user: NewUser, services: &ExternalServices) {
+        let connection = services.get_connection();
         diesel::insert_into(users::table)
             .values(new_user)
             .get_result::<User>(connection)
             .expect("Cannot create new user.");
     }
 
-    pub fn update(username: String, updated_display_name: String, updated_password: String, service: &ExternalServices)
+    pub fn update(username: String, updated_display_name: String, updated_password: String, services: &ExternalServices)
                   -> Result<User, String> {
-        if !User::is_username_exists(&username, service) {
+        if !User::is_username_exists(&username, services) {
             return Err(String::from("Username not exists"));
         }
 
         let hashed_password = User::hash_password(updated_password);
-        let connection = service.get_connection();
+        let connection = services.get_connection();
         diesel::update(users::table.filter(users::username.eq(&username)))
             .set((
                 users::display_name.eq(&updated_display_name),
@@ -113,9 +113,11 @@ impl User {
             ))
             .get_result::<User>(connection)
             .expect("Failed to update.");
-        User::get(&username, service)
+        User::get(&username, services)
     }
+}
 
+impl User {
     pub fn login(username: String, password: String, service: &ExternalServices) -> Result<User, String> {
         let user = User::get(&username, service)?;
         if user.is_password_correct(password) {
@@ -148,14 +150,14 @@ mod tests {
 
         #[test]
         fn test_create_new_superuser() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             let random_username = utils::generate_random_string(30);
             let random_display_name = utils::generate_random_string(30);
             let user = User::create_new_superuser(
                 random_username.clone(),
                 random_display_name.clone(),
                 utils::generate_random_string(30),
-                &test_service,
+                &test_services,
             ).unwrap();
 
             assert_eq!(user.username, random_username);
@@ -165,14 +167,14 @@ mod tests {
 
         #[test]
         fn test_create_new_admin() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             let random_username = utils::generate_random_string(30);
             let random_display_name = utils::generate_random_string(30);
             let user = User::create_new_admin(
                 random_username.clone(),
                 random_display_name.clone(),
                 utils::generate_random_string(30),
-                &test_service,
+                &test_services,
             ).unwrap();
 
             assert_eq!(user.username, random_username);
@@ -183,18 +185,18 @@ mod tests {
         #[test]
         #[should_panic]
         fn test_create_used_username() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             let user = User::create_new_admin(
                 String::from("test_username"),
                 String::from("Test Name"),
                 String::from("test_password"),
-                &test_service,
+                &test_services,
             ).unwrap();
             let _user_with_same_username = User::create_new_superuser(
                 user.username.clone(),
                 String::from("Another Name"),
                 String::from("another_password"),
-                &test_service,
+                &test_services,
             ).unwrap();
         }
     }
@@ -206,18 +208,18 @@ mod tests {
 
         #[test]
         fn test_user_update_without_changing() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             let _user = User::create_new_admin(
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
-                &test_service,
+                &test_services,
             ).unwrap();
             let updated_user = User::update(
                 _user.username.clone(),
                 _user.display_name.clone(),
                 utils::generate_random_string(30),
-                &test_service
+                &test_services
             ).unwrap();
             assert_eq!(_user.username.clone(), updated_user.username.clone());
             assert_eq!(_user.display_name.clone(), updated_user.display_name.clone());
@@ -225,18 +227,18 @@ mod tests {
 
         #[test]
         fn test_user_update_with_changing() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             let user = User::create_new_admin(
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
-                &test_service,
+                &test_services,
             ).unwrap();
             let updated_user = User::update(
                 user.username.clone(),
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
-                &test_service
+                &test_services
             ).unwrap();
             assert_eq!(user.username.clone(), updated_user.username.clone());
             assert_ne!(user.display_name.clone(), updated_user.display_name.clone());
@@ -245,12 +247,12 @@ mod tests {
         #[test]
         #[should_panic]
         fn test_user_update_not_found_username() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             User::update(
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
-                &test_service
+                &test_services
             ).unwrap();
         }
     }
@@ -262,47 +264,47 @@ mod tests {
 
         #[test]
         fn test_login_success() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             let username = utils::generate_random_string(30);
             let password = utils::generate_random_string(30);
             let created_user = User::create_new_admin(
                 username.clone(),
                 utils::generate_random_string(30),
                 password.clone(),
-                &test_service,
+                &test_services,
             ).unwrap();
-            let logged_in_user = User::login(username.clone(), password.clone(), &test_service).unwrap();
+            let logged_in_user = User::login(username.clone(), password.clone(), &test_services).unwrap();
             assert_eq!(created_user, logged_in_user);
         }
 
         #[test]
         #[should_panic]
         fn test_login_failed() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             let username = utils::generate_random_string(30);
             let password = utils::generate_random_string(30);
             User::create_new_admin(
                 username.clone(),
                 utils::generate_random_string(30),
                 password.clone(),
-                &test_service,
+                &test_services,
             ).unwrap();
             User::login(
                 username.clone(),
                 utils::generate_random_string(30),
-                &test_service
+                &test_services
             ).unwrap();
         }
 
         #[test]
         #[should_panic]
         fn test_login_no_user() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             let username = utils::generate_random_string(30);
             User::login(
                 username,
                 utils::generate_random_string(30),
-                &test_service
+                &test_services
             ).unwrap();
         }
     }
@@ -314,34 +316,34 @@ mod tests {
 
         #[test]
         fn test_zero_user() {
-            let test_service = ExternalServices::create_test_services();
-            let users = User::get_all_admin_or_higher(&test_service);
+            let test_services = ExternalServices::create_test_services();
+            let users = User::get_all_admin_or_higher(&test_services);
             assert_eq!(users.len(), 0);
         }
 
         #[test]
         fn test_get_all_admin_and_superuser() {
-            let test_service = ExternalServices::create_test_services();
+            let test_services = ExternalServices::create_test_services();
             User::create_new_superuser(
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
-                &test_service,
+                &test_services,
             ).unwrap();
             User::create_new_admin(
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
-                &test_service,
+                &test_services,
             ).unwrap();
             User::create_new_admin(
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
-                &test_service,
+                &test_services,
             ).unwrap();
 
-            let users = User::get_all_admin_or_higher(&test_service);
+            let users = User::get_all_admin_or_higher(&test_services);
             assert_eq!(users.len(), 3);
         }
     }
