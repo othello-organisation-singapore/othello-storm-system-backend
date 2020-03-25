@@ -5,6 +5,7 @@ use jsonwebtoken::errors::{ErrorKind};
 
 use super::super::models::User;
 use super::super::utils;
+use diesel::PgConnection;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -38,7 +39,7 @@ impl JWTMediator {
         String::from("Othello Storm System")
     }
 
-    pub fn get_user_from_jwt(jwt: String, services: &utils::ExternalServices) -> Result<User, String> {
+    pub fn get_user_from_jwt(jwt: String, connection: &PgConnection) -> Result<User, String> {
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
         let validation = Validation { iss: Some(JWTMediator::get_issuer()), ..Validation::default()};
         let token_data = match decode::<Claims>(&jwt, secret_key.as_ref(), &validation) {
@@ -48,7 +49,7 @@ impl JWTMediator {
                 _ => Err(String::from("Something is wrong"))
             }
         };
-        if let Ok(user) = User::get(&token_data.claims.username, services) {
+        if let Ok(user) = User::get(&token_data.claims.username, connection) {
             return Ok(user)
         }
         Err(String::from("User not found"))
@@ -71,14 +72,16 @@ mod tests {
         #[test]
         fn test_generate_get_jwt() {
             let test_services = utils::ExternalServices::create_test_services();
+            let connection = test_services.get_connection();
+
             let user = User::create_new_admin(
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
                 utils::generate_random_string(30),
-                &test_services
+                &connection
             ).unwrap();
             let jwt = JWTMediator::generate_jwt_from_user(&user).unwrap();
-            let username_claimed = JWTMediator::get_user_from_jwt(jwt, &test_services).unwrap().username;
+            let username_claimed = JWTMediator::get_user_from_jwt(jwt, &connection).unwrap().username;
             assert_eq!(user.username, username_claimed);
         }
 
@@ -86,17 +89,21 @@ mod tests {
         #[should_panic]
         fn test_generate_get_jwt_error() {
             let test_services = utils::ExternalServices::create_test_services();
+            let connection = test_services.get_connection();
+
             let jwt = utils::generate_random_string(60);
-            let _ = JWTMediator::get_user_from_jwt(jwt, &test_services).unwrap().username;
+            let _ = JWTMediator::get_user_from_jwt(jwt, &connection).unwrap().username;
         }
 
         #[test]
         #[should_panic]
-        fn test_generate_get_jwt_no_user() {
+        fn test_generate_get_jwt_no_user_found() {
             let test_services = utils::ExternalServices::create_test_services();
+            let connection = test_services.get_connection();
+
             let user = User::get_dummy_visitor();
             let jwt = JWTMediator::generate_jwt_from_user(&user).unwrap();
-            let _ = JWTMediator::get_user_from_jwt(jwt, &test_services).unwrap().username;
+            let _ = JWTMediator::get_user_from_jwt(jwt, &connection).unwrap().username;
         }
     }
 }

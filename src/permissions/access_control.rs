@@ -1,7 +1,7 @@
 use super::JWTMediator;
 use super::super::models::User;
 use super::super::properties::UserRole;
-use super::super::utils;
+use diesel::PgConnection;
 
 pub struct AccessControl {
     user: User
@@ -14,8 +14,8 @@ impl AccessControl {
         }
     }
 
-    pub fn from_jwt(jwt: String, services: &utils::ExternalServices) -> AccessControl {
-        if let Ok(user) = JWTMediator::get_user_from_jwt(jwt, services) {
+    pub fn from_jwt(jwt: String, connection: &PgConnection) -> AccessControl {
+        if let Ok(user) = JWTMediator::get_user_from_jwt(jwt, connection) {
             return AccessControl::from_user(user)
         }
         AccessControl::get_visitor_access()
