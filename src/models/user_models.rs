@@ -42,7 +42,7 @@ impl User {
         return UserRole::from_string(self.role.clone());
     }
 
-    pub fn get_random_visitor() -> User {
+    pub fn get_dummy_visitor() -> User {
         User {
             id: utils::generate_random_number(),
             username: utils::generate_random_string(30),
@@ -128,13 +128,13 @@ impl User {
         bcrypt::verify(password, &self.hashed_password)
     }
 
-    pub fn get_all_admin_or_higher(service: &ExternalServices) -> Result<Vec<User>, String> {
+    pub fn get_all_admin_or_higher(service: &ExternalServices) -> Vec<User> {
         let connection = service.get_connection();
         let users = users::table
             .filter(users::role.eq_any(vec![UserRole::Admin.to_string(), UserRole::Superuser.to_string()]))
             .load::<User>(connection)
             .expect("Error connecting to database");
-        Ok(users)
+        users
     }
 }
 
@@ -315,11 +315,8 @@ mod tests {
         #[test]
         fn test_zero_user() {
             let test_service = ExternalServices::create_test_services();
-            if let Ok(users) = User::get_all_admin_or_higher(&test_service) {
-                assert_eq!(users.len(), 0);
-            } else {
-                panic!("Should never reached here");
-            }
+            let users = User::get_all_admin_or_higher(&test_service);
+            assert_eq!(users.len(), 0);
         }
 
         #[test]
@@ -344,11 +341,8 @@ mod tests {
                 &test_service,
             ).unwrap();
 
-            if let Ok(users) = User::get_all_admin_or_higher(&test_service) {
-                assert_eq!(users.len(), 3);
-            } else {
-                panic!("Should never reached here");
-            }
+            let users = User::get_all_admin_or_higher(&test_service);
+            assert_eq!(users.len(), 3);
         }
     }
 }

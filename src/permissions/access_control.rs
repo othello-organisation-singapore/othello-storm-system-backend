@@ -1,6 +1,5 @@
 use std::env;
 use jsonwebtoken::{encode, decode, Header, Validation};
-use jsonwebtoken::errors::{ErrorKind};
 
 use super::Claims;
 use super::super::models::User;
@@ -17,22 +16,23 @@ impl AccessControl {
         }
     }
 
-    pub fn from_jwt(jwt: String, services: &utils::ExternalServices) -> Result<AccessControl, String> {
+    pub fn get_visitor_access() -> AccessControl {
+        let user = User::get_dummy_visitor();
+        AccessControl::from_user(user)
+    }
+
+    pub fn from_jwt(jwt: String, services: &utils::ExternalServices) -> AccessControl {
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
         let validation = Validation { iss: Some(AccessControl::get_issuer()), ..Validation::default()};
         let token_data = match decode::<Claims>(&jwt, secret_key.as_ref(), &validation) {
             Ok(t) => t,
-            Err(err) => return match *err.kind() {
-                ErrorKind::ExpiredSignature => Err(String::from("Token expired")),
-                _ => Err(String::from("Something is wrong"))
-            }
+            Err(_) => return AccessControl::get_visitor_access()
         };
 
         if let Ok(user) = User::get(&token_data.claims.username, services) {
-            return Ok(AccessControl { user })
+            return AccessControl::from_user(user)
         }
-        Err(String::from("User not found"))
-
+        AccessControl::get_visitor_access()
     }
 
     fn get_issuer() -> String {
