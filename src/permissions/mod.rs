@@ -1,5 +1,5 @@
 mod access_control;
-mod jwt_claim;
+mod jwt;
 
 pub use access_control::AccessControl;
-pub use jwt_claim::Claims;
+pub use jwt::JWTMediator;
