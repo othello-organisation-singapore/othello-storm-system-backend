@@ -98,7 +98,7 @@ impl User {
             .expect("Cannot create new user.");
     }
 
-    pub fn update(username: String, updated_display_name: String, updated_password: String, services: &ExternalServices)
+    pub fn update_password(username: String, updated_password: String, services: &ExternalServices)
                   -> Result<User, String> {
         if !User::is_username_exists(&username, services) {
             return Err(String::from("Username not exists"));
@@ -107,10 +107,7 @@ impl User {
         let hashed_password = User::hash_password(updated_password);
         let connection = services.get_connection();
         diesel::update(users::table.filter(users::username.eq(&username)))
-            .set((
-                users::display_name.eq(&updated_display_name),
-                users::hashed_password.eq(&hashed_password),
-            ))
+            .set((users::hashed_password.eq(&hashed_password), ))
             .get_result::<User>(connection)
             .expect("Failed to update.");
         User::get(&username, services)
@@ -201,62 +198,6 @@ mod tests {
         }
     }
 
-    mod test_user_update {
-        use crate::models::User;
-        use crate::utils;
-        use crate::utils::ExternalServices;
-
-        #[test]
-        fn test_user_update_without_changing() {
-            let test_services = ExternalServices::create_test_services();
-            let _user = User::create_new_admin(
-                utils::generate_random_string(30),
-                utils::generate_random_string(30),
-                utils::generate_random_string(30),
-                &test_services,
-            ).unwrap();
-            let updated_user = User::update(
-                _user.username.clone(),
-                _user.display_name.clone(),
-                utils::generate_random_string(30),
-                &test_services
-            ).unwrap();
-            assert_eq!(_user.username.clone(), updated_user.username.clone());
-            assert_eq!(_user.display_name.clone(), updated_user.display_name.clone());
-        }
-
-        #[test]
-        fn test_user_update_with_changing() {
-            let test_services = ExternalServices::create_test_services();
-            let user = User::create_new_admin(
-                utils::generate_random_string(30),
-                utils::generate_random_string(30),
-                utils::generate_random_string(30),
-                &test_services,
-            ).unwrap();
-            let updated_user = User::update(
-                user.username.clone(),
-                utils::generate_random_string(30),
-                utils::generate_random_string(30),
-                &test_services
-            ).unwrap();
-            assert_eq!(user.username.clone(), updated_user.username.clone());
-            assert_ne!(user.display_name.clone(), updated_user.display_name.clone());
-        }
-
-        #[test]
-        #[should_panic]
-        fn test_user_update_not_found_username() {
-            let test_services = ExternalServices::create_test_services();
-            User::update(
-                utils::generate_random_string(30),
-                utils::generate_random_string(30),
-                utils::generate_random_string(30),
-                &test_services
-            ).unwrap();
-        }
-    }
-
     mod test_user_login {
         use crate::models::User;
         use crate::utils;
@@ -303,6 +244,41 @@ mod tests {
             let username = utils::generate_random_string(30);
             User::login(
                 username,
+                utils::generate_random_string(30),
+                &test_services
+            ).unwrap();
+        }
+    }
+
+    mod test_user_update_password {
+        use crate::models::User;
+        use crate::utils;
+        use crate::utils::ExternalServices;
+
+        #[test]
+        fn test_update_password() {
+            let test_services = ExternalServices::create_test_services();
+            let updated_password = utils::generate_random_string(30);
+            let user = User::create_new_admin(
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                &test_services,
+            ).unwrap();
+            User::update_password(
+                user.username.clone(),
+                updated_password.clone(),
+                &test_services
+            ).unwrap();
+            User::login(user.username.clone(), updated_password, &test_services).unwrap();
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_update_password_not_found_username() {
+            let test_services = ExternalServices::create_test_services();
+            User::update_password(
+                utils::generate_random_string(30),
                 utils::generate_random_string(30),
                 &test_services
             ).unwrap();
