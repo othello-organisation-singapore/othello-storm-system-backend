@@ -1,5 +1,6 @@
 use super::JWTMediator;
 use super::super::models::User;
+use super::super::properties::UserRole;
 use super::super::utils;
 
 pub struct AccessControl {
@@ -27,5 +28,14 @@ impl AccessControl {
 
     pub fn generate_jwt(&self) -> Result<String, String> {
         JWTMediator::generate_jwt_from_user(&self.user)
+    }
+}
+
+impl AccessControl {
+    pub fn has_access_to_user_with_username(&self, username: String) -> bool {
+        if self.user.get_role() == UserRole::Superuser {
+            return true
+        }
+        return self.user.username == username
     }
 }
