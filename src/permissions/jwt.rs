@@ -54,3 +54,49 @@ impl JWTMediator {
         Err(String::from("User not found"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    mod test_get_generate_jwt {
+        use crate::models::User;
+        use crate::permissions::JWTMediator;
+        use crate::utils;
+
+        #[test]
+        fn test_generate_jwt() {
+            let user = User::get_dummy_visitor();
+            let _ = JWTMediator::generate_jwt_from_user(&user).unwrap();
+        }
+
+        #[test]
+        fn test_generate_get_jwt() {
+            let test_services = utils::ExternalServices::create_test_services();
+            let user = User::create_new_admin(
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                utils::generate_random_string(30),
+                &test_services
+            ).unwrap();
+            let jwt = JWTMediator::generate_jwt_from_user(&user).unwrap();
+            let username_claimed = JWTMediator::get_user_from_jwt(jwt, &test_services).unwrap().username;
+            assert_eq!(user.username, username_claimed);
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_generate_get_jwt_error() {
+            let test_services = utils::ExternalServices::create_test_services();
+            let jwt = utils::generate_random_string(60);
+            let _ = JWTMediator::get_user_from_jwt(jwt, &test_services).unwrap().username;
+        }
+
+        #[test]
+        #[should_panic]
+        fn test_generate_get_jwt_no_user() {
+            let test_services = utils::ExternalServices::create_test_services();
+            let user = User::get_dummy_visitor();
+            let jwt = JWTMediator::generate_jwt_from_user(&user).unwrap();
+            let _ = JWTMediator::get_user_from_jwt(jwt, &test_services).unwrap().username;
+        }
+    }
+}
