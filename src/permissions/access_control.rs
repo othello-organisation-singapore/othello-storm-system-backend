@@ -38,4 +38,12 @@ impl AccessControl {
         }
         return self.user.username == username
     }
+
+    pub fn has_superuser_access(&self) -> bool {
+        return self.user.get_role() == UserRole::Superuser
+    }
+
+    pub fn has_admin_access(&self) -> bool {
+        return [UserRole::Superuser, UserRole::Admin].contains(&self.user.get_role())
+    }
 }
