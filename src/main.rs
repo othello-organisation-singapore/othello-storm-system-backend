@@ -1,22 +1,38 @@
-#[macro_use(lazy_static)]
-extern crate lazy_static;
+#![feature(proc_macro_hygiene, decl_macro)]
+#[macro_use]
+extern crate rocket;
 
 #[macro_use]
 extern crate diesel;
+
+#[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
+extern crate log;
+
 extern crate mocktopus;
 
-pub mod schema;
+pub mod account;
 pub mod database_models;
 pub mod utils;
+
 pub mod properties;
+pub mod schema;
+
+#[get("/")]
+fn index() -> &'static str {
+    "Hello, world!"
+}
 
 
 fn main() {
-    // let services = utils::ExternalServices::create_live_services();
+    env_logger::init();
+    info!("Starting the program");
     // let connection = utils::get_pooled_connection();
-    // models::User::create_new_admin(String::from("test"), String::from("Test"), String::from("asasdf"), &connection);
-    // let users = models::User::get_all_admin_or_higher(&connection);
-    // for user in users {
-    //     println!("{} {} {}", user.username, user.display_name, user.hashed_password);
-    // }
+    // let username = String::from("ChrisMaxheart");
+    // let hashed_password =  String::from("random");
+    // let display_name =  String::from("");
+    // database_models::User::create(&username, &hashed_password, &display_name, properties::UserRole::Superuser, &connection);
+    rocket::ignite().mount("/", routes![index]).launch();
 }

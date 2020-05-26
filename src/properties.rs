@@ -7,7 +7,7 @@ pub enum UserRole {
 
 impl UserRole {
     pub fn from_string(role: String) -> UserRole {
-        match &(role[..]) {
+        match role.as_str() {
             "superuser" => UserRole::Superuser,
             "admin" => UserRole::Admin,
             _ => UserRole::Visitor,

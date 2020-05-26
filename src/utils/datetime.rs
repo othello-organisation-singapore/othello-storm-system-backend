@@ -1,4 +1,3 @@
-#[cfg(test)]
 use mocktopus::macros::mockable;
 
 use std::time::{SystemTime, UNIX_EPOCH};

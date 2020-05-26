@@ -15,10 +15,10 @@ pub struct User {
 #[derive(Insertable)]
 #[table_name = "users"]
 struct NewUser<'a> {
-    pub username: &'a str,
-    pub display_name: &'a str,
-    pub hashed_password: &'a str,
-    pub role: &'a str,
+    pub username: &'a String,
+    pub display_name: &'a String,
+    pub hashed_password: &'a String,
+    pub role: &'a String,
 }
 
 impl User {
@@ -33,8 +33,7 @@ impl User {
             hashed_password,
             role: &role.to_string(),
         };
-        User::insert_to_database(new_user, connection);
-        Ok(())
+        User::insert_to_database(new_user, connection)
     }
 
     fn is_username_exists(username: &String, connection: &PgConnection) -> bool {
@@ -44,19 +43,33 @@ impl User {
         false
     }
 
-    fn insert_to_database(new_user: NewUser, connection: &PgConnection) {
-        diesel::insert_into(users::table)
+    fn insert_to_database(new_user: NewUser, connection: &PgConnection) -> Result<(), String> {
+        let username = new_user.username.clone();
+        let display_name = new_user.display_name.clone();
+        let role = new_user.role.clone();
+
+        let result = diesel::insert_into(users::table)
             .values(new_user)
-            .execute(connection)
-            .expect("Cannot create new user.");
+            .execute(connection);
+        match result {
+            Err(_) => Err(String::from("Cannot create new user.")),
+            _ => {
+                info!("User {} ({}) is created as {}", username, display_name, role);
+                Ok(())
+            }
+        }
     }
 
     pub fn get(username: &String, connection: &PgConnection) -> Result<User, String> {
-        let mut filtered_users = users::table
+        let result = users::table
             .filter(users::username.eq(&username))
-            .load::<User>(connection)
-            .expect("Error connecting to database");
+            .load::<User>(connection);
 
+        if let Err(_) = result {
+            return Err(String::from("Failed connecting to database."));
+        }
+
+        let mut filtered_users = result.unwrap();
         if let Some(user) = filtered_users.pop() {
             return Ok(user);
         }
@@ -67,18 +80,23 @@ impl User {
         return UserRole::from_string(self.role.clone());
     }
 
-    pub fn update(&self, connection: &PgConnection) {
-        diesel::update(users::table.find(self.id))
+    pub fn update(&self, connection: &PgConnection) -> Result<(), String> {
+        let result = diesel::update(users::table.find(self.id))
             .set(self)
-            .execute(connection)
-            .expect("Failed to update.");
+            .execute(connection);
+        match result {
+            Err(_) => Err(String::from("User failed to update")),
+            _ => {
+                info!("User {} ({}) is updated", &self.username, &self.display_name);
+                Ok(())
+            }
+        }
     }
 }
 
 
 #[cfg(test)]
 mod tests {
-
     mod test_user_creation {
         use crate::database_models::User;
         use crate::properties::UserRole;
@@ -92,7 +110,9 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let result = User::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
+            let result = User::create(
+                &username, &display_name, &hashed_password, UserRole::Superuser, &test_connection
+            );
             assert_eq!(result.is_ok(), true);
         }
 
@@ -109,7 +129,9 @@ mod tests {
             let second_hashed_password = utils::hash(&second_password);
 
             let _ = User::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
-            let result = User::create(&username, &second_display_name, &second_hashed_password, UserRole::Admin, &test_connection);
+            let result = User::create(
+                &username, &second_display_name, &second_hashed_password, UserRole::Admin, &test_connection
+            );
             assert_eq!(result.is_err(), true);
         }
     }
@@ -164,7 +186,7 @@ mod tests {
 
             let updated_display_name = utils::generate_random_string(20);
             user.display_name = updated_display_name.clone();
-            user.update(&test_connection);
+            let _ = user.update(&test_connection);
 
             let updated_user = User::get(&username, &test_connection).unwrap();
             assert_ne!(updated_user.display_name, display_name);
