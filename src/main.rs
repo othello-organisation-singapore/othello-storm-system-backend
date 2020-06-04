@@ -3,6 +3,9 @@
 extern crate rocket;
 
 #[macro_use]
+extern crate rocket_contrib;
+
+#[macro_use]
 extern crate diesel;
 
 #[macro_use]
@@ -12,27 +15,39 @@ extern crate lazy_static;
 extern crate log;
 
 extern crate mocktopus;
+use std::env;
 
 pub mod account;
 pub mod database_models;
-pub mod utils;
-
 pub mod properties;
 pub mod schema;
+pub mod routes;
+pub mod utils;
 
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+fn create_default_superuser() {
+    let connection = utils::get_pooled_connection();
+    let username = env::var("SUPERUSER_ID").unwrap();
+    let display_name =  env::var("SUPERUSER_DISPLAY_NAME").unwrap();
+    let password =  env::var("SUPERUSER_PASS").unwrap();
+    let hashed_password = utils::hash(&password);
+    let _ = database_models::User::create(
+        &username, &display_name, &hashed_password, properties::UserRole::Superuser, &connection
+    );
 }
-
 
 fn main() {
     env_logger::init();
     info!("Starting the program");
-    // let connection = utils::get_pooled_connection();
-    // let username = String::from("ChrisMaxheart");
-    // let hashed_password =  String::from("random");
-    // let display_name =  String::from("");
-    // database_models::User::create(&username, &hashed_password, &display_name, properties::UserRole::Superuser, &connection);
-    rocket::ignite().mount("/", routes![index]).launch();
+    create_default_superuser();
+
+    rocket::ignite()
+        .mount("/user", routes![
+            routes::user_routes::get_user,
+            routes::user_routes::create_user,
+        ])
+        .mount("/", routes![
+            routes::general_routes::login,
+            routes::general_routes::get_current_user_profile,
+        ])
+        .launch();
 }

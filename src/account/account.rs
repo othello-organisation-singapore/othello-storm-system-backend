@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use diesel::prelude::*;
 
 use super::super::database_models::User;
@@ -8,6 +10,7 @@ pub trait Account {
     fn has_superuser_access(&self) -> bool;
     fn has_admin_access(&self) -> bool;
     fn get_username(&self) -> String;
+    fn generate_meta(&self) -> HashMap<String, String>;
 
     fn create_new_admin(&self, username: &String, display_name: &String, hashed_password: &String,
                         connection: &PgConnection) -> Result<(), String> {

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::account::Account;
 use super::super::database_models::User;
 use super::super::properties::UserRole;
@@ -26,6 +28,14 @@ impl Account for AdminAccount {
 
     fn get_username(&self) -> String {
         self.user.username.clone()
+    }
+
+    fn generate_meta(&self) -> HashMap<String, String> {
+        let mut meta: HashMap<String, String> = HashMap::new();
+        meta.insert(String::from("username"), self.user.username.clone());
+        meta.insert(String::from("display_name"), self.user.display_name.clone());
+        meta.insert(String::from("role"), self.user.get_role().to_string());
+        meta
     }
 }
 
