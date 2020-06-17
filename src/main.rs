@@ -44,6 +44,7 @@ fn main() {
         .mount("/user", routes![
             routes::user_routes::get_user,
             routes::user_routes::create_user,
+            routes::user_routes::update_user,
         ])
         .mount("/", routes![
             routes::general_routes::login,

@@ -5,7 +5,7 @@ use diesel::prelude::*;
 
 use super::database_models::User;
 use super::properties::UserRole;
-use super::utils::{JWTMediator, verify};
+use super::utils::{JWTMediator, hash, verify};
 
 pub struct Account {
     user: User
@@ -28,14 +28,6 @@ impl Account {
         }
     }
 
-    pub fn generate_meta(&self) -> HashMap<String, String> {
-        let mut meta: HashMap<String, String> = HashMap::new();
-        meta.insert(String::from("username"), self.user.username.clone());
-        meta.insert(String::from("display_name"), self.user.display_name.clone());
-        meta.insert(String::from("role"), self.user.get_role().to_string());
-        meta
-    }
-
     pub fn create_new_admin(&self, username: &String, display_name: &String,
                             hashed_password: &String, connection: &PgConnection)
                             -> Result<(), String> {
@@ -45,15 +37,33 @@ impl Account {
         User::create(username, display_name, hashed_password, UserRole::Admin, connection)
     }
 
-    pub fn generate_jwt(&self) -> Result<String, String> {
-        let username = self.get_username();
-        JWTMediator::generate_jwt_from_username(&username)
-    }
-
     pub fn get_username(&self) -> String {
         self.user.username.clone()
     }
 
+    pub fn update(&mut self, display_name: Option<&String>, password: Option<&String>,
+                  connection: &PgConnection) -> Result<(), String> {
+        if let Some(updated_display_name) = display_name {
+            self.user.display_name = updated_display_name.clone();
+        }
+        if let Some(updated_password) = password {
+            self.user.hashed_password = hash(updated_password);
+        }
+        self.user.update(connection)
+    }
+
+    pub fn generate_meta(&self) -> HashMap<String, String> {
+        let mut meta: HashMap<String, String> = HashMap::new();
+        meta.insert(String::from("username"), self.user.username.clone());
+        meta.insert(String::from("display_name"), self.user.display_name.clone());
+        meta.insert(String::from("role"), self.user.get_role().to_string());
+        meta
+    }
+
+    pub fn generate_jwt(&self) -> Result<String, String> {
+        let username = self.get_username();
+        JWTMediator::generate_jwt_from_username(&username)
+    }
 }
 
 impl Account {
@@ -351,6 +361,131 @@ mod tests {
                 &username, &display_name, &hashed_password, &test_connection
             );
             assert_eq!(result.is_ok(), true);
+        }
+    }
+
+    mod test_update {
+        use crate::account::Account;
+        use crate::database_models::User;
+        use crate::properties::UserRole;
+        use crate::utils;
+
+        #[test]
+        fn test_update_display_name() {
+            let test_connection = utils::get_test_connection();
+            let username = utils::generate_random_string(20);
+            let display_name = utils::generate_random_string(20);
+            let password = utils::generate_random_string(30);
+            let hashed_password = utils::hash(&password);
+            let _ = User::create(
+                &username,
+                &display_name,
+                &hashed_password,
+                UserRole::Admin,
+                &test_connection
+            );
+            let user = User::get(&username, &test_connection).unwrap();
+            let mut account = Account{user};
+            let updated_display_name = utils::generate_random_string(20);
+
+            let result = account.update(
+                Option::from(&updated_display_name),
+                Option::None,
+                &test_connection
+            );
+            assert_eq!(result.is_ok(), true);
+
+            let updated_user = User::get(&username, &test_connection).unwrap();
+            assert_eq!(updated_user.display_name, updated_display_name);
+        }
+
+        #[test]
+        fn test_update_password() {
+            let test_connection = utils::get_test_connection();
+            let username = utils::generate_random_string(20);
+            let display_name = utils::generate_random_string(20);
+            let password = utils::generate_random_string(30);
+            let hashed_password = utils::hash(&password);
+            let _ = User::create(
+                &username,
+                &display_name,
+                &hashed_password,
+                UserRole::Admin,
+                &test_connection
+            );
+
+            let user = User::get(&username, &test_connection).unwrap();
+            let mut account = Account{user};
+            let updated_password = utils::generate_random_string(20);
+            let result = account.update(
+                Option::None,
+                Option::from(&updated_password),
+                &test_connection
+            );
+            assert_eq!(result.is_ok(), true);
+
+            let updated_user = User::get(&username, &test_connection).unwrap();
+            assert_eq!(utils::verify(&updated_password, &updated_user.hashed_password), true);
+        }
+
+        #[test]
+        fn test_update_both() {
+            let test_connection = utils::get_test_connection();
+            let username = utils::generate_random_string(20);
+            let display_name = utils::generate_random_string(20);
+            let password = utils::generate_random_string(30);
+            let hashed_password = utils::hash(&password);
+            let _ = User::create(
+                &username,
+                &display_name,
+                &hashed_password,
+                UserRole::Admin,
+                &test_connection
+            );
+
+            let user = User::get(&username, &test_connection).unwrap();
+            let mut account = Account{user};
+            let updated_display_name = utils::generate_random_string(20);
+            let updated_password = utils::generate_random_string(20);
+            let result = account.update(
+                Option::from(&updated_display_name),
+                Option::from(&updated_password),
+                &test_connection
+            );
+            assert_eq!(result.is_ok(), true);
+
+            let updated_user = User::get(&username, &test_connection).unwrap();
+            assert_eq!(updated_user.display_name, updated_display_name);
+            assert_eq!(utils::verify(&updated_password, &updated_user.hashed_password), true);
+        }
+
+        #[test]
+        fn test_update_none() {
+            let test_connection = utils::get_test_connection();
+            let username = utils::generate_random_string(20);
+            let display_name = utils::generate_random_string(20);
+            let password = utils::generate_random_string(30);
+            let hashed_password = utils::hash(&password);
+            let _ = User::create(
+                &username,
+                &display_name,
+                &hashed_password,
+                UserRole::Admin,
+                &test_connection
+            );
+
+            let user = User::get(&username, &test_connection).unwrap();
+            let mut account = Account{user};
+            let result = account.update(
+                Option::None,
+                Option::None,
+                &test_connection
+            );
+            assert_eq!(result.is_ok(), true);
+
+            let updated_user = User::get(&username, &test_connection).unwrap();
+            assert_eq!(updated_user.display_name, display_name);
+            assert_eq!(utils::verify(&password, &updated_user.hashed_password), true);
         }
     }
 }

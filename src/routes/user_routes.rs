@@ -14,15 +14,9 @@ pub struct UserCreationRequest {
 }
 
 #[derive(Deserialize)]
-pub struct UserDisplayNameUpdateRequest {
-    username: String,
-    display_name: String,
-}
-
-#[derive(Deserialize)]
-pub struct UserPasswordUpdateRequest {
-    username: String,
-    password: String,
+pub struct UserUpdateRequest {
+    display_name: Option<String>,
+    password: Option<String>
 }
 
 #[get("/<username>")]
@@ -43,13 +37,46 @@ pub fn create_user(cookies: Cookies, request: Json<UserCreationRequest>) -> Json
     };
 
     if !account.has_superuser_access() {
-        return create_response(Err(String::from("You are not authorized to create an admin account_test.")))
+        return create_response(Err(String::from(
+            "You are not authorized to create an admin account."))
+        )
     }
     let hashed_password = hash(&request.password);
     match account.create_new_admin(
         &request.username, &request.display_name, &hashed_password, &connection
     ) {
-        Ok(()) => create_response(Ok(json!({"message": "user created"}))),
+        Ok(()) => create_response(Ok(json!({"message": "User created"}))),
         Err(message) => create_response(Err(message))
     }
+}
+
+#[patch("/<username>", data = "<request>")]
+pub fn update_user(cookies: Cookies, username: String, request: Json<UserUpdateRequest>)
+    -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    let mut account = match Account::login_from_cookies(cookies, &connection) {
+        Ok(account) => account,
+        Err(message) => return create_response(Err(message))
+    };
+
+    if !(account.has_superuser_access() || account.get_username() == username) {
+        return create_response(Err(
+            String::from("You are not authorized to change other people profile."))
+        )
+    }
+
+    let display_name = match &request.display_name {
+        Some(name) => Option::from(name),
+        None => Option::None
+    };
+    let password = match &request.password {
+        Some(password) => Option::from(password),
+        None => Option::None
+    };
+
+    match account.update(display_name, password, &connection) {
+        Ok(()) => create_response(Ok(json!({"message": "User updated"}))),
+        Err(message) => create_response(Err(message))
+    }
+
 }

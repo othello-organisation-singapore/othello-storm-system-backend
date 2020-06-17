@@ -3,9 +3,9 @@ use rocket_contrib::json::{JsonValue, Json};
 use serde::Deserialize;
 
 use super::response::create_response;
+use super::user_routes::get_user;
 use super::super::account::Account;
 use super::super::utils::get_pooled_connection;
-use rocket::response::Redirect;
 
 #[derive(Deserialize)]
 pub struct UserLoginRequest {
@@ -31,11 +31,11 @@ pub fn login(request: Json<UserLoginRequest>) -> Json<JsonValue> {
 }
 
 #[get("/profile")]
-pub fn get_current_user_profile(cookies: Cookies) -> Redirect {
+pub fn get_current_user_profile(cookies: Cookies) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     let username = match Account::login_from_cookies(cookies, &connection) {
         Ok(account) => account.get_username(),
-        Err(message) => message
+        Err(message) => return create_response(Err(message))
     };
-    Redirect::to(uri!(super::user_routes::get_user: username))
+    get_user(username)
 }
