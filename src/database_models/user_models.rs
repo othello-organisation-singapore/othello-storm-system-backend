@@ -5,7 +5,6 @@ use super::super::properties::UserRole;
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable)]
 pub struct User {
-    id: i32,
     pub username: String,
     pub display_name: String,
     pub hashed_password: String,
@@ -81,7 +80,9 @@ impl User {
     }
 
     pub fn update(&self, connection: &PgConnection) -> Result<(), String> {
-        let result = diesel::update(users::table.find(self.id))
+        let result = diesel::update(users::table.find(
+            self.username.as_str())
+        )
             .set(self)
             .execute(connection);
         match result {
