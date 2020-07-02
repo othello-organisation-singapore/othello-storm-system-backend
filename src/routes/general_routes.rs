@@ -2,9 +2,8 @@ use rocket::http::Cookies;
 use rocket_contrib::json::{JsonValue, Json};
 use serde::Deserialize;
 
-use super::response::create_response;
-use super::user_routes::get_user;
-use super::super::account::Account;
+use super::super::response_commands;
+use super::super::response_commands::ResponseCommand;
 use super::super::utils::get_pooled_connection;
 
 #[derive(Deserialize)]
@@ -16,26 +15,15 @@ pub struct UserLoginRequest {
 #[post("/login", data = "<request>")]
 pub fn login(request: Json<UserLoginRequest>) -> Json<JsonValue> {
     let connection = get_pooled_connection();
-    let account = match Account::login_from_password(
-        &request.username, &request.password, &connection
-    ) {
-        Ok(account) => account,
-        Err(message) => return create_response(Err(message))
-    };
 
-    info!("{} is logged in.", account.get_username());
-    match account.generate_jwt() {
-        Ok(jwt) => create_response(Ok(json!({"jwt": jwt}))),
-        Err(message) => create_response(Err(message))
-    }
+    response_commands::LoginCommand {
+        username: request.username.clone(),
+        password: request.password.clone(),
+    }.execute(&connection)
 }
 
 #[get("/profile")]
 pub fn get_current_user_profile(cookies: Cookies) -> Json<JsonValue> {
     let connection = get_pooled_connection();
-    let username = match Account::login_from_cookies(cookies, &connection) {
-        Ok(account) => account.get_username(),
-        Err(message) => return create_response(Err(message))
-    };
-    get_user(username)
+    response_commands::CurrentUserCommand { cookies }.execute(&connection)
 }

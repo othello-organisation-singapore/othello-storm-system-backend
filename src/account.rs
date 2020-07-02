@@ -28,13 +28,13 @@ impl Account {
         }
     }
 
-    pub fn create_new_admin(&self, username: &String, display_name: &String,
-                            hashed_password: &String, connection: &PgConnection)
-                            -> Result<(), String> {
+    pub fn create_new_admin(&self, username: &String, display_name: &String, password: &String,
+                            connection: &PgConnection) -> Result<(), String> {
         if !self.has_superuser_access() {
             return Err(String::from("Only superuser can create new admin account_test."));
         }
-        User::create(username, display_name, hashed_password, UserRole::Admin, connection)
+        let hashed_password = hash(password);
+        User::create(username, display_name, &hashed_password, UserRole::Admin, connection)
     }
 
     pub fn get_username(&self) -> String {
@@ -67,7 +67,7 @@ impl Account {
 }
 
 impl Account {
-    pub fn login_from_cookies(cookies: Cookies, connection: &PgConnection) -> Result<Account, String> {
+    pub fn login_from_cookies(cookies: &Cookies, connection: &PgConnection) -> Result<Account, String> {
         let cookies_jwt = cookies.get("jwt").map(|c| c.value()).unwrap_or("");
         let jwt = String::from(cookies_jwt);
         Account::login_from_jwt(&jwt, connection)
@@ -143,7 +143,7 @@ mod tests {
 
             assert_eq!(result.is_ok(), true);
             let account = Account::login_from_password(
-                &username, &password, &test_connection
+                &username, &password, &test_connection,
             ).unwrap();
             assert_eq!(account.has_superuser_access(), true);
             assert_eq!(account.has_admin_access(), true);
@@ -168,7 +168,7 @@ mod tests {
 
             assert_eq!(result.is_ok(), true);
             let account = Account::login_from_password(
-                &username, &password, &test_connection
+                &username, &password, &test_connection,
             ).unwrap();
             assert_eq!(account.has_superuser_access(), false);
             assert_eq!(account.has_admin_access(), true);
@@ -193,7 +193,7 @@ mod tests {
 
             assert_eq!(result.is_ok(), true);
             let login_result = Account::login_from_password(
-                &display_name, &password, &test_connection
+                &display_name, &password, &test_connection,
             );
             assert_eq!(login_result.is_err(), true);
         }
@@ -216,7 +216,7 @@ mod tests {
 
             assert_eq!(result.is_ok(), true);
             let login_result = Account::login_from_password(
-                &username, &hashed_password, &test_connection
+                &username, &hashed_password, &test_connection,
             );
             assert_eq!(login_result.is_err(), true);
         }
@@ -247,7 +247,7 @@ mod tests {
             let jwt = utils::JWTMediator::generate_jwt_from_username(&username).unwrap();
 
             let account = Account::login_from_jwt(
-                &jwt, &test_connection
+                &jwt, &test_connection,
             ).unwrap();
             assert_eq!(account.has_superuser_access(), true);
             assert_eq!(account.has_admin_access(), true);
@@ -273,7 +273,7 @@ mod tests {
             let jwt = utils::JWTMediator::generate_jwt_from_username(&username).unwrap();
 
             let account = Account::login_from_jwt(
-                &jwt, &test_connection
+                &jwt, &test_connection,
             ).unwrap();
             assert_eq!(account.has_superuser_access(), false);
             assert_eq!(account.has_admin_access(), true);
@@ -295,7 +295,7 @@ mod tests {
             let test_connection = utils::get_test_connection();
             let jwt = utils::generate_random_string(20);
             let login_result = Account::login_from_jwt(
-                &jwt, &test_connection
+                &jwt, &test_connection,
             );
             assert_eq!(login_result.is_err(), true);
         }
@@ -320,17 +320,16 @@ mod tests {
                 &admin_display_name,
                 &admin_hashed_password,
                 UserRole::Admin,
-                &test_connection
+                &test_connection,
             );
             let user_admin = User::get(&admin_username, &test_connection).unwrap();
-            let account = Account{user: user_admin};
+            let account = Account { user: user_admin };
 
             let username = utils::generate_random_string(20);
             let display_name = utils::generate_random_string(20);
             let password = utils::generate_random_string(30);
-            let hashed_password = utils::hash(&password);
             let result = account.create_new_admin(
-                &username, &display_name, &hashed_password, &test_connection
+                &username, &display_name, &password, &test_connection,
             );
             assert_eq!(result.is_err(), true);
         }
@@ -348,17 +347,16 @@ mod tests {
                 &admin_display_name,
                 &admin_hashed_password,
                 UserRole::Superuser,
-                &test_connection
+                &test_connection,
             );
             let user_admin = User::get(&admin_username, &test_connection).unwrap();
-            let account = Account{user: user_admin};
+            let account = Account { user: user_admin };
 
             let username = utils::generate_random_string(20);
             let display_name = utils::generate_random_string(20);
             let password = utils::generate_random_string(30);
-            let hashed_password = utils::hash(&password);
             let result = account.create_new_admin(
-                &username, &display_name, &hashed_password, &test_connection
+                &username, &display_name, &password, &test_connection,
             );
             assert_eq!(result.is_ok(), true);
         }
@@ -382,16 +380,16 @@ mod tests {
                 &display_name,
                 &hashed_password,
                 UserRole::Admin,
-                &test_connection
+                &test_connection,
             );
             let user = User::get(&username, &test_connection).unwrap();
-            let mut account = Account{user};
+            let mut account = Account { user };
             let updated_display_name = utils::generate_random_string(20);
 
             let result = account.update(
                 Option::from(&updated_display_name),
                 Option::None,
-                &test_connection
+                &test_connection,
             );
             assert_eq!(result.is_ok(), true);
 
@@ -411,16 +409,16 @@ mod tests {
                 &display_name,
                 &hashed_password,
                 UserRole::Admin,
-                &test_connection
+                &test_connection,
             );
 
             let user = User::get(&username, &test_connection).unwrap();
-            let mut account = Account{user};
+            let mut account = Account { user };
             let updated_password = utils::generate_random_string(20);
             let result = account.update(
                 Option::None,
                 Option::from(&updated_password),
-                &test_connection
+                &test_connection,
             );
             assert_eq!(result.is_ok(), true);
 
@@ -440,17 +438,17 @@ mod tests {
                 &display_name,
                 &hashed_password,
                 UserRole::Admin,
-                &test_connection
+                &test_connection,
             );
 
             let user = User::get(&username, &test_connection).unwrap();
-            let mut account = Account{user};
+            let mut account = Account { user };
             let updated_display_name = utils::generate_random_string(20);
             let updated_password = utils::generate_random_string(20);
             let result = account.update(
                 Option::from(&updated_display_name),
                 Option::from(&updated_password),
-                &test_connection
+                &test_connection,
             );
             assert_eq!(result.is_ok(), true);
 
@@ -471,15 +469,15 @@ mod tests {
                 &display_name,
                 &hashed_password,
                 UserRole::Admin,
-                &test_connection
+                &test_connection,
             );
 
             let user = User::get(&username, &test_connection).unwrap();
-            let mut account = Account{user};
+            let mut account = Account { user };
             let result = account.update(
                 Option::None,
                 Option::None,
-                &test_connection
+                &test_connection,
             );
             assert_eq!(result.is_ok(), true);
 

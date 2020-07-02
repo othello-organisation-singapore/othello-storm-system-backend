@@ -111,7 +111,7 @@ mod tests {
             let hashed_password = utils::hash(&password);
 
             let result = User::create(
-                &username, &display_name, &hashed_password, UserRole::Superuser, &test_connection
+                &username, &display_name, &hashed_password, UserRole::Superuser, &test_connection,
             );
             assert_eq!(result.is_ok(), true);
         }
@@ -130,7 +130,7 @@ mod tests {
 
             let _ = User::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
             let result = User::create(
-                &username, &second_display_name, &second_hashed_password, UserRole::Admin, &test_connection
+                &username, &second_display_name, &second_hashed_password, UserRole::Admin, &test_connection,
             );
             assert_eq!(result.is_err(), true);
         }

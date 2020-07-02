@@ -22,6 +22,7 @@ pub mod database_models;
 pub mod properties;
 pub mod schema;
 pub mod routes;
+pub mod response_commands;
 pub mod utils;
 
 fn create_default_superuser() {
