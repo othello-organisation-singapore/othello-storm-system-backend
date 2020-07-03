@@ -28,17 +28,14 @@ impl Account {
         }
     }
 
-    pub fn create_new_admin(&self, username: &String, display_name: &String, password: &String,
-                            connection: &PgConnection) -> Result<(), String> {
-        if !self.has_superuser_access() {
-            return Err(String::from("Only superuser can create new admin account_test."));
-        }
-        let hashed_password = hash(password);
-        User::create(username, display_name, &hashed_password, UserRole::Admin, connection)
-    }
-
     pub fn get_username(&self) -> String {
         self.user.username.clone()
+    }
+
+    pub fn create_new_admin(username: &String, display_name: &String, password: &String,
+                            connection: &PgConnection) -> Result<(), String> {
+        let hashed_password = hash(password);
+        User::create(username, display_name, &hashed_password, UserRole::Admin, connection)
     }
 
     pub fn update(&mut self, display_name: Option<&String>, password: Option<&String>,
@@ -303,59 +300,15 @@ mod tests {
 
     mod test_admin_creation {
         use crate::account::Account;
-        use crate::database_models::User;
-        use crate::properties::UserRole;
         use crate::utils;
 
         #[test]
-        fn test_admin_create_admin() {
+        fn test_create_admin() {
             let test_connection = utils::get_test_connection();
-
-            let admin_username = utils::generate_random_string(20);
-            let admin_display_name = utils::generate_random_string(20);
-            let admin_password = utils::generate_random_string(30);
-            let admin_hashed_password = utils::hash(&admin_password);
-            let _ = User::create(
-                &admin_username,
-                &admin_display_name,
-                &admin_hashed_password,
-                UserRole::Admin,
-                &test_connection,
-            );
-            let user_admin = User::get(&admin_username, &test_connection).unwrap();
-            let account = Account { user: user_admin };
-
             let username = utils::generate_random_string(20);
             let display_name = utils::generate_random_string(20);
             let password = utils::generate_random_string(30);
-            let result = account.create_new_admin(
-                &username, &display_name, &password, &test_connection,
-            );
-            assert_eq!(result.is_err(), true);
-        }
-
-        #[test]
-        fn test_superuser_create_admin() {
-            let test_connection = utils::get_test_connection();
-
-            let admin_username = utils::generate_random_string(20);
-            let admin_display_name = utils::generate_random_string(20);
-            let admin_password = utils::generate_random_string(30);
-            let admin_hashed_password = utils::hash(&admin_password);
-            let _ = User::create(
-                &admin_username,
-                &admin_display_name,
-                &admin_hashed_password,
-                UserRole::Superuser,
-                &test_connection,
-            );
-            let user_admin = User::get(&admin_username, &test_connection).unwrap();
-            let account = Account { user: user_admin };
-
-            let username = utils::generate_random_string(20);
-            let display_name = utils::generate_random_string(20);
-            let password = utils::generate_random_string(30);
-            let result = account.create_new_admin(
+            let result = Account::create_new_admin(
                 &username, &display_name, &password, &test_connection,
             );
             assert_eq!(result.is_ok(), true);

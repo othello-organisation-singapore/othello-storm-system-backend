@@ -34,7 +34,7 @@ impl ResponseCommand for CreateUserCommand<'_> {
             ));
         }
         let hashed_password = hash(&self.password);
-        account.create_new_admin(&self.username, &self.display_name, &hashed_password, connection)?;
+        Account::create_new_admin(&self.username, &self.display_name, &hashed_password, connection)?;
         Ok(json!({"message": "User created"}))
     }
 }
