@@ -21,8 +21,10 @@ struct NewUser<'a> {
 }
 
 impl User {
-    pub fn create(username: &String, display_name: &String, hashed_password: &String, role: UserRole,
-                  connection: &PgConnection) -> Result<(), String> {
+    pub fn create(
+        username: &String, display_name: &String, hashed_password: &String, role: UserRole,
+        connection: &PgConnection,
+    ) -> Result<(), String> {
         if User::is_username_exists(&username, connection) {
             return Err(String::from("Username exists."));
         }
