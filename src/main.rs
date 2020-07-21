@@ -22,9 +22,10 @@ use std::env;
 pub mod account;
 pub mod database_models;
 pub mod properties;
-pub mod schema;
 pub mod routes;
 pub mod response_commands;
+pub mod schema;
+pub mod tournament_manager;
 pub mod utils;
 
 fn create_default_superuser() {
