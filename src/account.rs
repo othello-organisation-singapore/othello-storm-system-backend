@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use rocket::http::Cookies;
 use diesel::prelude::*;
 
-use super::database_models::User;
+use super::database_models::UserRowModel;
 use super::properties::UserRole;
 use super::utils::{JWTMediator, hash, verify};
 
 pub struct Account {
-    user: User
+    user: UserRowModel
 }
 
 impl Account {
@@ -35,7 +35,7 @@ impl Account {
     pub fn create_new_admin(username: &String, display_name: &String, password: &String,
                             connection: &PgConnection) -> Result<(), String> {
         let hashed_password = hash(password);
-        User::create(username, display_name, &hashed_password, UserRole::Admin, connection)
+        UserRowModel::create(username, display_name, &hashed_password, UserRole::Admin, connection)
     }
 
     pub fn update(&mut self, display_name: Option<&String>, password: Option<&String>,
@@ -76,7 +76,7 @@ impl Account {
             Err(_) => return Err(String::from("Login expired."))
         };
 
-        let user = match User::get(&username, connection) {
+        let user = match UserRowModel::get(&username, connection) {
             Ok(user) => user,
             Err(_) => return Err(String::from("Requester user not found."))
         };
@@ -85,7 +85,7 @@ impl Account {
 
     pub fn login_from_password(username: &String, password: &String, connection: &PgConnection)
                                -> Result<Account, String> {
-        let user = match User::get(&username, connection) {
+        let user = match UserRowModel::get(&username, connection) {
             Ok(user) => user,
             Err(_) => return Err(String::from("Username not found."))
         };
@@ -98,14 +98,14 @@ impl Account {
     }
 
     pub fn get(username: &String, connection: &PgConnection) -> Result<Account, String> {
-        let user = match User::get(&username, connection) {
+        let user = match UserRowModel::get(&username, connection) {
             Ok(user) => user,
             Err(_) => return Err(String::from("Username not found."))
         };
         Account::get_account_from_user(user)
     }
 
-    fn get_account_from_user(user: User) -> Result<Account, String> {
+    fn get_account_from_user(user: UserRowModel) -> Result<Account, String> {
         match user.get_role() {
             UserRole::Superuser => Ok(Account { user }),
             UserRole::Admin => Ok(Account { user }),
@@ -118,7 +118,7 @@ impl Account {
 mod tests {
     mod test_login_from_password {
         use crate::account::Account;
-        use crate::database_models::User;
+        use crate::database_models::UserRowModel;
         use crate::properties::UserRole;
         use crate::utils;
 
@@ -130,7 +130,7 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let result = User::create(
+            let result = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -155,7 +155,7 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let result = User::create(
+            let result = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -180,7 +180,7 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let result = User::create(
+            let result = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -203,7 +203,7 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let result = User::create(
+            let result = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -221,7 +221,7 @@ mod tests {
 
     mod test_login_from_jwt {
         use crate::account::Account;
-        use crate::database_models::User;
+        use crate::database_models::UserRowModel;
         use crate::properties::UserRole;
         use crate::utils;
 
@@ -233,7 +233,7 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let result = User::create(
+            let result = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -259,7 +259,7 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let result = User::create(
+            let result = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -317,7 +317,7 @@ mod tests {
 
     mod test_update {
         use crate::account::Account;
-        use crate::database_models::User;
+        use crate::database_models::UserRowModel;
         use crate::properties::UserRole;
         use crate::utils;
 
@@ -328,14 +328,14 @@ mod tests {
             let display_name = utils::generate_random_string(20);
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
-            let _ = User::create(
+            let _ = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
                 UserRole::Admin,
                 &test_connection,
             );
-            let user = User::get(&username, &test_connection).unwrap();
+            let user = UserRowModel::get(&username, &test_connection).unwrap();
             let mut account = Account { user };
             let updated_display_name = utils::generate_random_string(20);
 
@@ -346,7 +346,7 @@ mod tests {
             );
             assert_eq!(result.is_ok(), true);
 
-            let updated_user = User::get(&username, &test_connection).unwrap();
+            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
             assert_eq!(updated_user.display_name, updated_display_name);
         }
 
@@ -357,7 +357,7 @@ mod tests {
             let display_name = utils::generate_random_string(20);
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
-            let _ = User::create(
+            let _ = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -365,7 +365,7 @@ mod tests {
                 &test_connection,
             );
 
-            let user = User::get(&username, &test_connection).unwrap();
+            let user = UserRowModel::get(&username, &test_connection).unwrap();
             let mut account = Account { user };
             let updated_password = utils::generate_random_string(20);
             let result = account.update(
@@ -375,7 +375,7 @@ mod tests {
             );
             assert_eq!(result.is_ok(), true);
 
-            let updated_user = User::get(&username, &test_connection).unwrap();
+            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
             assert_eq!(utils::verify(&updated_password, &updated_user.hashed_password), true);
         }
 
@@ -386,7 +386,7 @@ mod tests {
             let display_name = utils::generate_random_string(20);
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
-            let _ = User::create(
+            let _ = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -394,7 +394,7 @@ mod tests {
                 &test_connection,
             );
 
-            let user = User::get(&username, &test_connection).unwrap();
+            let user = UserRowModel::get(&username, &test_connection).unwrap();
             let mut account = Account { user };
             let updated_display_name = utils::generate_random_string(20);
             let updated_password = utils::generate_random_string(20);
@@ -405,7 +405,7 @@ mod tests {
             );
             assert_eq!(result.is_ok(), true);
 
-            let updated_user = User::get(&username, &test_connection).unwrap();
+            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
             assert_eq!(updated_user.display_name, updated_display_name);
             assert_eq!(utils::verify(&updated_password, &updated_user.hashed_password), true);
         }
@@ -417,7 +417,7 @@ mod tests {
             let display_name = utils::generate_random_string(20);
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
-            let _ = User::create(
+            let _ = UserRowModel::create(
                 &username,
                 &display_name,
                 &hashed_password,
@@ -425,7 +425,7 @@ mod tests {
                 &test_connection,
             );
 
-            let user = User::get(&username, &test_connection).unwrap();
+            let user = UserRowModel::get(&username, &test_connection).unwrap();
             let mut account = Account { user };
             let result = account.update(
                 Option::None,
@@ -434,7 +434,7 @@ mod tests {
             );
             assert_eq!(result.is_ok(), true);
 
-            let updated_user = User::get(&username, &test_connection).unwrap();
+            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
             assert_eq!(updated_user.display_name, display_name);
             assert_eq!(utils::verify(&password, &updated_user.hashed_password), true);
         }

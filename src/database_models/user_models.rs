@@ -4,7 +4,8 @@ use crate::schema::users;
 use crate::properties::UserRole;
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable)]
-pub struct User {
+#[table_name = "users"]
+pub struct UserRowModel {
     pub username: String,
     pub display_name: String,
     pub hashed_password: String,
@@ -13,38 +14,38 @@ pub struct User {
 
 #[derive(Insertable)]
 #[table_name = "users"]
-struct NewUser<'a> {
+struct NewUserRowModel<'a> {
     pub username: &'a String,
     pub display_name: &'a String,
     pub hashed_password: &'a String,
     pub role: &'a String,
 }
 
-impl User {
+impl UserRowModel {
     pub fn create(
         username: &String, display_name: &String, hashed_password: &String, role: UserRole,
         connection: &PgConnection,
     ) -> Result<(), String> {
-        if User::is_username_exists(&username, connection) {
+        if UserRowModel::is_username_exists(&username, connection) {
             return Err(String::from("Username exists."));
         }
-        let new_user = NewUser {
+        let new_user = NewUserRowModel {
             username,
             display_name,
             hashed_password,
             role: &role.to_string(),
         };
-        User::insert_to_database(new_user, connection)
+        UserRowModel::insert_to_database(new_user, connection)
     }
 
     fn is_username_exists(username: &String, connection: &PgConnection) -> bool {
-        if let Ok(_) = User::get(username, connection) {
+        if let Ok(_) = UserRowModel::get(username, connection) {
             return true;
         }
         false
     }
 
-    fn insert_to_database(new_user: NewUser, connection: &PgConnection) -> Result<(), String> {
+    fn insert_to_database(new_user: NewUserRowModel, connection: &PgConnection) -> Result<(), String> {
         let username = new_user.username.clone();
         let display_name = new_user.display_name.clone();
         let role = new_user.role.clone();
@@ -61,10 +62,10 @@ impl User {
         }
     }
 
-    pub fn get(username: &String, connection: &PgConnection) -> Result<User, String> {
+    pub fn get(username: &String, connection: &PgConnection) -> Result<UserRowModel, String> {
         let result = users::table
             .filter(users::username.eq(&username))
-            .load::<User>(connection);
+            .load::<UserRowModel>(connection);
 
         if let Err(_) = result {
             return Err(String::from("Failed connecting to database."));
@@ -101,7 +102,7 @@ impl User {
 #[cfg(test)]
 mod tests {
     mod test_user_creation {
-        use crate::database_models::User;
+        use crate::database_models::UserRowModel;
         use crate::properties::UserRole;
         use crate::utils;
 
@@ -113,7 +114,7 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let result = User::create(
+            let result = UserRowModel::create(
                 &username, &display_name, &hashed_password, UserRole::Superuser, &test_connection,
             );
             assert_eq!(result.is_ok(), true);
@@ -131,8 +132,8 @@ mod tests {
             let second_password = utils::generate_random_string(30);
             let second_hashed_password = utils::hash(&second_password);
 
-            let _ = User::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
-            let result = User::create(
+            let _ = UserRowModel::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
+            let result = UserRowModel::create(
                 &username, &second_display_name, &second_hashed_password, UserRole::Admin, &test_connection,
             );
             assert_eq!(result.is_err(), true);
@@ -140,7 +141,7 @@ mod tests {
     }
 
     mod test_user_retrieval {
-        use crate::database_models::User;
+        use crate::database_models::UserRowModel;
         use crate::properties::UserRole;
         use crate::utils;
 
@@ -152,9 +153,9 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let _ = User::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
+            let _ = UserRowModel::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
 
-            let user = User::get(&username, &test_connection).unwrap();
+            let user = UserRowModel::get(&username, &test_connection).unwrap();
             assert_eq!(user.username, username);
             assert_eq!(user.display_name, display_name);
             assert_eq!(user.hashed_password, hashed_password);
@@ -165,13 +166,13 @@ mod tests {
             let test_connection = utils::get_test_connection();
             let username = utils::generate_random_string(20);
 
-            let result = User::get(&username, &test_connection);
+            let result = UserRowModel::get(&username, &test_connection);
             assert_eq!(result.is_err(), true);
         }
     }
 
     mod test_user_update {
-        use crate::database_models::User;
+        use crate::database_models::UserRowModel;
         use crate::properties::UserRole;
         use crate::utils;
 
@@ -183,15 +184,15 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let _ = User::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
+            let _ = UserRowModel::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
 
-            let mut user = User::get(&username, &test_connection).unwrap();
+            let mut user = UserRowModel::get(&username, &test_connection).unwrap();
 
             let updated_display_name = utils::generate_random_string(20);
             user.display_name = updated_display_name.clone();
             let _ = user.update(&test_connection);
 
-            let updated_user = User::get(&username, &test_connection).unwrap();
+            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
             assert_ne!(updated_user.display_name, display_name);
             assert_eq!(updated_user.display_name, updated_display_name);
             assert_eq!(updated_user.username, username);

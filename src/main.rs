@@ -34,7 +34,7 @@ fn create_default_superuser() {
     let display_name = env::var("SUPERUSER_DISPLAY_NAME").unwrap();
     let password = env::var("SUPERUSER_PASS").unwrap();
     let hashed_password = utils::hash(&password);
-    let _ = database_models::User::create(
+    let _ = database_models::UserRowModel::create(
         &username, &display_name, &hashed_password, properties::UserRole::Superuser, &connection,
     );
 }
