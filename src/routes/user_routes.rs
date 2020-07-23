@@ -2,9 +2,9 @@ use rocket::http::Cookies;
 use rocket_contrib::json::{JsonValue, Json};
 use serde::Deserialize;
 
-use super::super::response_commands;
-use super::super::response_commands::ResponseCommand;
-use super::super::utils::get_pooled_connection;
+use crate::response_commands;
+use crate::response_commands::ResponseCommand;
+use crate::utils::get_pooled_connection;
 
 #[derive(Deserialize)]
 pub struct UserCreationRequest {

@@ -3,7 +3,7 @@ use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 
 use super::ResponseCommand;
-use super::super::account::Account;
+use crate::account::Account;
 
 pub struct LoginCommand {
     pub username: String,

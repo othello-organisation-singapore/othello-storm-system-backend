@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 
-use super::super::schema::users;
-use super::super::properties::UserRole;
+use crate::schema::users;
+use crate::properties::UserRole;
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable)]
 pub struct User {
