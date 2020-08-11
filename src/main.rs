@@ -15,6 +15,7 @@ extern crate lazy_static;
 extern crate log;
 
 extern crate mocktopus;
+extern crate regex;
 extern crate reqwest;
 
 use std::env;
@@ -43,13 +44,6 @@ fn main() {
     env_logger::init();
     info!("Starting the program");
     create_default_superuser();
-
-    // let body = reqwest::blocking::get("https://www.worldothello.org/files/joueurs.txt").unwrap().text().unwrap();
-    //
-    // let mut test = body.split("\n");
-    // for elem in test {
-    //     println!("{}", elem);
-    // }
 
     rocket::ignite()
         .mount("/user", routes![
