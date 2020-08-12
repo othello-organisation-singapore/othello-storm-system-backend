@@ -44,6 +44,8 @@ fn main() {
     env_logger::init();
     info!("Starting the program");
     create_default_superuser();
+    let joueurs = tournament_manager::get_joueurs_data(1).unwrap();
+    let parse_result = tournament_manager::JoueursParser::parse(&joueurs);
 
     rocket::ignite()
         .mount("/user", routes![
