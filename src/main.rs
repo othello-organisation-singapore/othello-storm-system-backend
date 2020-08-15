@@ -18,7 +18,7 @@ extern crate mocktopus;
 extern crate regex;
 extern crate reqwest;
 
-use std::env;
+use std::{time, env};
 
 pub mod account;
 pub mod database_models;
@@ -44,8 +44,12 @@ fn main() {
     env_logger::init();
     info!("Starting the program");
     create_default_superuser();
+    let start = time::Instant::now();
     let joueurs = tournament_manager::get_joueurs_data(1).unwrap();
+    println!("Joueurs obtained, {}", start.elapsed().as_millis());
+    let start_2 = time::Instant::now();
     let parse_result = tournament_manager::JoueursParser::parse(&joueurs);
+    println!("Joueurs parsed, {}", start_2.elapsed().as_millis());
 
     rocket::ignite()
         .mount("/user", routes![
