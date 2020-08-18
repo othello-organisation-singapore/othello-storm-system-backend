@@ -23,7 +23,7 @@ pub struct JoueursParser {}
 impl JoueursParser {
     pub fn parse(joueurs: &String) -> Vec<Player> {
         let re = Regex::new(r"pays = ").unwrap();
-        let mut country_joueurs: Vec<String> = re.split(joueurs).map(|x | String::from(x)).collect();
+        let country_joueurs: Vec<String> = re.split(joueurs).map(|x | String::from(x)).collect();
 //        println!("{}", country_joueurs[0]);
 //        println!("===========================");
 //        println!("{}", country_joueurs[1]);
@@ -46,29 +46,56 @@ impl JoueursParser {
 //            println!("joueurs = {}", joueurs);
 //            println!("===========================");
             let newline = Regex::new(r"\n").unwrap();
-            let mut joueurs_vec: Vec<String> = newline.split(&joueurs).map(|x | String::from(x)).filter(|x| !x.is_empty()).collect();
+            let joueurs_vec: Vec<String> = newline.split(&joueurs).map(|x | String::from(x)).filter(|x| !x.is_empty()).collect();
             for player in joueurs_vec {
-//                println!("{}", player);
-                let re_player = Regex::new(r"(\w+) (.+) (.+)").unwrap();
-                let parsed_player = re_player.captures(&player).unwrap();
+                println!("{}", player);
 
-                let id = String::from(&parsed_player[1]);
-                let name = String::from(&parsed_player[2]);
+                let mut id = String::new();
+                let mut name = String::new();
+                let mut rating = String::new();
+                let player = String::from(player.trim_start());
+                let mut curr = 0;
+                for char in player.chars() {
+                    match curr {
+                        0 => {
+                            if char == ' ' {
+                                curr += 1;
+                                continue;
+                            }
+                            id.push(char);
+                        },
+                        1 => {
+                            if char == '%' || char == '_'  {
+                                continue;
+                            }
+                            if char == '<' {
+                                curr += 1;
+                                continue;
+                            }
+                            name.push(char);
+                        },
+                        2 => {
+                            if char == '>' {
+                                break;
+                            }
+                            rating.push(char);
+                        }
+                        _ => break,
+                    }
+                }
+                let name = name.trim();
+                if rating.is_empty() {
+                    rating = String::from("1200");
+                }
+                rating.parse::<i32>().unwrap();
                 let re_name = match name.find(",") {
-                    Some(_) => Regex::new(r"(.+), (.+)"),
+                    Some(_) => Regex::new(r"(.+),(.*)"),
                     None => Regex::new(r"(.+) \((.*)\)"),
                 }.unwrap();
                 let parsed_name = re_name.captures(&name).unwrap();
                 let first_name = String::from(parsed_name[2].trim());
                 let last_name = String::from(&parsed_name[1]);
-
-                let rating = String::from(&parsed_player[3]);
-                let re_rating = Regex::new("%_<(.+)>").unwrap();
-                let rating_score = match re_rating.captures(&rating) {
-                    Some(parsed_rating) => String::from(&parsed_rating[1]),
-                    None => String::from("1200")
-                }.parse::<i32>().unwrap();
-//                println!("id:{}, first_name:{}, last_name:{}, rating:{}, country:{}", id, first_name, last_name, rating_score, country);
+                println!("id:{}, first_name:{}, last_name:{}, rating:{}, country:{}", id, first_name, last_name, rating, country);
             }
         }
         Vec::new()
