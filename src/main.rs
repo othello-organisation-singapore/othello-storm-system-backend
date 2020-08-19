@@ -22,6 +22,7 @@ use std::{time, env};
 
 pub mod account;
 pub mod database_models;
+pub mod joueurs;
 pub mod properties;
 pub mod routes;
 pub mod response_commands;
@@ -45,10 +46,10 @@ fn main() {
     info!("Starting the program");
     create_default_superuser();
     let start = time::Instant::now();
-    let joueurs = tournament_manager::Joueurs::get(1).unwrap();
+    let joueurs = joueurs::Joueurs::get(1).unwrap();
     println!("Joueurs obtained, {}", start.elapsed().as_millis());
     let start_2 = time::Instant::now();
-    let parse_result = tournament_manager::JoueursParser::parse(&joueurs);
+    let parse_result = joueurs::JoueursParser::parse(&joueurs);
     println!("Joueurs parsed, {}", start_2.elapsed().as_millis());
 
     rocket::ignite()

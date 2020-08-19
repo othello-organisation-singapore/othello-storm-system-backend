@@ -1,6 +1,5 @@
 use crate::regex::Regex;
-use super::Player;
-
+use crate::tournament_manager::Player;
 
 pub struct JoueursParser {}
 
