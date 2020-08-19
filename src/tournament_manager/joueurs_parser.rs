@@ -1,21 +1,5 @@
-use crate::utils::http_get_text;
 use crate::regex::Regex;
 use super::Player;
-
-pub fn get_joueurs_data(no_of_try: i32) -> Result<String, String> {
-    if no_of_try <= 0 {
-        return Err(String::from("Failed getting joueurs from WOF website."));
-    }
-
-    let url = String::from("https://www.worldothello.org/files/joueurs.txt");
-    match http_get_text(&url) {
-        Ok(joueurs) => {
-            info!("Joueurs successfully obtained");
-            Ok(joueurs)
-        }
-        Err(_) => get_joueurs_data(no_of_try - 1)
-    }
-}
 
 
 pub struct JoueursParser {}
@@ -23,7 +7,7 @@ pub struct JoueursParser {}
 impl JoueursParser {
     pub fn parse(joueurs: &String) -> Vec<Player> {
         let re = Regex::new(r"pays = ").unwrap();
-        let country_joueurs: Vec<String> = re.split(joueurs).map(|x | String::from(x)).collect();
+        let country_joueurs: Vec<String> = re.split(joueurs).map(|x| String::from(x)).collect();
 //        println!("{}", country_joueurs[0]);
 //        println!("===========================");
 //        println!("{}", country_joueurs[1]);
@@ -46,7 +30,7 @@ impl JoueursParser {
 //            println!("joueurs = {}", joueurs);
 //            println!("===========================");
             let newline = Regex::new(r"\n").unwrap();
-            let joueurs_vec: Vec<String> = newline.split(&joueurs).map(|x | String::from(x)).filter(|x| !x.is_empty()).collect();
+            let joueurs_vec: Vec<String> = newline.split(&joueurs).map(|x| String::from(x)).filter(|x| !x.is_empty()).collect();
             for player in joueurs_vec {
                 println!("{}", player);
 
@@ -63,9 +47,9 @@ impl JoueursParser {
                                 continue;
                             }
                             id.push(char);
-                        },
+                        }
                         1 => {
-                            if char == '%' || char == '_'  {
+                            if char == '%' || char == '_' {
                                 continue;
                             }
                             if char == '<' {
@@ -73,7 +57,7 @@ impl JoueursParser {
                                 continue;
                             }
                             name.push(char);
-                        },
+                        }
                         2 => {
                             if char == '>' {
                                 break;

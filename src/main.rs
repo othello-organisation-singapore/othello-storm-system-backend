@@ -45,7 +45,7 @@ fn main() {
     info!("Starting the program");
     create_default_superuser();
     let start = time::Instant::now();
-    let joueurs = tournament_manager::get_joueurs_data(1).unwrap();
+    let joueurs = tournament_manager::Joueurs::get(1).unwrap();
     println!("Joueurs obtained, {}", start.elapsed().as_millis());
     let start_2 = time::Instant::now();
     let parse_result = tournament_manager::JoueursParser::parse(&joueurs);

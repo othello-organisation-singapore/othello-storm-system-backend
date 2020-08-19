@@ -1,5 +1,7 @@
-mod joueurs_related;
+mod joueurs_parser;
+mod joueurs;
 mod player;
 
 pub use player::Player;
-pub use joueurs_related::{get_joueurs_data, JoueursParser};
+pub use joueurs::Joueurs;
+pub use joueurs_parser::JoueursParser;
