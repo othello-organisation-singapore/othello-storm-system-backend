@@ -1,18 +1,10 @@
 table! {
-    joueurs (id) {
-        id -> Int4,
-        timestamp -> Timestamp,
-        content -> Json,
-    }
-}
-
-table! {
     tournaments (id) {
         id -> Int4,
         name -> Varchar,
         country -> Varchar,
         creator -> Varchar,
-        joueurs_id -> Int4,
+        joueurs -> Json,
         meta_data -> Json,
     }
 }
@@ -26,11 +18,9 @@ table! {
     }
 }
 
-joinable!(tournaments -> joueurs (joueurs_id));
 joinable!(tournaments -> users (creator));
 
 allow_tables_to_appear_in_same_query!(
-    joueurs,
     tournaments,
     users,
 );
