@@ -3,5 +3,5 @@ pub struct Player {
     pub first_name: String,
     pub last_name: String,
     pub country: String,
-    pub rating: Option<i32>,
+    pub rating: i32,
 }

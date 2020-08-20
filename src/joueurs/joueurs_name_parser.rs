@@ -28,13 +28,6 @@ impl NameParser {
         self.reset();
         let name = name.trim();
         for char in name.chars() {
-            if char == ')' {
-                continue;
-            }
-            if char == '(' || char == ',' {
-                self.move_to_next_state();
-                continue;
-            }
             self.parse_char(char);
         }
         PlayerName {
@@ -49,17 +42,25 @@ impl NameParser {
         self.last_name = String::new();
     }
 
+    fn parse_char(&mut self, char: char) {
+        if char == ')' {
+            return
+        }
+        if char == '(' || char == ',' {
+            self.move_to_next_state();
+            return
+        }
+
+        match self.state {
+            NameParserState::FirstName => self.first_name.push(char),
+            NameParserState::LastName => self.last_name.push(char),
+        }
+    }
+
     fn move_to_next_state(&mut self) {
         match self.state {
             NameParserState::FirstName => self.state = NameParserState::LastName,
             NameParserState::LastName => self.state = NameParserState::FirstName,
-        }
-    }
-
-    fn parse_char(&mut self, char: char) {
-        match self.state {
-            NameParserState::FirstName => self.first_name.push(char),
-            NameParserState::LastName => self.last_name.push(char),
         }
     }
 }

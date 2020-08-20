@@ -1,7 +1,7 @@
 use crate::regex::Regex;
 use crate::tournament_manager::Player;
 
-use super::joueurs_name_parser::NameParser;
+use super::joueurs_player_parser::PlayerParser;
 
 pub struct JoueursParser {}
 
@@ -30,54 +30,14 @@ impl JoueursParser {
 //            println!("===========================");
 //            println!("joueurs = {}", joueurs);
 //            println!("===========================");
-            let newline = Regex::new(r"\n").unwrap();
-            let joueurs_vec: Vec<String> = newline.split(&joueurs).map(|x| String::from(x)).filter(|x| !x.is_empty()).collect();
+            let joueurs_vec: Vec<String> = joueurs.split('\n').map(|x| String::from(x)).collect();
             for player in joueurs_vec {
                 println!("{}", player);
 
-                let mut id = String::new();
-                let mut name = String::new();
-                let mut rating = String::new();
                 let player = String::from(player.trim_start());
-                let mut curr = 0;
-                for char in player.chars() {
-                    match curr {
-                        0 => {
-                            if char == ' ' {
-                                curr += 1;
-                                continue;
-                            }
-                            id.push(char);
-                        }
-                        1 => {
-                            if char == '%' || char == '_' {
-                                continue;
-                            }
-                            if char == '<' {
-                                curr += 1;
-                                continue;
-                            }
-                            name.push(char);
-                        }
-                        2 => {
-                            if char == '>' {
-                                break;
-                            }
-                            rating.push(char);
-                        }
-                        _ => break,
-                    }
-                }
-                if rating.is_empty() {
-                    rating = String::from("1200");
-                }
-                rating.parse::<i32>().unwrap();
-                let name = String::from(name.trim());
-                let mut name_parser = NameParser::create();
-                let parsed_name = name_parser.parse(&name);
-                let first_name = parsed_name.first_name;
-                let last_name = parsed_name.last_name;
-                println!("id:{}, first_name:{}, last_name:{}, rating:{}, country:{}", id, first_name, last_name, rating, country);
+                let mut player_parser = PlayerParser::create();
+                let parsed_player = player_parser.parse(&player, &country);
+                println!("id:{}, first_name:{}, last_name:{}, rating:{}, country:{}", parsed_player.joueurs_id, parsed_player.first_name, parsed_player.last_name, parsed_player.rating, parsed_player.country);
             }
         }
         Vec::new()
