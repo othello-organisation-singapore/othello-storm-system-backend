@@ -1,6 +1,8 @@
 use crate::regex::Regex;
 use crate::tournament_manager::Player;
 
+use super::joueurs_name_parser::NameParser;
+
 pub struct JoueursParser {}
 
 impl JoueursParser {
@@ -66,18 +68,15 @@ impl JoueursParser {
                         _ => break,
                     }
                 }
-                let name = name.trim();
                 if rating.is_empty() {
                     rating = String::from("1200");
                 }
                 rating.parse::<i32>().unwrap();
-                let re_name = match name.find(",") {
-                    Some(_) => Regex::new(r"(.+),(.*)"),
-                    None => Regex::new(r"(.+) \((.*)\)"),
-                }.unwrap();
-                let parsed_name = re_name.captures(&name).unwrap();
-                let first_name = String::from(parsed_name[2].trim());
-                let last_name = String::from(&parsed_name[1]);
+                let name = String::from(name.trim());
+                let mut name_parser = NameParser::create();
+                let parsed_name = name_parser.parse(&name);
+                let first_name = parsed_name.first_name;
+                let last_name = parsed_name.last_name;
                 println!("id:{}, first_name:{}, last_name:{}, rating:{}, country:{}", id, first_name, last_name, rating, country);
             }
         }
