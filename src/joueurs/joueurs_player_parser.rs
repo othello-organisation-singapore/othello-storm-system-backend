@@ -8,14 +8,14 @@ const DEFAULT_ID: i32 = -1;
 enum PlayerParserState {
     ID,
     Name,
-    Rating
+    Rating,
 }
 
 pub struct PlayerParser {
     state: PlayerParserState,
     id: String,
     name: String,
-    rating: String
+    rating: String,
 }
 
 impl PlayerParser {
@@ -35,21 +35,21 @@ impl PlayerParser {
         for char in player.chars() {
             self.parse_char(char);
         }
-        
+
         let mut name_parser = NameParser::create();
         let parsed_name = name_parser.parse(&self.name);
-        
+
         Player {
             joueurs_id: self.id.parse::<i32>().unwrap_or(DEFAULT_ID),
             first_name: parsed_name.first_name,
             last_name: parsed_name.last_name,
             country: country.clone(),
-            rating: self.rating.parse::<i32>().unwrap_or(DEFAULT_RATING)            
+            rating: self.rating.parse::<i32>().unwrap_or(DEFAULT_RATING),
         }
     }
 
     fn reset(&mut self) {
-        self.state =  PlayerParserState::ID;
+        self.state = PlayerParserState::ID;
         self.id = String::new();
         self.name = String::new();
         self.rating = String::new();
@@ -57,24 +57,24 @@ impl PlayerParser {
 
     fn parse_char(&mut self, char: char) {
         if char == '%' || char == '_' || char == '>' {
-            return
+            return;
         }
 
         match self.state {
             PlayerParserState::ID => {
                 if char == ' ' {
                     self.move_to_next_state();
-                    return
+                    return;
                 }
-                self.id.push(char)
-            },
+                self.id.push(char);
+            }
             PlayerParserState::Name => {
                 if char == '<' {
                     self.move_to_next_state();
-                    return
+                    return;
                 }
-                self.name.push(char)
-            },
+                self.name.push(char);
+            }
             PlayerParserState::Rating => self.rating.push(char),
         }
     }
@@ -84,6 +84,148 @@ impl PlayerParser {
             PlayerParserState::ID => self.state = PlayerParserState::Name,
             PlayerParserState::Name => self.state = PlayerParserState::Rating,
             PlayerParserState::Rating => self.state = PlayerParserState::ID,
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    mod test_player_parser {
+        use crate::joueurs::joueurs_player_parser::{PlayerParser, DEFAULT_RATING};
+
+        fn test_parse_player(
+            player: &String, expected_id: &i32, expected_first_name: &String,
+            expected_last_name: &String, expected_rating: &i32,
+        ) -> bool {
+            let mut parser = PlayerParser::create();
+            let country = String::from("test_country");
+            let parsed_player = parser.parse(player, &country);
+
+            &parsed_player.joueurs_id == expected_id
+                && &parsed_player.first_name == expected_first_name
+                && &parsed_player.last_name == expected_last_name
+                && &parsed_player.rating == expected_rating
+        }
+
+        #[test]
+        fn test_parse_comma_rated() {
+            let player = String::from("280216 ACUNA SSX, Ricardo                       %_<1484>");
+            let expected_first_name = String::from("Ricardo");
+            let expected_last_name = String::from("ACUNA SSX");
+            let expected_id = 280216;
+            let expected_rating = 1484;
+            assert_eq!(
+                test_parse_player(
+                    &player, &expected_id, &expected_first_name,
+                    &expected_last_name, &expected_rating
+                ),
+                true);
+        }
+
+        #[test]
+        fn test_parse_comma_negative_rated() {
+            let player = String::from("280216 ACUNA SSX, Ricardo                       %_<-1484>");
+            let expected_first_name = String::from("Ricardo");
+            let expected_last_name = String::from("ACUNA SSX");
+            let expected_id = 280216;
+            let expected_rating = -1484;
+            assert_eq!(
+                test_parse_player(
+                    &player, &expected_id, &expected_first_name,
+                    &expected_last_name, &expected_rating
+                ),
+                true);
+        }
+
+        #[test]
+        fn test_parse_comma_unrated() {
+            let player = String::from("281018 GRECO, Alejandra de                    ");
+            let expected_first_name = String::from("Alejandra de");
+            let expected_last_name = String::from("GRECO");
+            let expected_id = 281018;
+            let expected_rating = DEFAULT_RATING;
+            assert_eq!(
+                test_parse_player(
+                    &player, &expected_id, &expected_first_name,
+                    &expected_last_name, &expected_rating
+                ),
+                true);
+        }
+
+        #[test]
+        fn test_parse_comma_no_first_name() {
+            let player = String::from("281018 GRECO,                    ");
+            let expected_first_name = String::from("");
+            let expected_last_name = String::from("GRECO");
+            let expected_id = 281018;
+            let expected_rating = DEFAULT_RATING;
+            assert_eq!(
+                test_parse_player(
+                    &player, &expected_id, &expected_first_name,
+                    &expected_last_name, &expected_rating
+                ),
+                true);
+        }
+
+        #[test]
+        fn test_parse_bracket_rated() {
+            let player = String::from("   957 BRUTUS S (Geoffroy-Piotte)             %_<2410>");
+            let expected_first_name = String::from("Geoffroy-Piotte");
+            let expected_last_name = String::from("BRUTUS S");
+            let expected_id = 957;
+            let expected_rating = 2410;
+            assert_eq!(
+                test_parse_player(
+                    &player, &expected_id, &expected_first_name,
+                    &expected_last_name, &expected_rating
+                ),
+                true);
+        }
+
+        #[test]
+        fn test_parse_bracket_negative_rated() {
+            let player = String::from("   957 BRUTUS S (Geoffroy-Piotte)             %_<-2410>");
+            let expected_first_name = String::from("Geoffroy-Piotte");
+            let expected_last_name = String::from("BRUTUS S");
+            let expected_id = 957;
+            let expected_rating = -2410;
+            assert_eq!(
+                test_parse_player(
+                    &player, &expected_id, &expected_first_name,
+                    &expected_last_name, &expected_rating
+                ),
+                true);
+        }
+
+        #[test]
+        fn test_parse_bracket_unrated() {
+            let player = String::from("   349 EXPERT5 (Reversi Othello)                   ");
+            let expected_first_name = String::from("Reversi Othello");
+            let expected_last_name = String::from("EXPERT5");
+            let expected_id = 349;
+            let expected_rating = DEFAULT_RATING;
+            assert_eq!(
+                test_parse_player(
+                    &player, &expected_id, &expected_first_name,
+                    &expected_last_name, &expected_rating
+                ),
+                true);
+        }
+
+        #[test]
+        fn test_parse_bracket_no_first_name() {
+            let player = String::from("   349 EXPERT5 ()                   ");
+            let expected_first_name = String::from("");
+            let expected_last_name = String::from("EXPERT5");
+            let expected_id = 349;
+            let expected_rating = DEFAULT_RATING;
+            assert_eq!(
+                test_parse_player(
+                    &player, &expected_id, &expected_first_name,
+                    &expected_last_name, &expected_rating
+                ),
+                true);
         }
     }
 }

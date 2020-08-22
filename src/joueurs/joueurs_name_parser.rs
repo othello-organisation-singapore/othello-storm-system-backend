@@ -1,18 +1,18 @@
 #[derive(Debug, PartialEq)]
 enum NameParserState {
     FirstName,
-    LastName
+    LastName,
 }
 
 pub struct NameParser {
     state: NameParserState,
     first_name: String,
-    last_name: String
+    last_name: String,
 }
 
 pub struct PlayerName {
     pub first_name: String,
-    pub last_name: String
+    pub last_name: String,
 }
 
 impl NameParser {
@@ -44,11 +44,11 @@ impl NameParser {
 
     fn parse_char(&mut self, char: char) {
         if char == ')' {
-            return
+            return;
         }
         if char == '(' || char == ',' {
             self.move_to_next_state();
-            return
+            return;
         }
 
         match self.state {
@@ -71,7 +71,7 @@ mod tests {
         use crate::joueurs::joueurs_name_parser::NameParser;
 
         fn test_parse_name(
-            name: &String, expected_first_name: &String, expected_last_name: &String
+            name: &String, expected_first_name: &String, expected_last_name: &String,
         ) -> bool {
             let mut parser = NameParser::create();
             let player_name = parser.parse(name);
