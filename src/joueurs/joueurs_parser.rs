@@ -1,4 +1,3 @@
-use crate::regex::Regex;
 use crate::tournament_manager::Player;
 
 use super::joueurs_player_parser::PlayerParser;
@@ -6,40 +5,35 @@ use super::joueurs_player_parser::PlayerParser;
 pub struct JoueursParser {}
 
 impl JoueursParser {
-    pub fn parse(joueurs: &String) -> Vec<Player> {
-        let re = Regex::new(r"pays = ").unwrap();
-        let country_joueurs: Vec<String> = re.split(joueurs).map(|x| String::from(x)).collect();
-//        println!("{}", country_joueurs[0]);
-//        println!("===========================");
-//        println!("{}", country_joueurs[1]);
-//        println!("===========================");
-//        println!("{}", country_joueurs[2]);
-//        println!("===========================");
-        let re_country_joueurs = Regex::new(r"(.+)\n\n([\S\s]+)\n$").unwrap();
-        let mut first = true;
-        for country_joueur in country_joueurs.iter() {
-            if first {
-                first = false;
-                continue;
-            }
-            let parsed_country_joueurs = re_country_joueurs.captures(country_joueur).unwrap();
-            let country = String::from(parsed_country_joueurs[1].trim());
-            let joueurs = String::from(&parsed_country_joueurs[2]);
-//            println!("===========================");
-//            println!("country = {}", &country);
-//            println!("===========================");
-//            println!("joueurs = {}", joueurs);
-//            println!("===========================");
-            let joueurs_vec: Vec<String> = joueurs.split('\n').map(|x| String::from(x)).collect();
-            for player in joueurs_vec {
-                println!("{}", player);
+    pub fn parse(joueurs: &String) -> Result<Vec<Player>, String> {
+        let mut country_joueurs: Vec<String> = joueurs
+            .split("pays = ")
+            .map(|x| String::from(x))
+            .collect();
 
-                let player = String::from(player.trim_start());
-                let mut player_parser = PlayerParser::create();
-                let parsed_player = player_parser.parse(&player, &country);
-                println!("id:{}, first_name:{}, last_name:{}, rating:{}, country:{}", parsed_player.joueurs_id, parsed_player.first_name, parsed_player.last_name, parsed_player.rating, parsed_player.country);
-            }
+        if country_joueurs.is_empty() {
+            return Err(String::from("Joueurs file is empty, please contact the administrator."))
         }
-        Vec::new()
+        country_joueurs.remove(0);  // remove title
+
+        let mut players: Vec<Player> = Vec::new();
+        country_joueurs.iter().for_each(|country_joueur|{
+            let rows: Vec<&str> = country_joueur.splitn(2, '\n').collect();
+            if rows.len() < 2 {
+                return;
+            }
+
+            let country = String::from(rows[0].trim());
+            let joueurs = String::from(rows[1]);
+            let mut player_parser = PlayerParser::create();
+
+            joueurs
+                .split('\n')
+                .map(|x| String::from(x.trim_start()))
+                .filter(|x| !x.is_empty())
+                .for_each(|player| players.push(player_parser.parse(&player, &country)))
+        });
+        info!("Joueurs successfully parsed.");
+        Ok(players)
     }
 }

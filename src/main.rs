@@ -15,7 +15,6 @@ extern crate lazy_static;
 extern crate log;
 
 extern crate mocktopus;
-extern crate regex;
 extern crate reqwest;
 
 use std::{time, env};
@@ -49,7 +48,10 @@ fn main() {
     let joueurs = joueurs::Joueurs::get(1).unwrap();
     println!("Joueurs obtained, {}", start.elapsed().as_millis());
     let start_2 = time::Instant::now();
-    let parse_result = joueurs::JoueursParser::parse(&joueurs);
+    let parse_result = joueurs::JoueursParser::parse(&joueurs).unwrap();
+    for player in parse_result {
+        println!("id:{}, first_name:{}, last_name:{}, rating:{}, country:{}", player.joueurs_id, player.first_name, player.last_name, player.rating, player.country);
+    }
     println!("Joueurs parsed, {}", start_2.elapsed().as_millis());
 
     rocket::ignite()
