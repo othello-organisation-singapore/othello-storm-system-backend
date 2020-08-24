@@ -23,6 +23,10 @@ impl UserRole {
     }
 }
 
+pub enum TournamentType {
+    RoundRobin,
+}
+
 #[cfg(test)]
 mod tests {
     mod test_user_role {
