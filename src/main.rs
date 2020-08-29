@@ -30,9 +30,6 @@ pub mod schema;
 pub mod tournament_manager;
 pub mod utils;
 
-use std::collections::HashMap;
-use std::iter::FromIterator;
-
 fn create_default_superuser() {
     let connection = utils::get_pooled_connection();
     let username = env::var("SUPERUSER_ID").unwrap();
