@@ -16,6 +16,7 @@ extern crate log;
 
 extern crate mocktopus;
 extern crate reqwest;
+extern crate serde_json;
 
 use std::{time, env};
 
@@ -28,6 +29,9 @@ pub mod response_commands;
 pub mod schema;
 pub mod tournament_manager;
 pub mod utils;
+
+use std::collections::HashMap;
+use std::iter::FromIterator;
 
 fn create_default_superuser() {
     let connection = utils::get_pooled_connection();

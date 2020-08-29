@@ -1,5 +1,4 @@
-use diesel::prelude::*;
-use diesel::pg::types::sql_types::Json;
+use serde_json::Value;
 
 use crate::schema::tournaments;
 
@@ -13,6 +12,6 @@ pub struct TournamentRowModel {
     pub name: String,
     pub country: String,
     pub creator: String,
-    pub joueurs: Json,
-    pub meta_data: Json
+    pub joueurs: Value,
+    pub meta_data: Value
 }
