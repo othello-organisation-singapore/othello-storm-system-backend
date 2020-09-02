@@ -23,8 +23,29 @@ impl UserRole {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum TournamentType {
     RoundRobin,
+    SwissPairing,
+    Unidentified,
+}
+
+impl TournamentType {
+    pub fn from_string(tournament_type: String) -> TournamentType {
+        match tournament_type.as_str() {
+            "round_robin" => TournamentType::RoundRobin,
+            "swiss_pairing" => TournamentType::SwissPairing,
+            _ => TournamentType::Unidentified,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            TournamentType::RoundRobin => String::from("round_robin"),
+            TournamentType::SwissPairing => String::from("swiss_pairing"),
+            _ => String::from("unidentified"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -55,6 +76,37 @@ mod tests {
             assert_eq!(UserRole::from_string(String::from("visitor")).to_string(), String::from("visitor"));
             assert_eq!(UserRole::from_string(String::from("junk string")).to_string(), String::from("visitor"));
             assert_eq!(UserRole::from_string(String::from("")).to_string(), String::from("visitor"));
+        }
+    }
+
+    mod test_tournament_type {
+        use crate::properties::TournamentType;
+
+        #[test]
+        fn test_from_string() {
+            assert_eq!(
+                TournamentType::from_string(String::from("round_robin")),
+                TournamentType::RoundRobin
+            );
+            assert_eq!(
+                TournamentType::from_string(String::from("swiss_pairing")),
+                TournamentType::SwissPairing
+            );
+            assert_eq!(
+                TournamentType::from_string(String::from("")),
+                TournamentType::Unidentified
+            );
+            assert_eq!(
+                TournamentType::from_string(String::from("random")),
+                TournamentType::Unidentified
+            );
+        }
+
+        #[test]
+        fn test_to_string() {
+            assert_eq!(TournamentType::RoundRobin.to_string(), String::from("round_robin"));
+            assert_eq!(TournamentType::SwissPairing.to_string(), String::from("swiss_pairing"));
+            assert_eq!(TournamentType::Unidentified.to_string(), String::from("unidentified"));
         }
     }
 }
