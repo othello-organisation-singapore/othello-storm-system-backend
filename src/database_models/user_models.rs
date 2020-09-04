@@ -67,19 +67,16 @@ impl UserRowModel {
 
     pub fn get(username: &String, connection: &PgConnection) -> Result<UserRowModel, String> {
         let result = users::table
-            .filter(users::username.eq(&username))
-            .load::<UserRowModel>(connection);
+            .find(username)
+            .first(connection);
 
-        if let Err(e) = result {
-            error!("{}", e);
-            return Err(String::from("Failed connecting to database."));
+        match result {
+            Ok(user) => Ok(user),
+            Err(e) => {
+                error!("{}", e);
+                Err(String::from("Cannot get the user."))
+            }
         }
-
-        let mut filtered_users = result.unwrap();
-        if let Some(user) = filtered_users.pop() {
-            return Ok(user);
-        }
-        Err(String::from("User not found."))
     }
 
     pub fn get_role(&self) -> UserRole {
