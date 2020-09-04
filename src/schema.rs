@@ -2,6 +2,7 @@ table! {
     tournaments (id) {
         id -> Int4,
         name -> Varchar,
+        tournament_type -> Varchar,
         country -> Varchar,
         creator -> Varchar,
         joueurs -> Json,

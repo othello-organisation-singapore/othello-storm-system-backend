@@ -12,12 +12,12 @@ impl JoueursParser {
             .collect();
 
         if country_joueurs.is_empty() {
-            return Err(String::from("Joueurs file is empty, please contact the administrator."))
+            return Err(String::from("Joueurs file is empty, please contact the administrator."));
         }
         country_joueurs.remove(0);  // remove title
 
         let mut players: Vec<Player> = Vec::new();
-        country_joueurs.iter().for_each(|country_joueur|{
+        country_joueurs.iter().for_each(|country_joueur| {
             let rows: Vec<&str> = country_joueur.splitn(2, '\n').collect();
             if rows.len() < 2 {
                 return;

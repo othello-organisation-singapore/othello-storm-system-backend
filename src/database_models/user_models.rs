@@ -54,11 +54,14 @@ impl UserRowModel {
             .values(new_user)
             .execute(connection);
         match result {
-            Err(_) => Err(String::from("Cannot create new user.")),
-            _ => {
+            Ok(_) => {
                 info!("User {} ({}) is created as {}", username, display_name, role);
                 Ok(())
             }
+            Err(e) => {
+                error!("{}", e);
+                Err(String::from("Cannot create new user."))
+            },
         }
     }
 
@@ -67,7 +70,8 @@ impl UserRowModel {
             .filter(users::username.eq(&username))
             .load::<UserRowModel>(connection);
 
-        if let Err(_) = result {
+        if let Err(e) = result {
+            error!("{}", e);
             return Err(String::from("Failed connecting to database."));
         }
 
@@ -89,11 +93,14 @@ impl UserRowModel {
             .set(self)
             .execute(connection);
         match result {
-            Err(_) => Err(String::from("User failed to update")),
-            _ => {
+            Ok(_) => {
                 info!("User {} ({}) is updated", &self.username, &self.display_name);
                 Ok(())
             }
+            Err(e) => {
+                error!("{}", e);
+                Err(String::from("User failed to update"))
+            },
         }
     }
 }

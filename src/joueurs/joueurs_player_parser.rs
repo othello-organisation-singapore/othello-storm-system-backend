@@ -118,9 +118,10 @@ mod tests {
             assert_eq!(
                 test_parse_player(
                     &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating
+                    &expected_last_name, &expected_rating,
                 ),
-                true);
+                true
+            );
         }
 
         #[test]
@@ -133,9 +134,10 @@ mod tests {
             assert_eq!(
                 test_parse_player(
                     &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating
+                    &expected_last_name, &expected_rating,
                 ),
-                true);
+                true
+            );
         }
 
         #[test]
@@ -148,9 +150,10 @@ mod tests {
             assert_eq!(
                 test_parse_player(
                     &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating
+                    &expected_last_name, &expected_rating,
                 ),
-                true);
+                true
+            );
         }
 
         #[test]
@@ -163,9 +166,10 @@ mod tests {
             assert_eq!(
                 test_parse_player(
                     &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating
+                    &expected_last_name, &expected_rating,
                 ),
-                true);
+                true)
+            ;
         }
 
         #[test]
@@ -178,9 +182,10 @@ mod tests {
             assert_eq!(
                 test_parse_player(
                     &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating
+                    &expected_last_name, &expected_rating,
                 ),
-                true);
+                true
+            );
         }
 
         #[test]
@@ -193,9 +198,10 @@ mod tests {
             assert_eq!(
                 test_parse_player(
                     &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating
+                    &expected_last_name, &expected_rating,
                 ),
-                true);
+                true
+            );
         }
 
         #[test]
@@ -208,9 +214,10 @@ mod tests {
             assert_eq!(
                 test_parse_player(
                     &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating
+                    &expected_last_name, &expected_rating,
                 ),
-                true);
+                true
+            );
         }
 
         #[test]
@@ -223,9 +230,10 @@ mod tests {
             assert_eq!(
                 test_parse_player(
                     &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating
+                    &expected_last_name, &expected_rating,
                 ),
-                true);
+                true
+            );
         }
     }
 }
