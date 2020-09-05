@@ -3,8 +3,9 @@ use diesel::prelude::*;
 use crate::schema::users;
 use crate::properties::UserRole;
 
-#[derive(AsChangeset, PartialEq, Debug, Queryable)]
+#[derive(AsChangeset, PartialEq, Debug, Queryable, Identifiable)]
 #[table_name = "users"]
+#[primary_key(username)]
 pub struct UserRowModel {
     pub username: String,
     pub display_name: String,
@@ -55,7 +56,7 @@ impl UserRowModel {
             .execute(connection);
         match result {
             Ok(_) => {
-                info!("User {} ({}) is created as {}", username, display_name, role);
+                info!("User {} ({}) is created as {}.", username, display_name, role);
                 Ok(())
             }
             Err(e) => {
@@ -80,20 +81,18 @@ impl UserRowModel {
     }
 
     pub fn get_role(&self) -> UserRole {
-        return UserRole::from_string(self.role.clone());
+        UserRole::from_string(self.role.clone())
     }
 
     pub fn update(&self, connection: &PgConnection) -> Result<(), String> {
-        let result = diesel::update(users::table.find(
-            self.username.as_str())
-        )
+        let result = diesel::update(self)
             .set(self)
             .execute(connection);
         match result {
             Ok(_) => {
-                info!("User {} ({}) is updated", &self.username, &self.display_name);
+                info!("User {} ({}) is updated.", &self.username, &self.display_name);
                 Ok(())
-            }
+            },
             Err(e) => {
                 error!("{}", e);
                 Err(String::from("User failed to update"))
