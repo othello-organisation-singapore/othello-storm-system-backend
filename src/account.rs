@@ -38,8 +38,10 @@ impl Account {
         UserRowModel::create(username, display_name, &hashed_password, UserRole::Admin, connection)
     }
 
-    pub fn update(&mut self, display_name: Option<&String>, password: Option<&String>,
-                  connection: &PgConnection) -> Result<(), String> {
+    pub fn update(
+        &mut self, display_name: Option<&String>, password: Option<&String>,
+        connection: &PgConnection,
+    ) -> Result<(), String> {
         if let Some(updated_display_name) = display_name {
             self.user.display_name = updated_display_name.clone();
         }
@@ -53,7 +55,7 @@ impl Account {
         let mut meta: HashMap<String, String> = HashMap::new();
         meta.insert(String::from("username"), self.user.username.clone());
         meta.insert(String::from("display_name"), self.user.display_name.clone());
-        meta.insert(String::from("role"), self.user.get_role().to_string());
+        meta.insert(String::from("role"), self.user.role.clone());
         meta
     }
 
@@ -83,8 +85,9 @@ impl Account {
         Account::get_account_from_user(user)
     }
 
-    pub fn login_from_password(username: &String, password: &String, connection: &PgConnection)
-                               -> Result<Account, String> {
+    pub fn login_from_password(
+        username: &String, password: &String, connection: &PgConnection,
+    ) -> Result<Account, String> {
         let user = match UserRowModel::get(&username, connection) {
             Ok(user) => user,
             Err(_) => return Err(String::from("Username not found."))

@@ -114,10 +114,6 @@ impl TournamentRowModel {
         }
     }
 
-    pub fn get_tournament_type(&self) -> TournamentType {
-        TournamentType::from_string(self.tournament_type.clone())
-    }
-
     pub fn is_created_by(&self, username: &String) -> bool {
         &self.creator == username
     }

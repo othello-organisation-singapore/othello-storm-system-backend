@@ -10,7 +10,7 @@ pub struct UserRowModel {
     pub username: String,
     pub display_name: String,
     pub hashed_password: String,
-    role: String,
+    pub role: String,
 }
 
 #[derive(Insertable)]

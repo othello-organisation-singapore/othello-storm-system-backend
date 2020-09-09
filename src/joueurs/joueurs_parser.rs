@@ -17,6 +17,7 @@ impl JoueursParser {
         country_joueurs.remove(0);  // remove title
 
         let mut players: Vec<Player> = Vec::new();
+        let mut player_parser = PlayerParser::create();
         country_joueurs.iter().for_each(|country_joueur| {
             let rows: Vec<&str> = country_joueur.splitn(2, '\n').collect();
             if rows.len() < 2 {
@@ -25,8 +26,6 @@ impl JoueursParser {
 
             let country = String::from(rows[0].trim());
             let joueurs = String::from(rows[1]);
-            let mut player_parser = PlayerParser::create();
-
             joueurs
                 .split('\n')
                 .map(|x| String::from(x.trim_start()))
