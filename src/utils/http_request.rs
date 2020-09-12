@@ -1,3 +1,4 @@
+use mocktopus::macros::mockable;
 use reqwest::blocking::{get, Response};
 use reqwest::Error;
 
@@ -15,6 +16,7 @@ fn http_get(url: &String) -> Result<Response, String> {
     }
 }
 
+#[mockable]
 pub fn http_get_text(url: &String) -> Result<String, String> {
     let response = http_get(url)?;
     match response.text() {
