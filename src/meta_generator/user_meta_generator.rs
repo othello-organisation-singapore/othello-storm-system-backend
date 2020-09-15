@@ -10,15 +10,15 @@ pub struct UserMetaGenerator {
 }
 
 impl UserMetaGenerator {
-    pub fn from_user(user: UserRowModel) -> UserMetaGenerator {
-        return UserMetaGenerator { user };
-    }
-
     pub fn from_username(
         username: &String, connection: &PgConnection,
     ) -> Result<UserMetaGenerator, String> {
         let user = UserRowModel::get(username, connection)?;
         Ok(UserMetaGenerator::from_user(user))
+    }
+
+    pub fn from_user(user: UserRowModel) -> UserMetaGenerator {
+        UserMetaGenerator { user }
     }
 }
 

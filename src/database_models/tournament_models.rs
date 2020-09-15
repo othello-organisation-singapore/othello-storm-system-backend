@@ -13,7 +13,7 @@ use super::UserRowModel;
 pub struct TournamentRowModel {
     pub id: i32,
     pub name: String,
-    tournament_type: String,
+    pub tournament_type: String,
     pub country: String,
     pub creator: String,
     pub joueurs: Value,

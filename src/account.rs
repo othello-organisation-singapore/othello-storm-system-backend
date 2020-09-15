@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use rocket::http::Cookies;
 use diesel::prelude::*;
 
