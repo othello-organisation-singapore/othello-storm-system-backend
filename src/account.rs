@@ -51,14 +51,6 @@ impl Account {
         self.user.update(connection)
     }
 
-    pub fn generate_meta(&self) -> HashMap<String, String> {
-        let mut meta: HashMap<String, String> = HashMap::new();
-        meta.insert(String::from("username"), self.user.username.clone());
-        meta.insert(String::from("display_name"), self.user.display_name.clone());
-        meta.insert(String::from("role"), self.user.role.clone());
-        meta
-    }
-
     pub fn generate_jwt(&self) -> Result<String, String> {
         let username = self.get_username();
         JWTMediator::generate_jwt_from_username(&username)

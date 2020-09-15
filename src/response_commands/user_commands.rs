@@ -4,6 +4,7 @@ use rocket_contrib::json::JsonValue;
 
 use super::ResponseCommand;
 use crate::account::Account;
+use crate::meta_generator::{MetaGenerator, UserMetaGenerator};
 use crate::utils::hash;
 
 pub struct GetUserCommand {
@@ -12,8 +13,10 @@ pub struct GetUserCommand {
 
 impl ResponseCommand for GetUserCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
-        let account = Account::get(&self.username, &connection)?;
-        Ok(json!(account.generate_meta()))
+        let meta_generator = UserMetaGenerator::from_username(
+            &self.username, connection
+        )?;
+        Ok(json!(meta_generator.generate_meta()))
     }
 }
 

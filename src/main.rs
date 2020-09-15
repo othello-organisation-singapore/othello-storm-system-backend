@@ -23,6 +23,7 @@ use std::{time, env};
 pub mod account;
 pub mod database_models;
 pub mod joueurs;
+pub mod meta_generator;
 pub mod properties;
 pub mod routes;
 pub mod response_commands;
