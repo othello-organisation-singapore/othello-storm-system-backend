@@ -30,6 +30,12 @@ impl TournamentCRUDHandler {
     }
 
     pub fn from_existing(
+        tournament_model: TournamentRowModel
+    ) -> Result<TournamentCRUDHandler, String> {
+        Ok(TournamentCRUDHandler { tournament: tournament_model })
+    }
+
+    pub fn from_existing_id(
         id: &i32, connection: &PgConnection,
     ) -> Result<TournamentCRUDHandler, String> {
         let tournament_model = TournamentRowModel::get(id, connection)?;
@@ -139,12 +145,12 @@ mod tests {
             let tournament_id = created_tournament.id;
 
 
-            let result = TournamentCRUDHandler::from_existing(
+            let result = TournamentCRUDHandler::from_existing_id(
                 &tournament_id, &test_connection,
             );
             assert_eq!(result.is_ok(), true);
 
-            let failed_result = TournamentCRUDHandler::from_existing(
+            let failed_result = TournamentCRUDHandler::from_existing_id(
                 &(tournament_id + 1), &test_connection,
             );
             assert_eq!(failed_result.is_err(), true);
@@ -158,7 +164,7 @@ mod tests {
             let all_tournaments = TournamentRowModel::get_all(&test_connection).unwrap();
             let created_tournament = all_tournaments.first().unwrap();
             let tournament_id = created_tournament.id;
-            let mut crud_handler = TournamentCRUDHandler::from_existing(
+            let mut crud_handler = TournamentCRUDHandler::from_existing_id(
                 &tournament_id, &test_connection,
             ).unwrap();
 
@@ -185,7 +191,7 @@ mod tests {
             let all_tournaments = TournamentRowModel::get_all(&test_connection).unwrap();
             let created_tournament = all_tournaments.first().unwrap();
             let tournament_id = created_tournament.id;
-            let crud_handler = TournamentCRUDHandler::from_existing(
+            let crud_handler = TournamentCRUDHandler::from_existing_id(
                 &tournament_id, &test_connection,
             ).unwrap();
 
@@ -195,7 +201,7 @@ mod tests {
             ).unwrap();
             assert_eq!(all_tournaments_after_delete.is_empty(), true);
 
-            let result = TournamentCRUDHandler::from_existing(
+            let result = TournamentCRUDHandler::from_existing_id(
                 &tournament_id, &test_connection
             );
             assert_eq!(result.is_err(), true);

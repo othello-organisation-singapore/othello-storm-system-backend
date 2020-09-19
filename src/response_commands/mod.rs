@@ -1,6 +1,7 @@
 mod command_trait;
 mod general_commands;
 mod user_commands;
+mod tournament_commands;
 
 pub use command_trait::ResponseCommand;
 pub use general_commands::{LoginCommand, CurrentUserCommand};

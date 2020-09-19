@@ -8,7 +8,7 @@ use crate::meta_generator::{MetaGenerator, UserMetaGenerator};
 use crate::utils::hash;
 
 pub struct GetUserCommand {
-    pub username: String
+    pub username: String,
 }
 
 impl ResponseCommand for GetUserCommand {
@@ -38,7 +38,7 @@ impl ResponseCommand for CreateUserCommand<'_> {
         }
         let hashed_password = hash(&self.password);
         Account::create_new_admin(&self.username, &self.display_name, &hashed_password, connection)?;
-        Ok(json!({"message": "User created"}))
+        Ok(json!({"message": "User created."}))
     }
 }
 
@@ -75,6 +75,6 @@ impl ResponseCommand for UpdateUserCommand<'_> {
         };
 
         account.update(display_name, password, connection)?;
-        Ok(json!({"message": "User updated"}))
+        Ok(json!({"message": "User updated."}))
     }
 }
