@@ -48,18 +48,18 @@ fn main() {
     create_default_superuser();
 
     rocket::ignite()
-        .mount("/users", routes![
+        .mount("/api/users", routes![
             routes::user_routes::get_user,
             routes::user_routes::create_user,
             routes::user_routes::update_user,
         ])
-        .mount("/tournaments", routes![
+        .mount("/api/tournaments", routes![
             routes::tournament_routes::get_tournament,
             routes::tournament_routes::create_tournament,
             routes::tournament_routes::update_tournament,
             routes::tournament_routes::delete_tournament,
         ])
-        .mount("/", routes![
+        .mount("/api/", routes![
             routes::general_routes::login,
             routes::general_routes::get_current_user_profile,
         ])
