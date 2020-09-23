@@ -1,4 +1,5 @@
 use diesel::PgConnection;
+use serde_json::Map;
 use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 
@@ -7,7 +8,7 @@ use crate::account::Account;
 use crate::database_models::TournamentRowModel;
 use crate::meta_generator::{MetaGenerator, TournamentMetaGenerator};
 use crate::properties::TournamentType;
-use crate::tournament_manager::TournamentCRUDHandler;
+use crate::joueurs::{Joueurs, JoueursParser};
 
 pub struct GetTournamentCommand {
     pub id: i32,
@@ -42,11 +43,16 @@ impl ResponseCommand for CreateTournamentCommand<'_> {
         let tournament_type = TournamentType::from_string(
             self.tournament_type.clone()
         );
-        TournamentCRUDHandler::create_new_tournament(
+
+        let raw_joueurs = Joueurs::get(3)?;
+        let parsed_joueurs = JoueursParser::parse(&raw_joueurs)?;
+        TournamentRowModel::create(
             &self.name,
             &self.country,
-            &account,
+            &account.get_username(),
+            parsed_joueurs,
             tournament_type,
+            Map::new(),
             connection
         )?;
         Ok(json!({"message": "Tournament created."}))
@@ -72,7 +78,9 @@ impl UpdateTournamentCommand<'_> {
 impl ResponseCommand for UpdateTournamentCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
-        let tournament_model = TournamentRowModel::get(&self.id, connection)?;
+        let mut tournament_model = TournamentRowModel::get(
+            &self.id, connection
+        )?;
 
         if !self.is_able_to_update_tournament(&tournament_model, &account) {
             return Err(
@@ -80,10 +88,9 @@ impl ResponseCommand for UpdateTournamentCommand<'_> {
             );
         }
 
-        let mut crud_handler = TournamentCRUDHandler::from_existing(
-            tournament_model,
-        )?;
-        crud_handler.update(&self.updated_name, &self.updated_country, connection)?;
+        tournament_model.name = self.updated_name.clone();
+        tournament_model.country = self.updated_country.clone();
+        tournament_model.update(connection)?;
         Ok(json!({"message": "Tournament updated."}))
     }
 }
@@ -113,10 +120,7 @@ impl ResponseCommand for DeleteTournamentCommand<'_> {
             );
         }
 
-        let mut crud_handler = TournamentCRUDHandler::from_existing(
-            tournament_model,
-        )?;
-        crud_handler.delete(connection)?;
+        tournament_model.delete(connection)?;
         Ok(json!({"message": "Tournament deleted."}))
     }
 }
