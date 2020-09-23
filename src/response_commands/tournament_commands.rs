@@ -17,7 +17,7 @@ pub struct GetTournamentCommand {
 impl ResponseCommand for GetTournamentCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
         let meta_generator = TournamentMetaGenerator::from_tournament_id(
-            &self.id, connection
+            &self.id, connection,
         )?;
         Ok(json!(meta_generator.generate_meta()))
     }
@@ -53,7 +53,7 @@ impl ResponseCommand for CreateTournamentCommand<'_> {
             parsed_joueurs,
             tournament_type,
             Map::new(),
-            connection
+            connection,
         )?;
         Ok(json!({"message": "Tournament created."}))
     }
@@ -68,7 +68,7 @@ pub struct UpdateTournamentCommand<'a> {
 
 impl UpdateTournamentCommand<'_> {
     fn is_able_to_update_tournament(
-        &self, tournament_model: &TournamentRowModel, current_account: &Account
+        &self, tournament_model: &TournamentRowModel, current_account: &Account,
     ) -> bool {
         let username = current_account.get_username();
         current_account.has_superuser_access() || tournament_model.is_created_by(&username)
@@ -79,7 +79,7 @@ impl ResponseCommand for UpdateTournamentCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let mut tournament_model = TournamentRowModel::get(
-            &self.id, connection
+            &self.id, connection,
         )?;
 
         if !self.is_able_to_update_tournament(&tournament_model, &account) {
@@ -102,7 +102,7 @@ pub struct DeleteTournamentCommand<'a> {
 
 impl DeleteTournamentCommand<'_> {
     fn is_able_to_delete_tournament(
-        &self, tournament_model: &TournamentRowModel, current_account: &Account
+        &self, tournament_model: &TournamentRowModel, current_account: &Account,
     ) -> bool {
         let username = current_account.get_username();
         current_account.has_superuser_access() || tournament_model.is_created_by(&username)

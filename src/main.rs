@@ -18,7 +18,7 @@ extern crate mocktopus;
 extern crate reqwest;
 extern crate serde_json;
 
-use std::{time, env};
+use std::env;
 
 pub mod account;
 pub mod database_models;
@@ -46,21 +46,18 @@ fn main() {
     env_logger::init();
     info!("Starting the program");
     create_default_superuser();
-    let start = time::Instant::now();
-    let joueurs = joueurs::Joueurs::get(1).unwrap();
-    println!("Joueurs obtained, {}", start.elapsed().as_millis());
-    let start_2 = time::Instant::now();
-    let parse_result = joueurs::JoueursParser::parse(&joueurs).unwrap();
-    for player in parse_result {
-        println!("id:{}, first_name:{}, last_name:{}, rating:{}, country:{}", player.joueurs_id, player.first_name, player.last_name, player.rating, player.country);
-    }
-    println!("Joueurs parsed, {}", start_2.elapsed().as_millis());
 
     rocket::ignite()
-        .mount("/user", routes![
+        .mount("/users", routes![
             routes::user_routes::get_user,
             routes::user_routes::create_user,
             routes::user_routes::update_user,
+        ])
+        .mount("/tournaments", routes![
+            routes::tournament_routes::get_tournament,
+            routes::tournament_routes::create_tournament,
+            routes::tournament_routes::update_tournament,
+            routes::tournament_routes::delete_tournament,
         ])
         .mount("/", routes![
             routes::general_routes::login,

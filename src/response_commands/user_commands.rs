@@ -16,7 +16,7 @@ pub struct GetUserCommand {
 impl ResponseCommand for GetUserCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
         let meta_generator = UserMetaGenerator::from_username(
-            &self.username, connection
+            &self.username, connection,
         )?;
         Ok(json!(meta_generator.generate_meta()))
     }
@@ -44,7 +44,7 @@ impl ResponseCommand for CreateUserCommand<'_> {
             &self.display_name,
             &hashed_password,
             UserRole::Admin,
-            connection
+            connection,
         )?;
         Ok(json!({"message": "User created."}))
     }
