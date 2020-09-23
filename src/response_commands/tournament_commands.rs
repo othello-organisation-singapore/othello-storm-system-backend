@@ -116,7 +116,7 @@ impl ResponseCommand for DeleteTournamentCommand<'_> {
 
         if !self.is_able_to_delete_tournament(&tournament_model, &account) {
             return Err(
-                String::from("You are not authorized to edit this tournament.")
+                String::from("You are not authorized to delete this tournament.")
             );
         }
 
