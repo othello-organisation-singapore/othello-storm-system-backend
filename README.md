@@ -1,6 +1,6 @@
 # Othello Storm System (Backend)
 
-A project meant to help Othello Organisation Tournament to organise tournaments without too much dependencies on other people.
+A project meant to help Othello Organisation Singapore to organise tournaments easily to remove any dependencies to any individual or device.
 
 To know more, please contact Samuel (samuelhenrykurniawan@yahoo.com)
 

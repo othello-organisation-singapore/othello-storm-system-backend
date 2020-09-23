@@ -1,7 +1,7 @@
 use std::env;
 use serde::{Deserialize, Serialize};
 use jsonwebtoken::{encode, decode, Header, Validation};
-use jsonwebtoken::errors::{ErrorKind};
+use jsonwebtoken::errors::ErrorKind;
 
 use super::get_current_timestamp;
 
@@ -9,13 +9,12 @@ use super::get_current_timestamp;
 pub struct Claims {
     pub exp: u64,
     pub iss: String,
-    pub username: String
+    pub username: String,
 }
 
 pub struct JWTMediator {}
 
 impl JWTMediator {
-
     pub fn generate_jwt_from_username(username: &String) -> Result<String, String> {
         let claims = JWTMediator::generate_claims(username);
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
@@ -29,7 +28,7 @@ impl JWTMediator {
         Claims {
             exp: 60 * 60 * 30 + get_current_timestamp(),
             iss: JWTMediator::get_issuer(),
-            username: username.clone()
+            username: username.clone(),
         }
     }
 
@@ -39,7 +38,7 @@ impl JWTMediator {
 
     pub fn get_username_from_jwt(jwt: &String) -> Result<String, String> {
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-        let validation = Validation { iss: Some(JWTMediator::get_issuer()), ..Validation::default()};
+        let validation = Validation { iss: Some(JWTMediator::get_issuer()), ..Validation::default() };
         let token_data = match decode::<Claims>(jwt, secret_key.as_ref(), &validation) {
             Ok(t) => t,
             Err(err) => return match *err.kind() {

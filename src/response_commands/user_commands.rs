@@ -3,17 +3,22 @@ use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 
 use super::ResponseCommand;
-use super::super::account::Account;
-use super::super::utils::hash;
+use crate::account::Account;
+use crate::database_models::UserRowModel;
+use crate::meta_generator::{MetaGenerator, UserMetaGenerator};
+use crate::utils::hash;
+use crate::properties::UserRole;
 
 pub struct GetUserCommand {
-    pub username: String
+    pub username: String,
 }
 
 impl ResponseCommand for GetUserCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
-        let account = Account::get(&self.username, &connection)?;
-        Ok(json!(account.generate_meta()))
+        let meta_generator = UserMetaGenerator::from_username(
+            &self.username, connection,
+        )?;
+        Ok(json!(meta_generator.generate_meta()))
     }
 }
 
@@ -34,8 +39,14 @@ impl ResponseCommand for CreateUserCommand<'_> {
             ));
         }
         let hashed_password = hash(&self.password);
-        account.create_new_admin(&self.username, &self.display_name, &hashed_password, connection)?;
-        Ok(json!({"message": "User created"}))
+        UserRowModel::create(
+            &self.username,
+            &self.display_name,
+            &hashed_password,
+            UserRole::Admin,
+            connection,
+        )?;
+        Ok(json!({"message": "User created."}))
     }
 }
 
@@ -54,24 +65,22 @@ impl UpdateUserCommand<'_> {
 
 impl ResponseCommand for UpdateUserCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
-        let mut account = Account::login_from_cookies(&self.cookies, &connection)?;
+        let account = Account::login_from_cookies(&self.cookies, &connection)?;
 
         if !(self.is_able_to_update_user(&self.username, &account)) {
             return Err(
                 String::from("You are not authorized to change other people profile.")
             );
         }
+        let mut user_model = account.user;
 
-        let display_name = match &self.display_name {
-            Some(name) => Option::from(name),
-            None => Option::None
-        };
-        let password = match &self.password {
-            Some(password) => Option::from(password),
-            None => Option::None
-        };
-
-        account.update(display_name, password, connection)?;
-        Ok(json!({"message": "User updated"}))
+        if let Some(name) = &self.display_name {
+            user_model.display_name = name.clone()
+        }
+        if let Some(password) = &self.password {
+            user_model.hashed_password = hash(password)
+        }
+        user_model.update(connection)?;
+        Ok(json!({"message": "User updated."}))
     }
 }

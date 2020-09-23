@@ -9,10 +9,11 @@ edition = "2018"
 [dependencies]
 # web framework
 rocket = "0.4.4"
-rocket_contrib = { version = "0.4.5", features = ["json"]}
+rocket_contrib = { version = "0.4.5", features = ["json"] }
 
 # ORM
-diesel = { version = "1.4.3", features = ["postgres", "r2d2"] }
+diesel = { version = "1.4.3", features = ["postgres", "r2d2", "serde_json"] }
+serde_json = { version = "1.0.48", features = ["preserve_order"]}
 dotenv = "0.9.0"
 lazy_static = "1.4.0"
 
@@ -21,7 +22,7 @@ pwhash = "0.3"
 
 # jwt
 jsonwebtoken = "5"
-serde = {version = "1.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 
 # random
 rand = "0.7"
@@ -32,3 +33,6 @@ mocktopus = "0.7.0"
 # log
 log = "0.4.0"
 env_logger = "0.7.1"
+
+# download from external sources
+reqwest =  { version = "0.10.6", features=["blocking"] }
