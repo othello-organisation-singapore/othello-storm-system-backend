@@ -225,6 +225,10 @@ mod tests {
         #[test]
         fn test_get_tournaments() {
             let test_connection = utils::get_test_connection();
+            let initial_tournaments = TournamentRowModel::get_all(
+                &test_connection
+            ).unwrap();
+            let initial_count = initial_tournaments.len();
 
             let creator_username = utils::generate_random_string(20);
             let _ = create_mock_user_with_username(&creator_username, &test_connection);
@@ -241,7 +245,7 @@ mod tests {
             );
             assert_eq!(all_tournaments_result.is_ok(), true);
             let all_tournaments = all_tournaments_result.unwrap();
-            assert_eq!(all_tournaments.len(), 3);
+            assert_eq!(all_tournaments.len() - initial_count, 3);
 
             let all_first_creator_tournaments_result = TournamentRowModel::get_all_created_by(
                 &creator_username, &test_connection,
