@@ -3,10 +3,10 @@ use diesel::prelude::*;
 
 use super::database_models::UserRowModel;
 use super::properties::UserRole;
-use super::utils::{JWTMediator, hash, verify};
+use super::utils::{JWTMediator, verify};
 
 pub struct Account {
-    user: UserRowModel
+    pub user: UserRowModel
 }
 
 impl Account {
@@ -30,28 +30,8 @@ impl Account {
         self.user.username.clone()
     }
 
-    pub fn create_new_admin(username: &String, display_name: &String, password: &String,
-                            connection: &PgConnection) -> Result<(), String> {
-        let hashed_password = hash(password);
-        UserRowModel::create(username, display_name, &hashed_password, UserRole::Admin, connection)
-    }
-
-    pub fn update(
-        &mut self, display_name: Option<&String>, password: Option<&String>,
-        connection: &PgConnection,
-    ) -> Result<(), String> {
-        if let Some(updated_display_name) = display_name {
-            self.user.display_name = updated_display_name.clone();
-        }
-        if let Some(updated_password) = password {
-            self.user.hashed_password = hash(updated_password);
-        }
-        self.user.update(connection)
-    }
-
     pub fn generate_jwt(&self) -> Result<String, String> {
-        let username = self.get_username();
-        JWTMediator::generate_jwt_from_username(&username)
+        JWTMediator::generate_jwt_from_username(&self.user.username)
     }
 }
 
@@ -288,148 +268,6 @@ mod tests {
                 &jwt, &test_connection,
             );
             assert_eq!(login_result.is_err(), true);
-        }
-    }
-
-    mod test_admin_creation {
-        use crate::account::Account;
-        use crate::utils;
-
-        #[test]
-        fn test_create_admin() {
-            let test_connection = utils::get_test_connection();
-            let username = utils::generate_random_string(20);
-            let display_name = utils::generate_random_string(20);
-            let password = utils::generate_random_string(30);
-            let result = Account::create_new_admin(
-                &username, &display_name, &password, &test_connection,
-            );
-            assert_eq!(result.is_ok(), true);
-        }
-    }
-
-    mod test_update {
-        use crate::account::Account;
-        use crate::database_models::UserRowModel;
-        use crate::properties::UserRole;
-        use crate::utils;
-
-        #[test]
-        fn test_update_display_name() {
-            let test_connection = utils::get_test_connection();
-            let username = utils::generate_random_string(20);
-            let display_name = utils::generate_random_string(20);
-            let password = utils::generate_random_string(30);
-            let hashed_password = utils::hash(&password);
-            let _ = UserRowModel::create(
-                &username,
-                &display_name,
-                &hashed_password,
-                UserRole::Admin,
-                &test_connection,
-            );
-            let user = UserRowModel::get(&username, &test_connection).unwrap();
-            let mut account = Account { user };
-            let updated_display_name = utils::generate_random_string(20);
-
-            let result = account.update(
-                Option::from(&updated_display_name),
-                Option::None,
-                &test_connection,
-            );
-            assert_eq!(result.is_ok(), true);
-
-            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
-            assert_eq!(updated_user.display_name, updated_display_name);
-        }
-
-        #[test]
-        fn test_update_password() {
-            let test_connection = utils::get_test_connection();
-            let username = utils::generate_random_string(20);
-            let display_name = utils::generate_random_string(20);
-            let password = utils::generate_random_string(30);
-            let hashed_password = utils::hash(&password);
-            let _ = UserRowModel::create(
-                &username,
-                &display_name,
-                &hashed_password,
-                UserRole::Admin,
-                &test_connection,
-            );
-
-            let user = UserRowModel::get(&username, &test_connection).unwrap();
-            let mut account = Account { user };
-            let updated_password = utils::generate_random_string(20);
-            let result = account.update(
-                Option::None,
-                Option::from(&updated_password),
-                &test_connection,
-            );
-            assert_eq!(result.is_ok(), true);
-
-            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
-            assert_eq!(utils::verify(&updated_password, &updated_user.hashed_password), true);
-        }
-
-        #[test]
-        fn test_update_both() {
-            let test_connection = utils::get_test_connection();
-            let username = utils::generate_random_string(20);
-            let display_name = utils::generate_random_string(20);
-            let password = utils::generate_random_string(30);
-            let hashed_password = utils::hash(&password);
-            let _ = UserRowModel::create(
-                &username,
-                &display_name,
-                &hashed_password,
-                UserRole::Admin,
-                &test_connection,
-            );
-
-            let user = UserRowModel::get(&username, &test_connection).unwrap();
-            let mut account = Account { user };
-            let updated_display_name = utils::generate_random_string(20);
-            let updated_password = utils::generate_random_string(20);
-            let result = account.update(
-                Option::from(&updated_display_name),
-                Option::from(&updated_password),
-                &test_connection,
-            );
-            assert_eq!(result.is_ok(), true);
-
-            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
-            assert_eq!(updated_user.display_name, updated_display_name);
-            assert_eq!(utils::verify(&updated_password, &updated_user.hashed_password), true);
-        }
-
-        #[test]
-        fn test_update_none() {
-            let test_connection = utils::get_test_connection();
-            let username = utils::generate_random_string(20);
-            let display_name = utils::generate_random_string(20);
-            let password = utils::generate_random_string(30);
-            let hashed_password = utils::hash(&password);
-            let _ = UserRowModel::create(
-                &username,
-                &display_name,
-                &hashed_password,
-                UserRole::Admin,
-                &test_connection,
-            );
-
-            let user = UserRowModel::get(&username, &test_connection).unwrap();
-            let mut account = Account { user };
-            let result = account.update(
-                Option::None,
-                Option::None,
-                &test_connection,
-            );
-            assert_eq!(result.is_ok(), true);
-
-            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
-            assert_eq!(updated_user.display_name, display_name);
-            assert_eq!(utils::verify(&password, &updated_user.hashed_password), true);
         }
     }
 }
