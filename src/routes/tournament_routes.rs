@@ -6,6 +6,18 @@ use crate::response_commands;
 use crate::response_commands::ResponseCommand;
 use crate::utils::get_pooled_connection;
 
+#[get("/")]
+pub fn get_tournaments() -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    response_commands::GetAllTournamentsCommand {}.execute(&connection)
+}
+
+#[get("/created_by_me")]
+pub fn get_user_tournaments(cookies: Cookies) -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    response_commands::GetUserTournamentsCommand { cookies }.execute(&connection)
+}
+
 #[get("/<id>")]
 pub fn get_tournament(id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();

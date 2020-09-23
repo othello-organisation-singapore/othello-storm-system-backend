@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use diesel::PgConnection;
 use serde_json::Map;
 use rocket::http::Cookies;
@@ -21,6 +23,47 @@ impl ResponseCommand for GetTournamentCommand {
         )?;
         Ok(json!(meta_generator.generate_meta()))
     }
+}
+
+pub struct GetAllTournamentsCommand {}
+
+impl ResponseCommand for GetAllTournamentsCommand {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+        let tournament_models = TournamentRowModel::get_all(connection)?;
+        let tournament_meta_list = generate_tournaments_meta(tournament_models);
+        Ok(json!({"tournaments": tournament_meta_list}))
+    }
+}
+
+pub struct GetUserTournamentsCommand<'a> {
+    pub cookies: Cookies<'a>,
+}
+
+impl ResponseCommand for GetUserTournamentsCommand<'_> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let username = account.get_username();
+        let tournament_models = TournamentRowModel::get_all_created_by(
+            &username, connection,
+        )?;
+
+        let tournament_meta_list = generate_tournaments_meta(tournament_models);
+        Ok(json!({"tournaments": tournament_meta_list}))
+    }
+}
+
+fn generate_tournaments_meta(
+    tournament_models: Vec<TournamentRowModel>
+) -> Vec<HashMap<String, String>> {
+    tournament_models
+        .into_iter()
+        .map(|tournament| {
+            let meta_generator = TournamentMetaGenerator::from_tournament(
+                tournament
+            );
+            meta_generator.generate_meta()
+        })
+        .collect()
 }
 
 pub struct CreateTournamentCommand<'a> {

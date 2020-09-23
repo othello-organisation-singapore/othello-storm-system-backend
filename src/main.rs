@@ -54,6 +54,8 @@ fn main() {
             routes::user_routes::update_user,
         ])
         .mount("/api/tournaments", routes![
+            routes::tournament_routes::get_tournaments,
+            routes::tournament_routes::get_user_tournaments,
             routes::tournament_routes::get_tournament,
             routes::tournament_routes::create_tournament,
             routes::tournament_routes::update_tournament,

@@ -8,3 +8,4 @@ pub use general_commands::{LoginCommand, CurrentUserCommand};
 pub use user_commands::{GetUserCommand, CreateUserCommand, UpdateUserCommand};
 pub use tournament_commands::{CreateTournamentCommand, DeleteTournamentCommand};
 pub use tournament_commands::{GetTournamentCommand, UpdateTournamentCommand};
+pub use tournament_commands::{GetAllTournamentsCommand, GetUserTournamentsCommand};
