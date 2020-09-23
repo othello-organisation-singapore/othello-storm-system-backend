@@ -253,14 +253,17 @@ mod tests {
             assert_eq!(all_first_creator_tournaments_result.is_ok(), true);
             assert_eq!(all_first_creator_tournaments_result.unwrap().len(), 2);
 
-            let first_tournament = all_tournaments.first().unwrap();
-            let first_tournament_from_get = TournamentRowModel::get(
-                &first_tournament.id, &test_connection,
+            // There is possibility database has a tournament before the test started
+            let first_created_tournament = all_tournaments
+                .get(initial_count)
+                .unwrap();
+            let tournament_from_get = TournamentRowModel::get(
+                &first_created_tournament.id, &test_connection,
             ).unwrap();
-            assert_eq!(first_tournament.id, first_tournament_from_get.id);
-            assert_eq!(first_tournament.name, first_tournament_from_get.name);
-            assert_eq!(first_tournament.creator, first_tournament_from_get.creator);
-            assert_eq!(first_tournament.is_created_by(&creator_username), true);
+            assert_eq!(first_created_tournament.id, tournament_from_get.id);
+            assert_eq!(first_created_tournament.name, tournament_from_get.name);
+            assert_eq!(first_created_tournament.creator, tournament_from_get.creator);
+            assert_eq!(first_created_tournament.is_created_by(&creator_username), true);
         }
 
         #[test]
@@ -291,6 +294,11 @@ mod tests {
         #[test]
         fn test_delete() {
             let test_connection = utils::get_test_connection();
+            let initial_tournaments = TournamentRowModel::get_all(
+                &test_connection
+            ).unwrap();
+            let initial_count = initial_tournaments.len();
+
             let username = utils::generate_random_string(20);
             let _ = create_mock_user_with_username(&username, &test_connection);
             let _ = create_mock_tournament_with_creator(&username, &test_connection);
@@ -309,7 +317,7 @@ mod tests {
             let updated_all_tournaments = TournamentRowModel::get_all(
                 &test_connection
             ).unwrap();
-            assert_eq!(updated_all_tournaments.is_empty(), true);
+            assert_eq!(updated_all_tournaments.len() - initial_count, 0);
         }
     }
 }
