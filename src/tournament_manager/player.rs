@@ -58,40 +58,40 @@ impl Player {
     pub fn from_serdemap(player_data: Map<String, Value>) -> Result<Player, String> {
         let joueurs_id = player_data
             .get("joueurs_id")
-            .ok_or("Incomplete player data")?
+            .ok_or("Incomplete player data.")?
             .as_str()
-            .ok_or("Player data format is wrong")?
+            .ok_or("Player data format is wrong.")?
             .parse::<i32>()
-            .map_err(|_| String::from("Id is not integer"))?;
+            .map_err(|_| String::from("Id is not integer."))?;
 
         let first_name = player_data
             .get("first_name")
-            .ok_or("Incomplete player data")?
+            .ok_or("Incomplete player data.")?
             .as_str()
-            .ok_or("Player data format is wrong")?
+            .ok_or("Player data format is wrong.")?
             .to_string();
 
         let last_name = player_data
             .get("last_name")
-            .ok_or("Incomplete player data")?
+            .ok_or("Incomplete player data.")?
             .as_str()
-            .ok_or("Player data format is wrong")?
+            .ok_or("Player data format is wrong.")?
             .to_string();
 
         let country = player_data
             .get("country")
-            .ok_or("Incomplete player data")?
+            .ok_or("Incomplete player data.")?
             .as_str()
-            .ok_or("Player data format is wrong")?
+            .ok_or("Player data format is wrong.")?
             .to_string();
 
         let rating = player_data
             .get("rating")
-            .ok_or("Incomplete player data")?
+            .ok_or("Incomplete player data.")?
             .as_str()
-            .ok_or("Player data format is wrong")?
+            .ok_or("Player data format is wrong.")?
             .parse::<i32>()
-            .map_err(|_| String::from("Rating is not integer"))?;
+            .map_err(|_| String::from("Rating is not integer."))?;
 
         Ok(Player{ joueurs_id, first_name, last_name, country, rating})
     }

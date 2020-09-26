@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use diesel::PgConnection;
+use serde_json::{Map, Value};
 
 use crate::database_models::UserRowModel;
 use super::MetaGenerator;
@@ -23,11 +22,19 @@ impl UserMetaGenerator {
 }
 
 impl MetaGenerator for UserMetaGenerator {
-    fn generate_meta(&self) -> HashMap<String, String> {
-        let mut meta: HashMap<String, String> = HashMap::new();
-        meta.insert(String::from("username"), self.user.username.clone());
-        meta.insert(String::from("display_name"), self.user.display_name.clone());
-        meta.insert(String::from("role"), self.user.role.clone());
+    fn generate_meta(&self) -> Map<String, Value> {
+        let mut meta = Map::new();
+        meta.insert(String::from("username"), Value::from(self.user.username.clone()));
+        meta.insert(
+            String::from("display_name"), Value::from(self.user.display_name.clone()),
+        );
+        meta.insert(String::from("role"), Value::from(self.user.role.clone()));
         meta
+    }
+
+    fn generate_detailed_meta(
+        &self, _connection: &PgConnection,
+    ) -> Result<Map<String, Value>, String> {
+        Ok(self.generate_meta())
     }
 }
