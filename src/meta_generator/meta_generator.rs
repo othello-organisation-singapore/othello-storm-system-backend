@@ -1,5 +1,5 @@
-use std::collections::HashMap;
+use serde_json::{Map, Value};
 
 pub trait MetaGenerator {
-    fn generate_meta(&self) -> HashMap<String, String>;
+    fn generate_meta(&self) -> Map<String, Value>;
 }

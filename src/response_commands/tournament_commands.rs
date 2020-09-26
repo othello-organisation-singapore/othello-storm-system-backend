@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use diesel::PgConnection;
-use serde_json::Map;
+use serde_json::{Map, Value};
 use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 
@@ -54,7 +52,7 @@ impl ResponseCommand for GetUserTournamentsCommand<'_> {
 
 fn generate_tournaments_meta(
     tournament_models: Vec<TournamentRowModel>
-) -> Vec<HashMap<String, String>> {
+) -> Vec<Map<String, Value>> {
     tournament_models
         .into_iter()
         .map(|tournament| {

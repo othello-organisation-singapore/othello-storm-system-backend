@@ -1,17 +1,16 @@
-use std::collections::HashMap;
-
 use diesel::PgConnection;
+use serde_json::{Map, Value};
 
 use crate::database_models::TournamentRowModel;
 use super::MetaGenerator;
 
 pub struct TournamentMetaGenerator {
-    tournament: TournamentRowModel,
+    tournament: TournamentRowModel
 }
 
 impl TournamentMetaGenerator {
     pub fn from_tournament_id(
-        id: &i32, connection: &PgConnection
+        id: &i32, connection: &PgConnection,
     ) -> Result<TournamentMetaGenerator, String> {
         let tournament = TournamentRowModel::get(id, connection)?;
         Ok(TournamentMetaGenerator::from_tournament(tournament))
@@ -23,15 +22,21 @@ impl TournamentMetaGenerator {
 }
 
 impl MetaGenerator for TournamentMetaGenerator {
-    fn generate_meta(&self) -> HashMap<String, String> {
-        let mut meta: HashMap<String, String> = HashMap::new();
-        meta.insert(String::from("id"), self.tournament.id.to_string());
-        meta.insert(String::from("name"), self.tournament.name.clone());
+    fn generate_meta(&self) -> Map<String, Value> {
+        let mut meta = Map::new();
+        meta.insert(String::from("id"), Value::from(self.tournament.id.to_string()));
+        meta.insert(String::from("name"), Value::from(self.tournament.name.clone()));
         meta.insert(
-            String::from("tournament_type"), self.tournament.tournament_type.clone()
+            String::from("tournament_type"),
+            Value::from(self.tournament.tournament_type.clone()),
         );
-        meta.insert(String::from("country"), self.tournament.country.clone());
-        meta.insert(String::from("creator"), self.tournament.creator.clone());
+        meta.insert(
+            String::from("country"), Value::from(self.tournament.country.clone()),
+        );
+        meta.insert(
+            String::from("creator_username"),
+            Value::from(self.tournament.creator.clone()),
+        );
         meta
     }
 }
