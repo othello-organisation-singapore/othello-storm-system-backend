@@ -19,7 +19,7 @@ impl ResponseCommand for GetTournamentCommand {
         let meta_generator = TournamentMetaGenerator::from_tournament_id(
             &self.id, connection,
         )?;
-        Ok(json!(meta_generator.generate_meta()))
+        Ok(json!(meta_generator.generate_detailed_meta(connection)?))
     }
 }
 

@@ -1,7 +1,7 @@
 use diesel::PgConnection;
 use serde_json::{Map, Value};
 
-use crate::database_models::TournamentRowModel;
+use crate::database_models::{UserRowModel, TournamentRowModel};
 use super::MetaGenerator;
 
 pub struct TournamentMetaGenerator {
@@ -38,5 +38,28 @@ impl MetaGenerator for TournamentMetaGenerator {
             Value::from(self.tournament.creator.clone()),
         );
         meta
+    }
+
+    fn generate_detailed_meta(
+        &self, connection: &PgConnection
+    ) -> Result<Map<String, Value>, String> {
+        let mut meta = self.generate_meta();
+        let creator_username = meta
+            .get("creator_username")
+            .ok_or("Invalid tournament meta format.")?
+            .as_str()
+            .ok_or("Something is wrong.")?
+            .to_string();
+        let creator = UserRowModel::get(&creator_username, connection)?;
+
+        let mut creator_meta = Map::new();
+        creator_meta.insert(String::from("username"), Value::from(creator_username));
+        creator_meta.insert(
+            String::from("display_name"),
+            Value::from(creator.display_name.clone()))
+        ;
+
+        meta.insert(String::from("creator"), Value::from(creator_meta));
+        Ok(meta)
     }
 }

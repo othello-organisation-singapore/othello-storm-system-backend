@@ -31,4 +31,10 @@ impl MetaGenerator for UserMetaGenerator {
         meta.insert(String::from("role"), Value::from(self.user.role.clone()));
         meta
     }
+
+    fn generate_detailed_meta(
+        &self, _connection: &PgConnection,
+    ) -> Result<Map<String, Value>, String> {
+        Ok(self.generate_meta())
+    }
 }
