@@ -103,8 +103,9 @@ impl TournamentRowModel {
     pub fn get_all_created_by(
         username: &String, connection: &PgConnection,
     ) -> Result<Vec<TournamentRowModel>, String> {
-        let user = UserRowModel::get(username, connection)?;
-        let result = TournamentRowModel::belonging_to(&user).load::<TournamentRowModel>(connection);
+        let result = tournaments::table
+            .filter(tournaments::creator.eq(username))
+            .load::<TournamentRowModel>(connection);
         match result {
             Ok(tournaments) => Ok(tournaments),
             Err(e) => {
