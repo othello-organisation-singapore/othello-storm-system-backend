@@ -104,6 +104,26 @@ impl TournamentRowModel {
         }
     }
 
+    pub fn remove_admin(&self, username: &String, connection: &PgConnection) -> Result<(), String> {
+        let result = diesel::delete(
+            tournaments_admin::table
+                .filter(tournaments_admin::username.eq(username))
+        )
+            .execute(connection);
+
+        match result {
+            Ok(_) => {
+                info!("Admin {} is removed from tournament {} ({})", username, &self.id, &self.name);
+                Ok(())
+            }
+            Err(e) => {
+                error!("{}", e);
+                Err(String::from("Cannot delete admin from the tournament."))
+            }
+        }
+        return Ok(());
+    }
+
     pub fn is_managed_by(
         &self, username: &String, connection: &PgConnection,
     ) -> Result<bool, String> {
