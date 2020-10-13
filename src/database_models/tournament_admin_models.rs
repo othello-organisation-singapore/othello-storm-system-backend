@@ -1,5 +1,4 @@
 use diesel::prelude::*;
-use diesel::expression::dsl::any;
 
 use crate::schema::{tournaments_admin, users, tournaments};
 use super::{UserRowModel, TournamentRowModel};
@@ -21,26 +20,32 @@ struct NewTournamentAdminRowModel<'a> {
     pub admin_username: &'a String,
 }
 
+fn get_all_admin_usernames_of(
+    tournament_id: &i32, connection: &PgConnection,
+) -> Result<Vec<String>, String> {
+    let admin_usernames_query_result = tournaments_admin::table
+        .filter(tournaments_admin::tournament_id.eq(tournament_id))
+        .select(tournaments_admin::admin_username)
+        .distinct()
+        .load::<String>(connection);
+
+    match admin_usernames_query_result {
+        Ok(usernames) => Ok(usernames),
+        Err(e) => {
+            error!("{}", e);
+            Err(String::from("Cannot get all admin usernames of the tournament."))
+        }
+    }
+}
+
+
 impl UserRowModel {
-    pub fn get_all_admin_of(
+    pub fn get_all_admins_of(
         tournament_id: &i32, connection: &PgConnection,
     ) -> Result<Vec<UserRowModel>, String> {
-        let admin_usernames_query_result = tournaments_admin::table
-            .filter(tournaments_admin::tournament_id.eq(tournament_id))
-            .select(tournaments_admin::admin_username)
-            .distinct()
-            .load::<String>(connection);
-
-        let admin_usernames = match admin_usernames_query_result {
-            Ok(usernames) => Ok(usernames),
-            Err(e) => {
-                error!("{}", e);
-                Err(String::from("Cannot get all admin usernames of the tournament."))
-            }
-        }?;
-
+        let admin_usernames = get_all_admin_usernames_of(tournament_id, connection)?;
         let users_query_result = users::table
-            .filter(users::username.eq(any(admin_usernames)))
+            .filter(users::username.eq_any(admin_usernames))
             .load::<UserRowModel>(connection);
 
         match users_query_result {
@@ -48,6 +53,23 @@ impl UserRowModel {
             Err(e) => {
                 error!("{}", e);
                 Err(String::from("Cannot get all admins of the tournament."))
+            }
+        }
+    }
+
+    pub fn get_all_potential_admins_of(
+        tournament_id: &i32, connection: &PgConnection,
+    ) -> Result<Vec<UserRowModel>, String> {
+        let admin_usernames = get_all_admin_usernames_of(tournament_id, connection)?;
+        let users_query_result = users::table
+            .filter(users::username.ne_all(admin_usernames))
+            .load::<UserRowModel>(connection);
+
+        match users_query_result {
+            Ok(potential_admins) => Ok(potential_admins),
+            Err(e) => {
+                error!("{}", e);
+                Err(String::from("Cannot get all potentia admins of the tournament."))
             }
         }
     }
@@ -72,7 +94,7 @@ impl TournamentRowModel {
         }?;
 
         let tournaments_query_result = tournaments::table
-            .filter(tournaments::id.eq(any(tournament_ids)))
+            .filter(tournaments::id.eq_any(tournament_ids))
             .load::<TournamentRowModel>(connection);
 
         match tournaments_query_result {
