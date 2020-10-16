@@ -1,5 +1,7 @@
 use diesel::prelude::*;
 
+use crate::account::Account;
+use crate::properties::UserRole;
 use crate::schema::{tournaments_admin, users, tournaments};
 use super::{UserRowModel, TournamentRowModel};
 
@@ -45,6 +47,10 @@ impl UserRowModel {
     ) -> Result<Vec<UserRowModel>, String> {
         let admin_usernames = get_all_admin_usernames_of(tournament_id, connection)?;
         let users_query_result = users::table
+            .filter(users::role.eq_any(vec![
+                UserRole::Superuser.to_string(),
+                UserRole::Admin.to_string()]
+            ))
             .filter(users::username.eq_any(admin_usernames))
             .load::<UserRowModel>(connection);
 
@@ -62,6 +68,10 @@ impl UserRowModel {
     ) -> Result<Vec<UserRowModel>, String> {
         let admin_usernames = get_all_admin_usernames_of(tournament_id, connection)?;
         let users_query_result = users::table
+            .filter(users::role.eq_any(vec![
+                UserRole::Superuser.to_string(),
+                UserRole::Admin.to_string()]
+            ))
             .filter(users::username.ne_all(admin_usernames))
             .load::<UserRowModel>(connection);
 
@@ -69,7 +79,7 @@ impl UserRowModel {
             Ok(potential_admins) => Ok(potential_admins),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get all potentia admins of the tournament."))
+                Err(String::from("Cannot get all potential admins of the tournament."))
             }
         }
     }
@@ -107,6 +117,11 @@ impl TournamentRowModel {
     }
 
     pub fn add_admin(&self, username: &String, connection: &PgConnection) -> Result<(), String> {
+        let added_admin_account = Account::get(username, connection)?;
+        if !added_admin_account.has_admin_access() {
+            return Err(String::from("The user added does not have admin role or higher."));
+        }
+
         let new_tournament_admin = NewTournamentAdminRowModel {
             tournament_id: &self.id,
             admin_username: username,
@@ -129,7 +144,7 @@ impl TournamentRowModel {
     pub fn remove_admin(&self, username: &String, connection: &PgConnection) -> Result<(), String> {
         let result = diesel::delete(
             tournaments_admin::table
-                .filter(tournaments_admin::username.eq(username))
+                .filter(tournaments_admin::admin_username.eq(username))
         )
             .execute(connection);
 
@@ -143,7 +158,6 @@ impl TournamentRowModel {
                 Err(String::from("Cannot delete admin from the tournament."))
             }
         }
-        return Ok(());
     }
 
     pub fn is_managed_by(

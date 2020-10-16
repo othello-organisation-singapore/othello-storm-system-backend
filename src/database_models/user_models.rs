@@ -62,7 +62,7 @@ impl UserRowModel {
             Err(e) => {
                 error!("{}", e);
                 Err(String::from("Cannot create new user."))
-            },
+            }
         }
     }
 
@@ -92,11 +92,11 @@ impl UserRowModel {
             Ok(_) => {
                 info!("User {} ({}) is updated.", &self.username, &self.display_name);
                 Ok(())
-            },
+            }
             Err(e) => {
                 error!("{}", e);
                 Err(String::from("User failed to update"))
-            },
+            }
         }
     }
 }
