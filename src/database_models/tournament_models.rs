@@ -163,36 +163,17 @@ impl TournamentRowModel {
 mod tests {
     mod crud {
         use serde_json::Map;
-        use crate::database_models::{UserRowModel, TournamentRowModel};
-        use crate::properties::{UserRole, TournamentType};
+        use crate::database_models::TournamentRowModel;
+        use crate::properties::TournamentType;
         use crate::tournament_manager::Player;
         use crate::utils;
-        use diesel::PgConnection;
-
-        fn create_mock_user_with_username(
-            username: &String, connection: &PgConnection,
-        ) -> UserRowModel {
-            let display_name = utils::generate_random_string(20);
-            let password = utils::generate_random_string(30);
-            let hashed_password = utils::hash(&password);
-            let _ = UserRowModel::create(
-                username,
-                &display_name,
-                &hashed_password,
-                UserRole::Superuser,
-                connection,
-            );
-            UserRowModel::get(username, connection).unwrap()
-        }
+        use crate::utils::{create_mock_tournament_with_creator, create_mock_user};
 
         #[test]
         fn test_create_tournament() {
             let test_connection = utils::get_test_connection();
 
-            let creator_username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(
-                &creator_username, &test_connection,
-            );
+            let user = create_mock_user(&test_connection,);
 
             let name = utils::generate_random_string(20);
             let country = utils::generate_random_string(10);
@@ -202,32 +183,13 @@ mod tests {
             let result = TournamentRowModel::create(
                 &name,
                 &country,
-                &creator_username,
+                &user.username,
                 joueurs,
                 tournament_type,
                 Map::new(),
                 &test_connection,
             );
-            assert_eq!(result.is_ok(), true)
-        }
-
-        fn create_mock_tournament_with_creator(
-            username: &String, connection: &PgConnection
-        ) -> TournamentRowModel {
-            let name = utils::generate_random_string(20);
-            let country = utils::generate_random_string(10);
-            let joueurs: Vec<Player> = Vec::new();
-            let tournament_type = TournamentType::RoundRobin;
-
-            TournamentRowModel::create(
-                &name,
-                &country,
-                &username,
-                joueurs,
-                tournament_type,
-                Map::new(),
-                connection,
-            ).unwrap()
+            assert_eq!(result.is_ok(), true);
         }
 
         #[test]
@@ -238,11 +200,11 @@ mod tests {
             ).unwrap();
             let initial_count = initial_tournaments.len();
 
-            let creator_username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(&creator_username, &test_connection);
+            let user = create_mock_user(&test_connection);
+            let creator_username = user.username.clone();
 
-            let second_creator_username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(&second_creator_username, &test_connection);
+            let second_user = create_mock_user(&test_connection);
+            let second_creator_username = second_user.username.clone();
 
             let tournament = create_mock_tournament_with_creator(
                 &creator_username, &test_connection
@@ -275,10 +237,9 @@ mod tests {
         #[test]
         fn test_update() {
             let test_connection = utils::get_test_connection();
-            let username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(&username, &test_connection);
+            let user = create_mock_user(&test_connection);
             let mut tournament = create_mock_tournament_with_creator(
-                &username, &test_connection
+                &user.username, &test_connection
             );
 
             let updated_name = String::from("new name");
@@ -302,9 +263,10 @@ mod tests {
             ).unwrap();
             let initial_count = initial_tournaments.len();
 
-            let username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(&username, &test_connection);
-            let tournament = create_mock_tournament_with_creator(&username, &test_connection);
+            let user = create_mock_user(&test_connection);
+            let tournament = create_mock_tournament_with_creator(
+                &user.username, &test_connection
+            );
 
             let _ = tournament.delete(&test_connection);
             let updated_get_result = TournamentRowModel::get(

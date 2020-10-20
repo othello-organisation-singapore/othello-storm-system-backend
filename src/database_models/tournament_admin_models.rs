@@ -122,6 +122,10 @@ impl TournamentRowModel {
             return Err(String::from("The user added does not have admin role or higher."));
         }
 
+        if self.is_managed_by(username, connection)? {
+            return Err(String::from("The user is already the admin of this tournament."))
+        }
+
         let new_tournament_admin = NewTournamentAdminRowModel {
             tournament_id: &self.id,
             admin_username: username,
@@ -142,6 +146,10 @@ impl TournamentRowModel {
     }
 
     pub fn remove_admin(&self, username: &String, connection: &PgConnection) -> Result<(), String> {
+        if !self.is_managed_by(username, connection)? {
+            return Err(String::from("The user is not the admin of this tournament."))
+        }
+
         let result = diesel::delete(
             tournaments_admin::table
                 .filter(tournaments_admin::admin_username.eq(username))
@@ -174,6 +182,68 @@ impl TournamentRowModel {
                 error!("{}", e);
                 Err(String::from("Cannot check whether the tournament is managed by the admin."))
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    mod test_add_admin {
+        use crate::utils;
+
+        #[test]
+        fn test_add_admin() {
+            let test_connection = utils::get_test_connection();
+            let user = utils::create_mock_user(&test_connection);
+            let tournament = utils::create_mock_tournament_with_creator(
+                &user.username, &test_connection
+            );
+
+            let result = tournament.add_admin(&user.username, &test_connection);
+            assert_eq!(result.is_ok(), true);
+        }
+
+        #[test]
+        fn test_add_existed_admin() {
+            let test_connection = utils::get_test_connection();
+            let user = utils::create_mock_user(&test_connection);
+            let tournament = utils::create_mock_tournament_with_creator(
+                &user.username, &test_connection
+            );
+
+            let _ = tournament.add_admin(&user.username, &test_connection);
+            let result = tournament.add_admin(&user.username, &test_connection);
+            assert_eq!(result.is_err(), true);
+        }
+    }
+
+    mod test_remove_admin {
+        use crate::utils;
+
+        #[test]
+        fn test_remove_admin() {
+            let test_connection = utils::get_test_connection();
+            let user = utils::create_mock_user(&test_connection);
+            let tournament = utils::create_mock_tournament_with_creator(
+                &user.username, &test_connection
+            );
+
+            let _ = tournament.add_admin(&user.username, &test_connection);
+            let result = tournament.remove_admin(&user.username, &test_connection);
+            assert_eq!(result.is_ok(), true);
+        }
+
+        #[test]
+        fn test_remove_not_admin() {
+            let test_connection = utils::get_test_connection();
+            let user = utils::create_mock_user(&test_connection);
+
+            let tournament = utils::create_mock_tournament_with_creator(
+                &user.username, &test_connection
+            );
+
+            let result = tournament.remove_admin(&user.username, &test_connection);
+            assert_eq!(result.is_err(), true);
         }
     }
 }
