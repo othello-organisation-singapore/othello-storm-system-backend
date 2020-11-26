@@ -5,8 +5,12 @@ use rocket_contrib::json::JsonValue;
 
 use super::ResponseCommand;
 use crate::account::Account;
-use crate::database_models::TournamentRowModel;
-use crate::meta_generator::{MetaGenerator, TournamentMetaGenerator};
+use crate::database_models::{UserRowModel, TournamentRowModel};
+use crate::meta_generator::{
+    MetaGenerator,
+    TournamentPreviewMetaGenerator,
+    TournamentDetailsMetaGenerator,
+};
 use crate::properties::TournamentType;
 use crate::joueurs::{Joueurs, JoueursParser};
 
@@ -16,10 +20,14 @@ pub struct GetTournamentCommand {
 
 impl ResponseCommand for GetTournamentCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
-        let meta_generator = TournamentMetaGenerator::from_tournament_id(
-            &self.id, connection,
-        )?;
-        Ok(json!(meta_generator.generate_detailed_meta(connection)?))
+        let tournament_model = TournamentRowModel::get(&self.id, connection)?;
+        let creator_username = &tournament_model.creator;
+        let creator = UserRowModel::get(creator_username, connection)?;
+        let meta_generator = TournamentDetailsMetaGenerator::from_tournament(
+            tournament_model,
+            creator,
+        );
+        Ok(json!(meta_generator.generate_meta()))
     }
 }
 
@@ -56,7 +64,7 @@ fn generate_tournaments_meta(
     tournament_models
         .into_iter()
         .map(|tournament| {
-            let meta_generator = TournamentMetaGenerator::from_tournament(
+            let meta_generator = TournamentPreviewMetaGenerator::from_tournament(
                 tournament
             );
             meta_generator.generate_meta()
