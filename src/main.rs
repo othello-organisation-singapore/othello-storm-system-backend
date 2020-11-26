@@ -22,6 +22,7 @@ use std::env;
 
 pub mod account;
 pub mod database_models;
+pub mod errors;
 pub mod joueurs;
 pub mod meta_generator;
 pub mod properties;
