@@ -1,6 +1,7 @@
 use diesel::PgConnection;
 use serde_json::{Map, Value};
 
+use crate::errors::ErrorType;
 use crate::database_models::UserRowModel;
 use super::MetaGenerator;
 
@@ -11,7 +12,7 @@ pub struct UserMetaGenerator {
 impl UserMetaGenerator {
     pub fn from_username(
         username: &String, connection: &PgConnection,
-    ) -> Result<UserMetaGenerator, String> {
+    ) -> Result<UserMetaGenerator, ErrorType> {
         let user = UserRowModel::get(username, connection)?;
         Ok(UserMetaGenerator::from_user(user))
     }

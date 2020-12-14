@@ -1,7 +1,9 @@
 use diesel::prelude::*;
 
+use crate::errors::ErrorType;
 use crate::schema::users;
 use crate::properties::UserRole;
+use crate::errors::ErrorType::BadRequestError;
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable, Identifiable)]
 #[table_name = "users"]
@@ -26,9 +28,9 @@ impl UserRowModel {
     pub fn create(
         username: &String, display_name: &String, hashed_password: &String, role: UserRole,
         connection: &PgConnection,
-    ) -> Result<UserRowModel, String> {
+    ) -> Result<UserRowModel, ErrorType> {
         if UserRowModel::is_username_exists(&username, connection) {
-            return Err(String::from("Username exists."));
+            return Err(BadRequestError(String::from("Username exists.")));
         }
         let new_user = NewUserRowModel {
             username,
@@ -48,7 +50,7 @@ impl UserRowModel {
 
     fn insert_to_database(
         new_user: NewUserRowModel, connection: &PgConnection,
-    ) -> Result<UserRowModel, String> {
+    ) -> Result<UserRowModel, ErrorType> {
         let username = new_user.username.clone();
         let display_name = new_user.display_name.clone();
         let role = new_user.role.clone();
@@ -63,12 +65,12 @@ impl UserRowModel {
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot create new user."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn get(username: &String, connection: &PgConnection) -> Result<UserRowModel, String> {
+    pub fn get(username: &String, connection: &PgConnection) -> Result<UserRowModel, ErrorType> {
         let result = users::table
             .find(username)
             .first(connection);
@@ -77,7 +79,7 @@ impl UserRowModel {
             Ok(user) => Ok(user),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get the user."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
@@ -86,7 +88,7 @@ impl UserRowModel {
         UserRole::from_string(self.role.clone())
     }
 
-    pub fn update(&self, connection: &PgConnection) -> Result<UserRowModel, String> {
+    pub fn update(&self, connection: &PgConnection) -> Result<UserRowModel, ErrorType> {
         let result = diesel::update(self)
             .set(self)
             .get_result::<UserRowModel>(connection);
@@ -97,7 +99,7 @@ impl UserRowModel {
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("User failed to update"))
+                Err(ErrorType::DatabaseError)
             }
         }
     }

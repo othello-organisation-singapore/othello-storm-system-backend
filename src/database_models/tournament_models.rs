@@ -1,6 +1,7 @@
 use serde_json::{Value, Map};
 use diesel::prelude::*;
 
+use crate::errors::ErrorType;
 use crate::schema::tournaments;
 use crate::properties::TournamentType;
 use crate::tournament_manager::Player;
@@ -42,7 +43,7 @@ impl TournamentRowModel {
         tournament_type: TournamentType,
         meta_data: Map<String, Value>,
         connection: &PgConnection,
-    ) -> Result<TournamentRowModel, String> {
+    ) -> Result<TournamentRowModel, ErrorType> {
         let joueurs_to_store = Value::Array(
             joueurs
                 .iter()
@@ -63,7 +64,7 @@ impl TournamentRowModel {
 
     fn insert_to_database(
         new_tournament: NewTournamentRowModel, connection: &PgConnection,
-    ) -> Result<TournamentRowModel, String> {
+    ) -> Result<TournamentRowModel, ErrorType> {
         let tournament_name = new_tournament.name.clone();
         let result = diesel::insert_into(tournaments::table)
             .values(new_tournament)
@@ -75,12 +76,12 @@ impl TournamentRowModel {
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot create new tournament."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn get(id: &i32, connection: &PgConnection) -> Result<TournamentRowModel, String> {
+    pub fn get(id: &i32, connection: &PgConnection) -> Result<TournamentRowModel, ErrorType> {
         let result = tournaments::table
             .find(id)
             .first(connection);
@@ -89,25 +90,25 @@ impl TournamentRowModel {
             Ok(tournament) => Ok(tournament),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get the tournament."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn get_all(connection: &PgConnection) -> Result<Vec<TournamentRowModel>, String> {
+    pub fn get_all(connection: &PgConnection) -> Result<Vec<TournamentRowModel>, ErrorType> {
         let result = tournaments::table.load::<TournamentRowModel>(connection);
         match result {
             Ok(tournaments) => Ok(tournaments),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot obtain all tournaments."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
     pub fn get_all_created_by(
         username: &String, connection: &PgConnection,
-    ) -> Result<Vec<TournamentRowModel>, String> {
+    ) -> Result<Vec<TournamentRowModel>, ErrorType> {
         let result = tournaments::table
             .filter(tournaments::creator.eq(username))
             .load::<TournamentRowModel>(connection);
@@ -115,7 +116,7 @@ impl TournamentRowModel {
             Ok(tournaments) => Ok(tournaments),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot obtain tournaments from user."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
@@ -124,7 +125,7 @@ impl TournamentRowModel {
         &self.creator == username
     }
 
-    pub fn update(&self, connection: &PgConnection) -> Result<TournamentRowModel, String> {
+    pub fn update(&self, connection: &PgConnection) -> Result<TournamentRowModel, ErrorType> {
         let result = diesel::update(self)
             .set(self)
             .get_result(connection);
@@ -136,12 +137,12 @@ impl TournamentRowModel {
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Tournament failed to update."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn delete(&self, connection: &PgConnection) -> Result<(), String> {
+    pub fn delete(&self, connection: &PgConnection) -> Result<(), ErrorType> {
         let result = diesel::delete(self)
             .execute(connection);
 
@@ -152,7 +153,7 @@ impl TournamentRowModel {
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Tournament failed to delete."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }

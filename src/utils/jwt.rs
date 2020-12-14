@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use jsonwebtoken::{encode, decode, Header, Validation};
 use jsonwebtoken::errors::ErrorKind;
 
+use crate::errors::ErrorType;
 use super::get_current_timestamp;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,12 +16,12 @@ pub struct Claims {
 pub struct JWTMediator {}
 
 impl JWTMediator {
-    pub fn generate_jwt_from_username(username: &String) -> Result<String, String> {
+    pub fn generate_jwt_from_username(username: &String) -> Result<String, ErrorType> {
         let claims = JWTMediator::generate_claims(username);
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
         match encode(&Header::default(), &claims, secret_key.as_ref()) {
             Ok(token) => Ok(token),
-            Err(_) => Err(String::from("Failed to generate token"))
+            Err(_) => Err(ErrorType::UnknownError(String::from("Failed to generate token")))
         }
     }
 
@@ -36,14 +37,14 @@ impl JWTMediator {
         String::from("Othello Storm System")
     }
 
-    pub fn get_username_from_jwt(jwt: &String) -> Result<String, String> {
+    pub fn get_username_from_jwt(jwt: &String) -> Result<String, ErrorType> {
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
         let validation = Validation { iss: Some(JWTMediator::get_issuer()), ..Validation::default() };
         let token_data = match decode::<Claims>(jwt, secret_key.as_ref(), &validation) {
             Ok(t) => t,
             Err(err) => return match *err.kind() {
-                ErrorKind::ExpiredSignature => Err(String::from("Token expired")),
-                _ => Err(String::from("Something is wrong"))
+                ErrorKind::ExpiredSignature => Err(ErrorType::TokenExpired),
+                _ => Err(ErrorType::AuthenticationFailed)
             }
         };
         Ok(token_data.claims.username)

@@ -4,6 +4,7 @@ use rocket_contrib::json::JsonValue;
 
 use super::ResponseCommand;
 use crate::account::Account;
+use crate::errors::ErrorType;
 use crate::meta_generator::{MetaGenerator, UserMetaGenerator};
 
 pub struct LoginCommand {
@@ -12,7 +13,7 @@ pub struct LoginCommand {
 }
 
 impl ResponseCommand for LoginCommand {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_password(
             &self.username, &self.password, &connection,
         )?;
@@ -22,6 +23,10 @@ impl ResponseCommand for LoginCommand {
         let jwt = account.generate_jwt()?;
         Ok(json!({"jwt": jwt}))
     }
+
+    fn get_request_name(&self) -> String {
+        String::from("Login")
+    }
 }
 
 
@@ -30,11 +35,15 @@ pub struct CurrentUserCommand<'a> {
 }
 
 impl ResponseCommand for CurrentUserCommand<'_> {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let meta_generator = UserMetaGenerator::from_username(
             &account.get_username(), connection
         )?;
         Ok(json!(meta_generator.generate_meta()))
+    }
+
+    fn get_request_name(&self) -> String {
+        String::from("GetCurrentUser")
     }
 }

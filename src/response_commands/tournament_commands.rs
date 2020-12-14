@@ -6,6 +6,7 @@ use rocket_contrib::json::JsonValue;
 use super::ResponseCommand;
 use crate::account::Account;
 use crate::database_models::{UserRowModel, TournamentRowModel};
+use crate::errors::ErrorType;
 use crate::meta_generator::{
     MetaGenerator,
     TournamentPreviewMetaGenerator,
@@ -19,7 +20,7 @@ pub struct GetTournamentCommand {
 }
 
 impl ResponseCommand for GetTournamentCommand {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let tournament_model = TournamentRowModel::get(&self.id, connection)?;
         let creator_username = &tournament_model.creator;
         let creator = UserRowModel::get(creator_username, connection)?;
@@ -29,15 +30,24 @@ impl ResponseCommand for GetTournamentCommand {
         );
         Ok(json!(meta_generator.generate_meta()))
     }
+
+    fn get_request_name(&self) -> String {
+        String::from("UpdateUser")
+    }
 }
 
 pub struct GetAllTournamentsCommand {}
 
 impl ResponseCommand for GetAllTournamentsCommand {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let tournament_models = TournamentRowModel::get_all(connection)?;
         let tournament_meta_list = generate_tournaments_meta(tournament_models);
         Ok(json!({"tournaments": tournament_meta_list}))
+    }
+
+
+    fn get_request_name(&self) -> String {
+        String::from("UpdateUser")
     }
 }
 
@@ -46,7 +56,7 @@ pub struct GetUserTournamentsCommand<'a> {
 }
 
 impl ResponseCommand for GetUserTournamentsCommand<'_> {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let username = account.get_username();
         let tournament_models = TournamentRowModel::get_all_created_by(
@@ -55,6 +65,10 @@ impl ResponseCommand for GetUserTournamentsCommand<'_> {
 
         let tournament_meta_list = generate_tournaments_meta(tournament_models);
         Ok(json!({"tournaments": tournament_meta_list}))
+    }
+
+    fn get_request_name(&self) -> String {
+        String::from("UpdateUser")
     }
 }
 
@@ -80,13 +94,11 @@ pub struct CreateTournamentCommand<'a> {
 }
 
 impl ResponseCommand for CreateTournamentCommand<'_> {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
 
         if !account.has_admin_access() {
-            return Err(String::from(
-                "You are not authorized to create a tournament."
-            ));
+            return Err(ErrorType::PermissionDenied);
         }
 
         let tournament_type = TournamentType::from_string(
@@ -105,6 +117,10 @@ impl ResponseCommand for CreateTournamentCommand<'_> {
             connection,
         )?;
         Ok(json!({"message": "Tournament created."}))
+    }
+
+    fn get_request_name(&self) -> String {
+        String::from("UpdateUser")
     }
 }
 
@@ -125,22 +141,24 @@ impl UpdateTournamentCommand<'_> {
 }
 
 impl ResponseCommand for UpdateTournamentCommand<'_> {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let mut tournament_model = TournamentRowModel::get(
             &self.id, connection,
         )?;
 
         if !self.is_able_to_update_tournament(&tournament_model, &account) {
-            return Err(
-                String::from("You are not authorized to edit this tournament.")
-            );
+            return Err(ErrorType::PermissionDenied);
         }
 
         tournament_model.name = self.updated_name.clone();
         tournament_model.country = self.updated_country.clone();
         tournament_model.update(connection)?;
         Ok(json!({"message": "Tournament updated."}))
+    }
+
+    fn get_request_name(&self) -> String {
+        String::from("UpdateUser")
     }
 }
 
@@ -159,17 +177,19 @@ impl DeleteTournamentCommand<'_> {
 }
 
 impl ResponseCommand for DeleteTournamentCommand<'_> {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let tournament_model = TournamentRowModel::get(&self.id, connection)?;
 
         if !self.is_able_to_delete_tournament(&tournament_model, &account) {
-            return Err(
-                String::from("You are not authorized to delete this tournament.")
-            );
+            return Err(ErrorType::PermissionDenied);
         }
 
         tournament_model.delete(connection)?;
         Ok(json!({"message": "Tournament deleted."}))
+    }
+
+    fn get_request_name(&self) -> String {
+        String::from("UpdateUser")
     }
 }

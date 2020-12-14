@@ -1,9 +1,10 @@
 use rocket::http::Cookies;
 use diesel::prelude::*;
 
-use super::database_models::UserRowModel;
-use super::properties::UserRole;
-use super::utils::{JWTMediator, verify};
+use crate::database_models::UserRowModel;
+use crate::errors::ErrorType;
+use crate::properties::UserRole;
+use crate::utils::{JWTMediator, verify};
 
 pub struct Account {
     pub user: UserRowModel
@@ -30,59 +31,47 @@ impl Account {
         self.user.username.clone()
     }
 
-    pub fn generate_jwt(&self) -> Result<String, String> {
+    pub fn generate_jwt(&self) -> Result<String, ErrorType> {
         JWTMediator::generate_jwt_from_username(&self.user.username)
     }
 }
 
 impl Account {
-    pub fn login_from_cookies(cookies: &Cookies, connection: &PgConnection) -> Result<Account, String> {
+    pub fn login_from_cookies(cookies: &Cookies, connection: &PgConnection) -> Result<Account, ErrorType> {
         let cookies_jwt = cookies.get("jwt").map(|c| c.value()).unwrap_or("");
         let jwt = String::from(cookies_jwt);
         Account::login_from_jwt(&jwt, connection)
     }
 
-    pub fn login_from_jwt(jwt: &String, connection: &PgConnection) -> Result<Account, String> {
-        let username = match JWTMediator::get_username_from_jwt(jwt) {
-            Ok(username) => username,
-            Err(_) => return Err(String::from("Login expired."))
-        };
+    pub fn login_from_jwt(jwt: &String, connection: &PgConnection) -> Result<Account, ErrorType> {
+        let username = JWTMediator::get_username_from_jwt(jwt)?;
 
-        let user = match UserRowModel::get(&username, connection) {
-            Ok(user) => user,
-            Err(_) => return Err(String::from("Requester user not found."))
-        };
+        let user = UserRowModel::get(&username, connection)?;
         Account::get_account_from_user(user)
     }
 
     pub fn login_from_password(
         username: &String, password: &String, connection: &PgConnection,
-    ) -> Result<Account, String> {
-        let user = match UserRowModel::get(&username, connection) {
-            Ok(user) => user,
-            Err(_) => return Err(String::from("Username not found."))
-        };
+    ) -> Result<Account, ErrorType> {
+        let user = UserRowModel::get(&username, connection)?;
 
         let is_password_correct = verify(password, &user.hashed_password);
         if !is_password_correct {
-            return Err(String::from("Incorrect password."));
+            return Err(ErrorType::AuthenticationFailed);
         }
         Account::get_account_from_user(user)
     }
 
-    pub fn get(username: &String, connection: &PgConnection) -> Result<Account, String> {
-        let user = match UserRowModel::get(&username, connection) {
-            Ok(user) => user,
-            Err(_) => return Err(String::from("Username not found."))
-        };
+    pub fn get(username: &String, connection: &PgConnection) -> Result<Account, ErrorType> {
+        let user = UserRowModel::get(&username, connection)?;
         Account::get_account_from_user(user)
     }
 
-    fn get_account_from_user(user: UserRowModel) -> Result<Account, String> {
+    fn get_account_from_user(user: UserRowModel) -> Result<Account, ErrorType> {
         match user.get_role() {
             UserRole::Superuser => Ok(Account { user }),
             UserRole::Admin => Ok(Account { user }),
-            _ => Err(String::from("Something is wrong, please contact admin."))
+            _ => Err(ErrorType::AuthenticationFailed),
         }
     }
 }

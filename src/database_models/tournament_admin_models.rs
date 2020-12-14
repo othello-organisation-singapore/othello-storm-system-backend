@@ -1,6 +1,7 @@
 use diesel::prelude::*;
 
 use crate::account::Account;
+use crate::errors::ErrorType;
 use crate::properties::UserRole;
 use crate::schema::{tournaments_admin, users, tournaments};
 use super::{UserRowModel, TournamentRowModel};
@@ -23,29 +24,11 @@ struct NewTournamentAdminRowModel<'a> {
     pub admin_username: &'a String,
 }
 
-fn get_all_admin_usernames_of(
-    tournament_id: &i32, connection: &PgConnection,
-) -> Result<Vec<String>, String> {
-    let admin_usernames_query_result = tournaments_admin::table
-        .filter(tournaments_admin::tournament_id.eq(tournament_id))
-        .select(tournaments_admin::admin_username)
-        .distinct()
-        .load::<String>(connection);
-
-    match admin_usernames_query_result {
-        Ok(usernames) => Ok(usernames),
-        Err(e) => {
-            error!("{}", e);
-            Err(String::from("Cannot get all admin usernames of the tournament."))
-        }
-    }
-}
-
 
 impl UserRowModel {
     pub fn get_all_admins_of(
         tournament_id: &i32, connection: &PgConnection,
-    ) -> Result<Vec<UserRowModel>, String> {
+    ) -> Result<Vec<UserRowModel>, ErrorType> {
         let admin_usernames = get_all_admin_usernames_of(tournament_id, connection)?;
         let users_query_result = users::table
             .filter(users::role.eq_any(vec![
@@ -59,14 +42,14 @@ impl UserRowModel {
             Ok(admins) => Ok(admins),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get all admins of the tournament."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
     pub fn get_all_potential_admins_of(
         tournament_id: &i32, connection: &PgConnection,
-    ) -> Result<Vec<UserRowModel>, String> {
+    ) -> Result<Vec<UserRowModel>, ErrorType> {
         let admin_usernames = get_all_admin_usernames_of(tournament_id, connection)?;
         let users_query_result = users::table
             .filter(users::role.eq_any(vec![
@@ -80,7 +63,7 @@ impl UserRowModel {
             Ok(potential_admins) => Ok(potential_admins),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get all potential admins of the tournament."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
@@ -89,7 +72,7 @@ impl UserRowModel {
 impl TournamentRowModel {
     pub fn get_all_managed_by(
         username: &String, connection: &PgConnection,
-    ) -> Result<Vec<TournamentRowModel>, String> {
+    ) -> Result<Vec<TournamentRowModel>, ErrorType> {
         let tournament_ids_query_result = tournaments_admin::table
             .filter(tournaments_admin::admin_username.eq(username))
             .select(tournaments_admin::tournament_id)
@@ -100,7 +83,7 @@ impl TournamentRowModel {
             Ok(ids) => Ok(ids),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get all tournament ids of the admin."))
+                Err(ErrorType::DatabaseError)
             }
         }?;
 
@@ -112,19 +95,21 @@ impl TournamentRowModel {
             Ok(tournaments) => Ok(tournaments),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get all tournaments of the admin."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn add_admin(&self, username: &String, connection: &PgConnection) -> Result<(), String> {
+    pub fn add_admin(&self, username: &String, connection: &PgConnection) -> Result<(), ErrorType> {
         let added_admin_account = Account::get(username, connection)?;
         if !added_admin_account.has_admin_access() {
-            return Err(String::from("The user added does not have admin role or higher."));
+            return Err(ErrorType::PermissionDenied);
         }
 
         if self.is_managed_by(username, connection)? {
-            return Err(String::from("The user is already the admin of this tournament."));
+            return Err(ErrorType::BadRequestError(
+                String::from("The user is already the admin of this tournament.")
+            ));
         }
 
         let new_tournament_admin = NewTournamentAdminRowModel {
@@ -141,14 +126,18 @@ impl TournamentRowModel {
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot add new admin to the tournament."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn remove_admin(&self, username: &String, connection: &PgConnection) -> Result<(), String> {
+    pub fn remove_admin(
+        &self, username: &String, connection: &PgConnection,
+    ) -> Result<(), ErrorType> {
         if !self.is_managed_by(username, connection)? {
-            return Err(String::from("The user is not the admin of this tournament."));
+            return Err(ErrorType::BadRequestError(
+                String::from("The user is not the admin of this tournament.")
+            ));
         }
 
         let result = diesel::delete(
@@ -165,14 +154,14 @@ impl TournamentRowModel {
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot delete admin from the tournament."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
     pub fn is_managed_by(
         &self, username: &String, connection: &PgConnection,
-    ) -> Result<bool, String> {
+    ) -> Result<bool, ErrorType> {
         let result = select(
             exists(
                 tournaments_admin::table
@@ -185,11 +174,31 @@ impl TournamentRowModel {
             Ok(exist) => Ok(exist),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot check whether the tournament is managed by the admin."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 }
+
+
+fn get_all_admin_usernames_of(
+    tournament_id: &i32, connection: &PgConnection,
+) -> Result<Vec<String>, ErrorType> {
+    let admin_usernames_query_result = tournaments_admin::table
+        .filter(tournaments_admin::tournament_id.eq(tournament_id))
+        .select(tournaments_admin::admin_username)
+        .distinct()
+        .load::<String>(connection);
+
+    match admin_usernames_query_result {
+        Ok(usernames) => Ok(usernames),
+        Err(e) => {
+            error!("{}", e);
+            Err(ErrorType::DatabaseError)
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
