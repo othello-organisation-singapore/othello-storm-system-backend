@@ -2,13 +2,14 @@ use diesel::PgConnection;
 use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 
-use super::ResponseCommand;
 use crate::account::Account;
 use crate::database_models::UserRowModel;
 use crate::errors::ErrorType;
 use crate::meta_generator::{MetaGenerator, UserMetaGenerator};
-use crate::utils::hash;
 use crate::properties::UserRole;
+use crate::utils::hash;
+
+use super::ResponseCommand;
 
 pub struct GetUserCommand {
     pub username: String,
@@ -22,8 +23,8 @@ impl ResponseCommand for GetUserCommand {
         Ok(json!(meta_generator.generate_meta()))
     }
 
-    fn get_request_name(&self) -> String {
-        String::from("GetUser")
+    fn get_request_summary(&self) -> String {
+        String::from(format!("GetUser for {}", &self.username))
     }
 }
 
@@ -52,8 +53,8 @@ impl ResponseCommand for CreateUserCommand<'_> {
         Ok(json!({"message": "User created."}))
     }
 
-    fn get_request_name(&self) -> String {
-        String::from("CreateUser")
+    fn get_request_summary(&self) -> String {
+        String::from(format!("CreateUser for {}", &self.username))
     }
 }
 
@@ -90,7 +91,7 @@ impl ResponseCommand for UpdateUserCommand<'_> {
     }
 
 
-    fn get_request_name(&self) -> String {
-        String::from("UpdateUser")
+    fn get_request_summary(&self) -> String {
+        String::from(format!("UpdateUser for {}", &self.username))
     }
 }

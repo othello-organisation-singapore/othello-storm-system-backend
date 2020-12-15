@@ -1,19 +1,20 @@
 use diesel::PgConnection;
-use serde_json::{Map, Value};
 use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
+use serde_json::Map;
 
-use super::ResponseCommand;
 use crate::account::Account;
-use crate::database_models::{UserRowModel, TournamentRowModel};
+use crate::database_models::{TournamentRowModel, UserRowModel};
 use crate::errors::ErrorType;
+use crate::joueurs::{Joueurs, JoueursParser};
 use crate::meta_generator::{
     MetaGenerator,
-    TournamentPreviewMetaGenerator,
     TournamentDetailsMetaGenerator,
 };
 use crate::properties::TournamentType;
-use crate::joueurs::{Joueurs, JoueursParser};
+
+use super::generate_tournaments_meta;
+use super::ResponseCommand;
 
 pub struct GetTournamentCommand {
     pub id: i32,
@@ -31,8 +32,8 @@ impl ResponseCommand for GetTournamentCommand {
         Ok(json!(meta_generator.generate_meta()))
     }
 
-    fn get_request_name(&self) -> String {
-        String::from("UpdateUser")
+    fn get_request_summary(&self) -> String {
+        String::from(format!("GetTournament for {}", &self.id))
     }
 }
 
@@ -46,16 +47,16 @@ impl ResponseCommand for GetAllTournamentsCommand {
     }
 
 
-    fn get_request_name(&self) -> String {
-        String::from("UpdateUser")
+    fn get_request_summary(&self) -> String {
+        String::from("GetAllTournaments")
     }
 }
 
-pub struct GetUserTournamentsCommand<'a> {
+pub struct GetAllCreatedTournamentsCommand<'a> {
     pub cookies: Cookies<'a>,
 }
 
-impl ResponseCommand for GetUserTournamentsCommand<'_> {
+impl ResponseCommand for GetAllCreatedTournamentsCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let username = account.get_username();
@@ -67,23 +68,9 @@ impl ResponseCommand for GetUserTournamentsCommand<'_> {
         Ok(json!({"tournaments": tournament_meta_list}))
     }
 
-    fn get_request_name(&self) -> String {
-        String::from("UpdateUser")
+    fn get_request_summary(&self) -> String {
+        String::from("GetCreatedTournaments")
     }
-}
-
-fn generate_tournaments_meta(
-    tournament_models: Vec<TournamentRowModel>
-) -> Vec<Map<String, Value>> {
-    tournament_models
-        .into_iter()
-        .map(|tournament| {
-            let meta_generator = TournamentPreviewMetaGenerator::from_tournament(
-                tournament
-            );
-            meta_generator.generate_meta()
-        })
-        .collect()
 }
 
 pub struct CreateTournamentCommand<'a> {
@@ -119,8 +106,8 @@ impl ResponseCommand for CreateTournamentCommand<'_> {
         Ok(json!({"message": "Tournament created."}))
     }
 
-    fn get_request_name(&self) -> String {
-        String::from("UpdateUser")
+    fn get_request_summary(&self) -> String {
+        String::from(format!("CreateTournament for {}", &self.name))
     }
 }
 
@@ -157,8 +144,8 @@ impl ResponseCommand for UpdateTournamentCommand<'_> {
         Ok(json!({"message": "Tournament updated."}))
     }
 
-    fn get_request_name(&self) -> String {
-        String::from("UpdateUser")
+    fn get_request_summary(&self) -> String {
+        String::from(format!("UpdateTournament for {}", &self.id))
     }
 }
 
@@ -189,7 +176,7 @@ impl ResponseCommand for DeleteTournamentCommand<'_> {
         Ok(json!({"message": "Tournament deleted."}))
     }
 
-    fn get_request_name(&self) -> String {
-        String::from("UpdateUser")
+    fn get_request_summary(&self) -> String {
+        String::from(format!("DeleteTournament for {}", &self.id))
     }
 }

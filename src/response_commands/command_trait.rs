@@ -7,7 +7,7 @@ pub trait ResponseCommand {
     fn execute(&self, connection: &PgConnection) -> Json<JsonValue> {
         match self.do_execute(connection) {
             Ok(result) => {
-                info!("Successful request for {}", self.get_request_name());
+                info!("Successful request for {}", self.get_request_summary());
                 Json(json!({
                     "success": result,
                     "error": {
@@ -17,7 +17,7 @@ pub trait ResponseCommand {
                 }))
             }
             Err(error) => {
-                error!("Failed request for {}, {}", self.get_request_name(), &error.to_error_message());
+                error!("Failed request for {}, {}", self.get_request_summary(), &error.to_error_message());
                 Json(json!({
                     "success": "",
                     "error": {
@@ -31,5 +31,5 @@ pub trait ResponseCommand {
 
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType>;
 
-    fn get_request_name(&self) -> String;
+    fn get_request_summary(&self) -> String;
 }

@@ -56,11 +56,16 @@ fn main() {
         ])
         .mount("/api/tournaments", routes![
             routes::tournament_routes::get_tournaments,
-            routes::tournament_routes::get_user_tournaments,
+            routes::tournament_routes::get_all_created_tournaments,
+            routes::tournament_routes::get_all_managed_tournaments,
             routes::tournament_routes::get_tournament,
             routes::tournament_routes::create_tournament,
             routes::tournament_routes::update_tournament,
             routes::tournament_routes::delete_tournament,
+            routes::tournament_routes::get_tournament_admins,
+            routes::tournament_routes::get_tournament_potential_admins,
+            routes::tournament_routes::add_admin,
+            routes::tournament_routes::remove_admin,
         ])
         .mount("/api/", routes![
             routes::general_routes::login,

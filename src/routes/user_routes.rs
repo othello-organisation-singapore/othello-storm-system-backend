@@ -1,5 +1,5 @@
 use rocket::http::Cookies;
-use rocket_contrib::json::{JsonValue, Json};
+use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 
 use crate::response_commands;
@@ -37,8 +37,9 @@ pub struct UserUpdateRequest {
 }
 
 #[patch("/<username>", data = "<request>")]
-pub fn update_user(cookies: Cookies, username: String, request: Json<UserUpdateRequest>)
-                   -> Json<JsonValue> {
+pub fn update_user(
+    cookies: Cookies, username: String, request: Json<UserUpdateRequest>,
+) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::UpdateUserCommand {
         cookies,
