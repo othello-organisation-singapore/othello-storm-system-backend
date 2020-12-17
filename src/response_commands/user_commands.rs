@@ -2,23 +2,29 @@ use diesel::PgConnection;
 use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 
-use super::ResponseCommand;
 use crate::account::Account;
 use crate::database_models::UserRowModel;
+use crate::errors::ErrorType;
 use crate::meta_generator::{MetaGenerator, UserMetaGenerator};
-use crate::utils::hash;
 use crate::properties::UserRole;
+use crate::utils::hash;
+
+use super::ResponseCommand;
 
 pub struct GetUserCommand {
     pub username: String,
 }
 
 impl ResponseCommand for GetUserCommand {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let meta_generator = UserMetaGenerator::from_username(
             &self.username, connection,
         )?;
         Ok(json!(meta_generator.generate_meta()))
+    }
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!("GetUser for {}", &self.username))
     }
 }
 
@@ -30,13 +36,11 @@ pub struct CreateUserCommand<'a> {
 }
 
 impl ResponseCommand for CreateUserCommand<'_> {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, &connection)?;
 
         if !account.has_superuser_access() {
-            return Err(String::from(
-                "You are not authorized to create an admin account."
-            ));
+            return Err(ErrorType::PermissionDenied);
         }
         let hashed_password = hash(&self.password);
         UserRowModel::create(
@@ -47,6 +51,10 @@ impl ResponseCommand for CreateUserCommand<'_> {
             connection,
         )?;
         Ok(json!({"message": "User created."}))
+    }
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!("CreateUser for {}", &self.username))
     }
 }
 
@@ -64,13 +72,11 @@ impl UpdateUserCommand<'_> {
 }
 
 impl ResponseCommand for UpdateUserCommand<'_> {
-    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, String> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, &connection)?;
 
         if !(self.is_able_to_update_user(&self.username, &account)) {
-            return Err(
-                String::from("You are not authorized to change other people profile.")
-            );
+            return Err(ErrorType::PermissionDenied);
         }
         let mut user_model = account.user;
 
@@ -82,5 +88,10 @@ impl ResponseCommand for UpdateUserCommand<'_> {
         }
         user_model.update(connection)?;
         Ok(json!({"message": "User updated."}))
+    }
+
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!("UpdateUser for {}", &self.username))
     }
 }

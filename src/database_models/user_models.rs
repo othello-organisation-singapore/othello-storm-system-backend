@@ -1,7 +1,9 @@
 use diesel::prelude::*;
 
+use crate::errors::ErrorType;
 use crate::schema::users;
 use crate::properties::UserRole;
+use crate::errors::ErrorType::BadRequestError;
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable, Identifiable)]
 #[table_name = "users"]
@@ -26,9 +28,9 @@ impl UserRowModel {
     pub fn create(
         username: &String, display_name: &String, hashed_password: &String, role: UserRole,
         connection: &PgConnection,
-    ) -> Result<(), String> {
+    ) -> Result<UserRowModel, ErrorType> {
         if UserRowModel::is_username_exists(&username, connection) {
-            return Err(String::from("Username exists."));
+            return Err(BadRequestError(String::from("Username exists.")));
         }
         let new_user = NewUserRowModel {
             username,
@@ -46,27 +48,29 @@ impl UserRowModel {
         false
     }
 
-    fn insert_to_database(new_user: NewUserRowModel, connection: &PgConnection) -> Result<(), String> {
+    fn insert_to_database(
+        new_user: NewUserRowModel, connection: &PgConnection,
+    ) -> Result<UserRowModel, ErrorType> {
         let username = new_user.username.clone();
         let display_name = new_user.display_name.clone();
         let role = new_user.role.clone();
 
         let result = diesel::insert_into(users::table)
             .values(new_user)
-            .execute(connection);
+            .get_result::<UserRowModel>(connection);
         match result {
-            Ok(_) => {
+            Ok(user) => {
                 info!("User {} ({}) is created as {}.", username, display_name, role);
-                Ok(())
+                Ok(user)
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot create new user."))
-            },
+                Err(ErrorType::DatabaseError)
+            }
         }
     }
 
-    pub fn get(username: &String, connection: &PgConnection) -> Result<UserRowModel, String> {
+    pub fn get(username: &String, connection: &PgConnection) -> Result<UserRowModel, ErrorType> {
         let result = users::table
             .find(username)
             .first(connection);
@@ -75,7 +79,7 @@ impl UserRowModel {
             Ok(user) => Ok(user),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get the user."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
@@ -84,19 +88,19 @@ impl UserRowModel {
         UserRole::from_string(self.role.clone())
     }
 
-    pub fn update(&self, connection: &PgConnection) -> Result<(), String> {
+    pub fn update(&self, connection: &PgConnection) -> Result<UserRowModel, ErrorType> {
         let result = diesel::update(self)
             .set(self)
-            .execute(connection);
+            .get_result::<UserRowModel>(connection);
         match result {
-            Ok(_) => {
+            Ok(user) => {
                 info!("User {} ({}) is updated.", &self.username, &self.display_name);
-                Ok(())
-            },
+                Ok(user)
+            }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("User failed to update"))
-            },
+                Err(ErrorType::DatabaseError)
+            }
         }
     }
 }
@@ -118,7 +122,11 @@ mod tests {
             let hashed_password = utils::hash(&password);
 
             let result = UserRowModel::create(
-                &username, &display_name, &hashed_password, UserRole::Superuser, &test_connection,
+                &username,
+                &display_name,
+                &hashed_password,
+                UserRole::Superuser,
+                &test_connection,
             );
             assert_eq!(result.is_ok(), true);
         }
@@ -135,9 +143,19 @@ mod tests {
             let second_password = utils::generate_random_string(30);
             let second_hashed_password = utils::hash(&second_password);
 
-            let _ = UserRowModel::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
+            let _ = UserRowModel::create(
+                &username,
+                &display_name,
+                &hashed_password,
+                UserRole::Superuser,
+                &test_connection,
+            );
             let result = UserRowModel::create(
-                &username, &second_display_name, &second_hashed_password, UserRole::Admin, &test_connection,
+                &username,
+                &second_display_name,
+                &second_hashed_password,
+                UserRole::Admin,
+                &test_connection,
             );
             assert_eq!(result.is_err(), true);
         }
@@ -156,7 +174,13 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let _ = UserRowModel::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
+            let _ = UserRowModel::create(
+                &username,
+                &display_name,
+                &hashed_password,
+                UserRole::Superuser,
+                &test_connection
+            );
 
             let user = UserRowModel::get(&username, &test_connection).unwrap();
             assert_eq!(user.username, username);
@@ -187,15 +211,17 @@ mod tests {
             let password = utils::generate_random_string(30);
             let hashed_password = utils::hash(&password);
 
-            let _ = UserRowModel::create(&username, &display_name, &hashed_password, UserRole::Superuser, &test_connection);
-
-            let mut user = UserRowModel::get(&username, &test_connection).unwrap();
+            let mut user = UserRowModel::create(
+                &username,
+                &display_name,
+                &hashed_password,
+                UserRole::Superuser,
+                &test_connection,
+            ).unwrap();
 
             let updated_display_name = utils::generate_random_string(20);
             user.display_name = updated_display_name.clone();
-            let _ = user.update(&test_connection);
-
-            let updated_user = UserRowModel::get(&username, &test_connection).unwrap();
+            let updated_user = user.update(&test_connection).unwrap();
             assert_ne!(updated_user.display_name, display_name);
             assert_eq!(updated_user.display_name, updated_display_name);
             assert_eq!(updated_user.username, username);

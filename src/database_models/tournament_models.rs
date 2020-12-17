@@ -1,6 +1,7 @@
 use serde_json::{Value, Map};
 use diesel::prelude::*;
 
+use crate::errors::ErrorType;
 use crate::schema::tournaments;
 use crate::properties::TournamentType;
 use crate::tournament_manager::Player;
@@ -35,9 +36,14 @@ struct NewTournamentRowModel<'a> {
 
 impl TournamentRowModel {
     pub fn create(
-        name: &String, country: &String, creator_username: &String, joueurs: Vec<Player>,
-        tournament_type: TournamentType, meta_data: Map<String, Value>, connection: &PgConnection,
-    ) -> Result<(), String> {
+        name: &String,
+        country: &String,
+        creator_username: &String,
+        joueurs: Vec<Player>,
+        tournament_type: TournamentType,
+        meta_data: Map<String, Value>,
+        connection: &PgConnection,
+    ) -> Result<TournamentRowModel, ErrorType> {
         let joueurs_to_store = Value::Array(
             joueurs
                 .iter()
@@ -58,24 +64,24 @@ impl TournamentRowModel {
 
     fn insert_to_database(
         new_tournament: NewTournamentRowModel, connection: &PgConnection,
-    ) -> Result<(), String> {
+    ) -> Result<TournamentRowModel, ErrorType> {
         let tournament_name = new_tournament.name.clone();
         let result = diesel::insert_into(tournaments::table)
             .values(new_tournament)
-            .execute(connection);
+            .get_result(connection);
         match result {
-            Ok(_) => {
+            Ok(tournament) => {
                 info!("Tournament {} is created.", tournament_name);
-                Ok(())
+                Ok(tournament)
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot create new tournament."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn get(id: &i32, connection: &PgConnection) -> Result<TournamentRowModel, String> {
+    pub fn get(id: &i32, connection: &PgConnection) -> Result<TournamentRowModel, ErrorType> {
         let result = tournaments::table
             .find(id)
             .first(connection);
@@ -84,32 +90,33 @@ impl TournamentRowModel {
             Ok(tournament) => Ok(tournament),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot get the tournament."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn get_all(connection: &PgConnection) -> Result<Vec<TournamentRowModel>, String> {
+    pub fn get_all(connection: &PgConnection) -> Result<Vec<TournamentRowModel>, ErrorType> {
         let result = tournaments::table.load::<TournamentRowModel>(connection);
         match result {
             Ok(tournaments) => Ok(tournaments),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot obtain all tournaments."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
     pub fn get_all_created_by(
         username: &String, connection: &PgConnection,
-    ) -> Result<Vec<TournamentRowModel>, String> {
-        let user = UserRowModel::get(username, connection)?;
-        let result = TournamentRowModel::belonging_to(&user).load::<TournamentRowModel>(connection);
+    ) -> Result<Vec<TournamentRowModel>, ErrorType> {
+        let result = tournaments::table
+            .filter(tournaments::creator.eq(username))
+            .load::<TournamentRowModel>(connection);
         match result {
             Ok(tournaments) => Ok(tournaments),
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Cannot obtain tournaments from user."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
@@ -118,24 +125,24 @@ impl TournamentRowModel {
         &self.creator == username
     }
 
-    pub fn update(&self, connection: &PgConnection) -> Result<(), String> {
+    pub fn update(&self, connection: &PgConnection) -> Result<TournamentRowModel, ErrorType> {
         let result = diesel::update(self)
             .set(self)
-            .execute(connection);
+            .get_result(connection);
 
         match result {
-            Ok(_) => {
+            Ok(tournament) => {
                 info!("Tournament {} ({}) is updated.", &self.id, &self.name);
-                Ok(())
+                Ok(tournament)
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Tournament failed to update."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
 
-    pub fn delete(&self, connection: &PgConnection) -> Result<(), String> {
+    pub fn delete(&self, connection: &PgConnection) -> Result<(), ErrorType> {
         let result = diesel::delete(self)
             .execute(connection);
 
@@ -146,7 +153,7 @@ impl TournamentRowModel {
             }
             Err(e) => {
                 error!("{}", e);
-                Err(String::from("Tournament failed to delete."))
+                Err(ErrorType::DatabaseError)
             }
         }
     }
@@ -157,36 +164,17 @@ impl TournamentRowModel {
 mod tests {
     mod crud {
         use serde_json::Map;
-        use crate::database_models::{UserRowModel, TournamentRowModel};
-        use crate::properties::{UserRole, TournamentType};
+        use crate::database_models::TournamentRowModel;
+        use crate::properties::TournamentType;
         use crate::tournament_manager::Player;
         use crate::utils;
-        use diesel::PgConnection;
-
-        fn create_mock_user_with_username(
-            username: &String, connection: &PgConnection,
-        ) -> UserRowModel {
-            let display_name = utils::generate_random_string(20);
-            let password = utils::generate_random_string(30);
-            let hashed_password = utils::hash(&password);
-            let _ = UserRowModel::create(
-                username,
-                &display_name,
-                &hashed_password,
-                UserRole::Superuser,
-                connection,
-            );
-            UserRowModel::get(username, connection).unwrap()
-        }
+        use crate::utils::{create_mock_tournament_with_creator, create_mock_user};
 
         #[test]
         fn test_create_tournament() {
             let test_connection = utils::get_test_connection();
 
-            let creator_username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(
-                &creator_username, &test_connection,
-            );
+            let user = create_mock_user(&test_connection,);
 
             let name = utils::generate_random_string(20);
             let country = utils::generate_random_string(10);
@@ -196,30 +184,13 @@ mod tests {
             let result = TournamentRowModel::create(
                 &name,
                 &country,
-                &creator_username,
+                &user.username,
                 joueurs,
                 tournament_type,
                 Map::new(),
                 &test_connection,
             );
-            assert_eq!(result.is_ok(), true)
-        }
-
-        fn create_mock_tournament_with_creator(username: &String, connection: &PgConnection) {
-            let name = utils::generate_random_string(20);
-            let country = utils::generate_random_string(10);
-            let joueurs: Vec<Player> = Vec::new();
-            let tournament_type = TournamentType::RoundRobin;
-
-            let _ = TournamentRowModel::create(
-                &name,
-                &country,
-                &username,
-                joueurs,
-                tournament_type,
-                Map::new(),
-                connection,
-            );
+            assert_eq!(result.is_ok(), true);
         }
 
         #[test]
@@ -230,13 +201,15 @@ mod tests {
             ).unwrap();
             let initial_count = initial_tournaments.len();
 
-            let creator_username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(&creator_username, &test_connection);
+            let user = create_mock_user(&test_connection);
+            let creator_username = user.username.clone();
 
-            let second_creator_username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(&second_creator_username, &test_connection);
+            let second_user = create_mock_user(&test_connection);
+            let second_creator_username = second_user.username.clone();
 
-            let _ = create_mock_tournament_with_creator(&creator_username, &test_connection);
+            let tournament = create_mock_tournament_with_creator(
+                &creator_username, &test_connection
+            );
             let _ = create_mock_tournament_with_creator(&creator_username, &test_connection);
             let _ = create_mock_tournament_with_creator(&second_creator_username, &test_connection);
 
@@ -253,30 +226,22 @@ mod tests {
             assert_eq!(all_first_creator_tournaments_result.is_ok(), true);
             assert_eq!(all_first_creator_tournaments_result.unwrap().len(), 2);
 
-            // There is possibility database has a tournament before the test started
-            let first_created_tournament = all_tournaments
-                .get(initial_count)
-                .unwrap();
             let tournament_from_get = TournamentRowModel::get(
-                &first_created_tournament.id, &test_connection,
+                &tournament.id, &test_connection,
             ).unwrap();
-            assert_eq!(first_created_tournament.id, tournament_from_get.id);
-            assert_eq!(first_created_tournament.name, tournament_from_get.name);
-            assert_eq!(first_created_tournament.creator, tournament_from_get.creator);
-            assert_eq!(first_created_tournament.is_created_by(&creator_username), true);
+            assert_eq!(tournament.id, tournament_from_get.id);
+            assert_eq!(tournament.name, tournament_from_get.name);
+            assert_eq!(tournament.creator, tournament_from_get.creator);
+            assert_eq!(tournament.is_created_by(&creator_username), true);
         }
 
         #[test]
         fn test_update() {
             let test_connection = utils::get_test_connection();
-            let username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(&username, &test_connection);
-            let _ = create_mock_tournament_with_creator(&username, &test_connection);
-
-            let mut all_tournaments = TournamentRowModel::get_all(
-                &test_connection
-            ).unwrap();
-            let mut tournament = all_tournaments.first_mut().unwrap();
+            let user = create_mock_user(&test_connection);
+            let mut tournament = create_mock_tournament_with_creator(
+                &user.username, &test_connection
+            );
 
             let updated_name = String::from("new name");
             let updated_country = String::from("SGP");
@@ -299,14 +264,10 @@ mod tests {
             ).unwrap();
             let initial_count = initial_tournaments.len();
 
-            let username = utils::generate_random_string(20);
-            let _ = create_mock_user_with_username(&username, &test_connection);
-            let _ = create_mock_tournament_with_creator(&username, &test_connection);
-
-            let mut all_tournaments = TournamentRowModel::get_all(
-                &test_connection
-            ).unwrap();
-            let tournament = all_tournaments.first_mut().unwrap();
+            let user = create_mock_user(&test_connection);
+            let tournament = create_mock_tournament_with_creator(
+                &user.username, &test_connection
+            );
 
             let _ = tournament.delete(&test_connection);
             let updated_get_result = TournamentRowModel::get(
