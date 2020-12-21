@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 use crate::errors::ErrorType;
 
 pub struct Player {
-    pub joueurs_id: i32,
+    pub joueurs_id: String,
     pub first_name: String,
     pub last_name: String,
     pub country: String,
@@ -18,8 +18,7 @@ impl Player {
         let joueurs_id = player_data
             .get("joueurs_id")
             .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
-            .parse::<i32>()
-            .map_err(|_| ErrorType::UnknownError(String::from("Id is not integer")))?;
+            .to_string();
 
         let first_name = player_data
             .get("first_name")
@@ -47,7 +46,7 @@ impl Player {
 
     pub fn to_hashmap(&self) -> HashMap<String, String> {
         let mut player_data = HashMap::new();
-        player_data.insert(String::from("joueurs_id"), self.joueurs_id.to_string());
+        player_data.insert(String::from("joueurs_id"), self.joueurs_id.clone());
         player_data.insert(String::from("first_name"), self.first_name.clone());
         player_data.insert(String::from("last_name"), self.last_name.clone());
         player_data.insert(String::from("country"), self.country.clone());
@@ -63,8 +62,7 @@ impl Player {
             .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
             .as_str()
             .ok_or(ErrorType::UnknownError(String::from("Player data format is wrong.")))?
-            .parse::<i32>()
-            .map_err(|_| ErrorType::UnknownError(String::from("Id is not integer")))?;
+            .to_string();
 
         let first_name = player_data
             .get("first_name")
@@ -101,7 +99,7 @@ impl Player {
     pub fn to_serdemap(&self) -> Map<String, Value> {
         let mut player_data = Map::new();
         player_data.insert(
-            String::from("joueurs_id"), Value::from(self.joueurs_id.to_string())
+            String::from("joueurs_id"), Value::from(self.joueurs_id.clone())
         );
         player_data.insert(
             String::from("first_name"), Value::from(self.first_name.clone())
@@ -138,7 +136,7 @@ mod tests {
             assert_eq!(player_result.is_ok(), true);
 
             let player = player_result.unwrap();
-            assert_eq!(player.joueurs_id, 132);
+            assert_eq!(player.joueurs_id, String::from("132"));
             assert_eq!(player.first_name, String::from("first_name_1"));
             assert_eq!(player.last_name, String::from("last_name_1"));
             assert_eq!(player.country, String::from("SGP"));
@@ -159,10 +157,10 @@ mod tests {
         #[test]
         fn test_from_hashmap_incomplete_i32_field() {
             let mut data = HashMap::new();
+            data.insert(String::from("joueurs_id"), String::from("1815"));
             data.insert(String::from("first_name"), String::from("first_name_1"));
             data.insert(String::from("last_name"), String::from("last_name_1"));
             data.insert(String::from("country"), String::from("SGP"));
-            data.insert(String::from("rating"), String::from("1815"));
             let player_result = Player::from_hashmap(data);
             assert_eq!(player_result.is_err(), true);
         }
@@ -174,7 +172,7 @@ mod tests {
             data.insert(String::from("first_name"), String::from("first_name_1"));
             data.insert(String::from("last_name"), String::from("last_name_1"));
             data.insert(String::from("country"), String::from("SGP"));
-            data.insert(String::from("rating"), String::from("1815"));
+            data.insert(String::from("rating"), String::from("a1815"));
             let player_result = Player::from_hashmap(data);
             assert_eq!(player_result.is_err(), true);
         }
@@ -182,7 +180,7 @@ mod tests {
         #[test]
         fn test_to_hashmap() {
             let player = Player {
-                joueurs_id: 145,
+                joueurs_id: String::from("145"),
                 first_name: String::from("first_name_1"),
                 last_name: String::from("last_name_1"),
                 country: String::from("country_SGP"),
@@ -213,7 +211,7 @@ mod tests {
             assert_eq!(player_result.is_ok(), true);
 
             let player = player_result.unwrap();
-            assert_eq!(player.joueurs_id, 132);
+            assert_eq!(player.joueurs_id, String::from("132"));
             assert_eq!(player.first_name, String::from("first_name_1"));
             assert_eq!(player.last_name, String::from("last_name_1"));
             assert_eq!(player.country, String::from("SGP"));
@@ -234,10 +232,10 @@ mod tests {
         #[test]
         fn test_from_serdemap_incomplete_i32_field() {
             let mut data = Map::new();
+            data.insert(String::from("joueurs_id"), Value::from("1815"));
             data.insert(String::from("first_name"), Value::from("first_name_1"));
             data.insert(String::from("last_name"), Value::from("last_name_1"));
             data.insert(String::from("country"), Value::from("SGP"));
-            data.insert(String::from("rating"), Value::from("1815"));
             let player_result = Player::from_serdemap(data);
             assert_eq!(player_result.is_err(), true);
         }
@@ -249,7 +247,7 @@ mod tests {
             data.insert(String::from("first_name"), Value::from("first_name_1"));
             data.insert(String::from("last_name"), Value::from("last_name_1"));
             data.insert(String::from("country"), Value::from("SGP"));
-            data.insert(String::from("rating"), Value::from("1815"));
+            data.insert(String::from("rating"), Value::from("a1815"));
             let player_result = Player::from_serdemap(data);
             assert_eq!(player_result.is_err(), true);
         }
@@ -257,7 +255,7 @@ mod tests {
         #[test]
         fn test_to_serdemap() {
             let player = Player {
-                joueurs_id: 145,
+                joueurs_id: String::from("145"),
                 first_name: String::from("first_name_1"),
                 last_name: String::from("last_name_1"),
                 country: String::from("country_SGP"),

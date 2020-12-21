@@ -1,9 +1,10 @@
+use diesel::PgConnection;
 use serde_json::Map;
-use crate::database_models::{UserRowModel, TournamentRowModel};
-use crate::properties::{UserRole, TournamentType};
+
+use crate::database_models::{TournamentRowModel, UserRowModel};
+use crate::properties::{TournamentType, UserRole};
 use crate::tournament_manager::Player;
 use crate::utils;
-use diesel::PgConnection;
 
 pub fn create_mock_user(connection: &PgConnection) -> UserRowModel {
     let username = utils::generate_random_string(10);
@@ -31,6 +32,26 @@ pub fn create_mock_tournament_with_creator(
         &name,
         &country,
         &username,
+        joueurs,
+        tournament_type,
+        Map::new(),
+        connection,
+    ).unwrap()
+}
+
+pub fn create_mock_tournament_with_creator_and_joueurs(
+    creator_username: &String,
+    joueurs: Vec<Player>,
+    connection: &PgConnection,
+) -> TournamentRowModel {
+    let name = utils::generate_random_string(20);
+    let country = utils::generate_random_string(10);
+    let tournament_type = TournamentType::RoundRobin;
+
+    TournamentRowModel::create(
+        &name,
+        &country,
+        &creator_username,
         joueurs,
         tournament_type,
         Map::new(),

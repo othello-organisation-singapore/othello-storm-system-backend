@@ -1,11 +1,12 @@
+use diesel::dsl::{exists, select};
 use diesel::prelude::*;
 
 use crate::account::Account;
 use crate::errors::ErrorType;
 use crate::properties::UserRole;
-use crate::schema::{tournaments_admin, users, tournaments};
-use super::{UserRowModel, TournamentRowModel};
-use diesel::dsl::{exists, select};
+use crate::schema::{tournaments, tournaments_admin, users};
+
+use super::{TournamentRowModel, UserRowModel};
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable, Associations, Identifiable)]
 #[belongs_to(UserRowModel, foreign_key = "admin_username")]
@@ -262,9 +263,8 @@ mod tests {
     }
 
     mod test_getters {
+        use crate::database_models::{TournamentRowModel, UserRowModel};
         use crate::utils;
-        use crate::database_models::{UserRowModel, TournamentRowModel};
-
 
         #[test]
         fn test_get_all_admins() {

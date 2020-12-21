@@ -1,6 +1,8 @@
+pub use player_models::PlayerRowModel;
+pub use tournament_models::TournamentRowModel;
+pub use user_models::UserRowModel;
+
 mod user_models;
 mod tournament_models;
 mod tournament_admin_models;
-
-pub use user_models::UserRowModel;
-pub use tournament_models::TournamentRowModel;
+mod player_models;
