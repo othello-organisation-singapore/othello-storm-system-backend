@@ -92,6 +92,25 @@ impl PlayerRowModel {
         }
     }
 
+    pub fn get_from_joueurs_id(
+        joueurs_id: &String,
+        tournament_id: &i32,
+        connection: &PgConnection,
+    ) -> Result<PlayerRowModel, ErrorType> {
+        let result = players::table
+            .filter(players::tournament_id.eq(tournament_id))
+            .filter(players::joueurs_id.eq(joueurs_id))
+            .first(connection);
+
+        match result {
+            Ok(player) => Ok(player),
+            Err(e) => {
+                error!("{}", e);
+                Err(ErrorType::DatabaseError)
+            }
+        }
+    }
+
     pub fn delete(&self, connection: &PgConnection) -> Result<(), ErrorType> {
         let result = diesel::delete(self).execute(connection);
         match result {
@@ -344,6 +363,59 @@ mod tests {
             let test_connection = utils::get_test_connection();
             let mock_id = 1;
             let result = PlayerRowModel::get(&mock_id, &test_connection);
+            assert_eq!(result.is_err(), true);
+        }
+
+        #[test]
+        fn test_get_joueurs() {
+            let test_connection = utils::get_test_connection();
+            let user = create_mock_user(&test_connection);
+            let tournament = create_mock_tournament_with_creator(
+                &user.username,
+                &test_connection,
+            );
+
+            let first_name = utils::generate_random_string(5);
+            let last_name = utils::generate_random_string(5);
+            let country = utils::generate_random_string(3);
+            let joueurs_id = utils::generate_random_string(10);
+            let rating = 100;
+            let player = Player {
+                joueurs_id: joueurs_id.clone(),
+                first_name: first_name.clone(),
+                last_name: last_name.clone(),
+                country: country.clone(),
+                rating: rating.clone(),
+            };
+            let player = PlayerRowModel::create(
+                &tournament.id,
+                &player,
+                Map::new(),
+                &test_connection,
+            ).unwrap();
+
+            let player_obtained = PlayerRowModel::get_from_joueurs_id(
+                &player.joueurs_id,
+                &player.tournament_id,
+                &test_connection,
+            ).unwrap();
+            assert_eq!(player_obtained.joueurs_id, joueurs_id);
+            assert_eq!(player_obtained.first_name, first_name);
+            assert_eq!(player_obtained.last_name, last_name);
+            assert_eq!(player_obtained.country, country);
+            assert_eq!(player_obtained.rating, rating);
+        }
+
+        #[test]
+        fn test_get_joueurs_not_available() {
+            let test_connection = utils::get_test_connection();
+            let mock_joueurs_id = String::from("Mock joueurs id");
+            let mock_tournament_id = 1;
+            let result = PlayerRowModel::get_from_joueurs_id(
+                &mock_joueurs_id,
+                &mock_tournament_id,
+                &test_connection,
+            );
             assert_eq!(result.is_err(), true);
         }
 

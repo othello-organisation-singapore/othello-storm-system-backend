@@ -159,20 +159,7 @@ impl TournamentRowModel {
     }
 
     pub fn get_player_with_joueurs_id(&self, joueurs_id: &String) -> Result<Player, ErrorType> {
-        let joueurs = self.joueurs.as_array().unwrap();
-        let players: Vec<Player> = joueurs
-            .iter()
-            .map(|player_json| {
-                let player_data = player_json.as_object().unwrap().clone();
-                match Player::from_serdemap(player_data) {
-                    Ok(player) => Some(player),
-                    Err(_err) => None,
-                }
-            })
-            .filter(|player| player.is_some())
-            .map(|player| player.unwrap())
-            .collect();
-
+        let players = self.get_players_from_joueurs()?;
         let player = match players
             .iter()
             .find(|&player| &player.joueurs_id == joueurs_id) {
@@ -186,6 +173,23 @@ impl TournamentRowModel {
             country: player.country.clone(),
             rating: player.rating.clone(),
         })
+    }
+
+    pub fn get_players_from_joueurs(&self) -> Result<Vec<Player>, ErrorType> {
+        let joueurs = self.joueurs.as_array().unwrap();
+        let players: Vec<Player> = joueurs
+            .iter()
+            .map(|player_json| {
+                let player_data = player_json.as_object().unwrap().clone();
+                match Player::from_serdemap(player_data) {
+                    Ok(player) => Some(player),
+                    Err(_err) => None,
+                }
+            })
+            .filter(|player| player.is_some())
+            .map(|player| player.unwrap())
+            .collect();
+        Ok(players)
     }
 }
 
