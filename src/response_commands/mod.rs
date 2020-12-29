@@ -1,6 +1,11 @@
 pub use command_trait::ResponseCommand;
 pub use general_commands::{CurrentUserCommand, LoginCommand};
-pub use helpers::{generate_tournaments_meta, generate_users_meta};
+pub use helpers::{
+    generate_players_meta,
+    generate_tournaments_meta,
+    generate_users_meta,
+    is_allowed_to_manage_tournament,
+};
 pub use tournament_admin_commands::{
     AddAdminCommand,
     GetAllAdminsCommand,
