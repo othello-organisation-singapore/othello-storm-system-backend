@@ -39,7 +39,8 @@ pub struct TournamentCreationRequest {
 
 #[post("/", data = "<request>")]
 pub fn create_tournament(
-    cookies: Cookies, request: Json<TournamentCreationRequest>,
+    cookies: Cookies,
+    request: Json<TournamentCreationRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::CreateTournamentCommand {
@@ -58,7 +59,9 @@ pub struct TournamentUpdateRequest {
 
 #[patch("/<id>", data = "<request>")]
 pub fn update_tournament(
-    cookies: Cookies, id: i32, request: Json<TournamentUpdateRequest>,
+    cookies: Cookies,
+    id: i32,
+    request: Json<TournamentUpdateRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::UpdateTournamentCommand {
@@ -76,43 +79,4 @@ pub fn delete_tournament(cookies: Cookies, id: i32) -> Json<JsonValue> {
         cookies,
         id,
     }.execute(&connection)
-}
-
-#[get("/<id>/admins")]
-pub fn get_tournament_admins(id: i32) -> Json<JsonValue> {
-    let connection = get_pooled_connection();
-    response_commands::GetAllAdminsCommand { tournament_id: id }.execute(&connection)
-}
-
-#[get("/<id>/potential_admins")]
-pub fn get_tournament_potential_admins(id: i32) -> Json<JsonValue> {
-    let connection = get_pooled_connection();
-    response_commands::GetPotentialAdminsCommand { tournament_id: id }.execute(&connection)
-}
-
-#[derive(Deserialize)]
-pub struct AddAdminRequest {
-    username: String,
-}
-
-#[post("/<id>/admins", data = "<request>")]
-pub fn add_admin(cookies: Cookies, id: i32, request: Json<AddAdminRequest>) -> Json<JsonValue> {
-    let connection = get_pooled_connection();
-    let command = response_commands::AddAdminCommand {
-        cookies,
-        tournament_id: id,
-        admin_username: request.username.clone(),
-    };
-    command.execute(&connection)
-}
-
-#[delete("/<id>/admins/<username>")]
-pub fn remove_admin(cookies: Cookies, id: i32, username: String) -> Json<JsonValue> {
-    let connection = get_pooled_connection();
-    let command = response_commands::RemoveAdminCommand {
-        cookies,
-        tournament_id: id,
-        admin_username: username,
-    };
-    command.execute(&connection)
 }
