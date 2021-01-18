@@ -6,6 +6,12 @@ pub use helpers::{
     generate_users_meta,
     is_allowed_to_manage_tournament,
 };
+pub use player_commands::{
+    GetTournamentPlayersCommand,
+    GetTournamentJoueursPlayersCommand,
+    AddTournamentPlayerCommand,
+    DeleteTournamentPlayerCommand,
+};
 pub use tournament_admin_commands::{
     AddAdminCommand,
     GetAllAdminsCommand,

@@ -89,7 +89,7 @@ impl ResponseCommand for AddTournamentPlayerCommand<'_> {
             Map::new(),
             connection,
         )?;
-        Ok(json!({"message": "Tournament created."}))
+        Ok(json!({"message": "Player added to tournament."}))
     }
 
     fn get_request_summary(&self) -> String {
@@ -104,7 +104,6 @@ impl ResponseCommand for AddTournamentPlayerCommand<'_> {
 pub struct DeleteTournamentPlayerCommand<'a> {
     pub cookies: Cookies<'a>,
     pub tournament_id: i32,
-    pub joueurs_id: String,
     pub player_id: i32,
 }
 
@@ -133,10 +132,9 @@ impl ResponseCommand for DeleteTournamentPlayerCommand<'_> {
 
     fn get_request_summary(&self) -> String {
         String::from(format!(
-            "DeleteTournamentPlayer with joueurs id {} for tournament id {} (Player id {})",
-            &self.joueurs_id,
-            &self.tournament_id,
+            "DeleteTournamentPlayer with player id {} for tournament id {}",
             &self.player_id,
+            &self.tournament_id,
         ))
     }
 }

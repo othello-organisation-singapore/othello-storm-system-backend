@@ -66,6 +66,10 @@ fn main() {
             routes::tournament_admin_routes::get_tournament_potential_admins,
             routes::tournament_admin_routes::add_admin,
             routes::tournament_admin_routes::remove_admin,
+            routes::player_routes::get_players,
+            routes::player_routes::get_joueurs_players,
+            routes::player_routes::add_player,
+            routes::player_routes::delete_player,
         ])
         .mount("/api/", routes![
             routes::general_routes::login,
