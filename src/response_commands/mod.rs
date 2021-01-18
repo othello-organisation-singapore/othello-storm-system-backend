@@ -10,6 +10,7 @@ pub use player_commands::{
     GetTournamentPlayersCommand,
     GetTournamentJoueursPlayersCommand,
     AddTournamentPlayerCommand,
+    AddTournamentPlayerNewCommand,
     DeleteTournamentPlayerCommand,
 };
 pub use tournament_admin_commands::{

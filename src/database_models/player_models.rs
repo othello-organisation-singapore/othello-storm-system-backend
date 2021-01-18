@@ -116,7 +116,7 @@ impl PlayerRowModel {
         match result {
             Ok(_) => {
                 info!(
-                    "Player id={} with joueurs_id={} is deleted from tournament {} ",
+                    "Player id {} with joueurs_id {} is deleted from tournament {} ",
                     &self.id,
                     &self.joueurs_id,
                     &self.tournament_id

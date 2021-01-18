@@ -69,6 +69,7 @@ fn main() {
             routes::player_routes::get_players,
             routes::player_routes::get_joueurs_players,
             routes::player_routes::add_player,
+            routes::player_routes::add_player_new,
             routes::player_routes::delete_player,
         ])
         .mount("/api/", routes![

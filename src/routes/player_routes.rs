@@ -34,6 +34,26 @@ pub fn add_player(cookies: Cookies, id: i32, request: Json<AddPlayerRequest>) ->
     command.execute(&connection)
 }
 
+#[derive(Deserialize)]
+pub struct AddPlayerNewRequest {
+    pub first_name: String,
+    pub last_name: String,
+    pub country: String,
+}
+
+#[post("/<id>/players/new", data = "<request>")]
+pub fn add_player_new(cookies: Cookies, id: i32, request: Json<AddPlayerNewRequest>) -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    let command = response_commands::AddTournamentPlayerNewCommand {
+        cookies,
+        tournament_id: id,
+        first_name: request.first_name.clone(),
+        last_name: request.last_name.clone(),
+        country: request.country.clone(),
+    };
+    command.execute(&connection)
+}
+
 #[delete("/<tournament_id>/players/<player_id>")]
 pub fn delete_player(cookies: Cookies, tournament_id: i32, player_id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();

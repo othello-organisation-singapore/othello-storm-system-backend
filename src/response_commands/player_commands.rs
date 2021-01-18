@@ -6,6 +6,8 @@ use serde_json::{Map, Value};
 use crate::account::Account;
 use crate::database_models::{PlayerRowModel, TournamentRowModel};
 use crate::errors::ErrorType;
+use crate::tournament_manager::Player;
+use crate::utils::generate_random_string;
 
 use super::{generate_players_meta, is_allowed_to_manage_tournament};
 use super::ResponseCommand;
@@ -96,6 +98,68 @@ impl ResponseCommand for AddTournamentPlayerCommand<'_> {
         String::from(format!(
             "AddTournamentPlayer with joueurs id {} for tournament id {}",
             &self.joueurs_id,
+            &self.tournament_id
+        ))
+    }
+}
+
+pub struct AddTournamentPlayerNewCommand<'a> {
+    pub cookies: Cookies<'a>,
+    pub tournament_id: i32,
+    pub first_name: String,
+    pub last_name: String,
+    pub country: String,
+}
+
+impl AddTournamentPlayerNewCommand<'_> {
+    fn try_create_player(&self, connection: &PgConnection, retry: i32) -> Result<(), ErrorType> {
+        let joueurs_id = String::from("+") + &generate_random_string(4);
+        let player = Player {
+            joueurs_id,
+            first_name: self.first_name.clone(),
+            last_name: self.last_name.clone(),
+            country: self.country.clone(),
+            rating: 1200,
+        };
+        match PlayerRowModel::create(&self.tournament_id, &player, Map::new(), connection) {
+            Ok(_player_model) => Ok(()),
+            Err(error) => {
+                if retry == 0 {
+                    return Err(error);
+                }
+                self.try_create_player(connection, retry - 1)
+            }
+        }
+    }
+}
+
+impl ResponseCommand for AddTournamentPlayerNewCommand<'_> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
+        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let tournament_model = TournamentRowModel::get(
+            &self.tournament_id,
+            connection,
+        )?;
+
+        let is_allowed_to_manage = is_allowed_to_manage_tournament(
+            &account,
+            &tournament_model,
+            connection,
+        )?;
+        if !is_allowed_to_manage {
+            return Err(ErrorType::PermissionDenied);
+        }
+        self.try_create_player(connection, 3)?;
+        Ok(json!({"message": "Player (new) added to tournament"}))
+    }
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!(
+            "AddTournamentPlayerNew \
+            with first_name {}, last_name {}, country {} for tournament id {}",
+            &self.first_name,
+            &self.last_name,
+            &self.country,
             &self.tournament_id
         ))
     }
