@@ -14,7 +14,7 @@ impl Joueurs {
             ));
         }
 
-        let url = env::var("SUPERUSER_ID").unwrap();
+        let url = env::var("JOUEURS_URL").unwrap();
         match http_get_text(&url) {
             Ok(joueurs) => {
                 info!("Joueurs successfully obtained");
