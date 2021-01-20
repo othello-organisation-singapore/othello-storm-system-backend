@@ -1,3 +1,5 @@
+use std::env;
+
 use crate::errors::ErrorType;
 use crate::utils::http_get_text;
 
@@ -12,7 +14,7 @@ impl Joueurs {
             ));
         }
 
-        let url = String::from("https://www.worldothello.org/files/joueurs.txt");
+        let url = env::var("JOUEURS_URL").unwrap();
         match http_get_text(&url) {
             Ok(joueurs) => {
                 info!("Joueurs successfully obtained");

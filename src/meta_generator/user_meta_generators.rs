@@ -1,8 +1,9 @@
 use diesel::PgConnection;
 use serde_json::{Map, Value};
 
-use crate::errors::ErrorType;
 use crate::database_models::UserRowModel;
+use crate::errors::ErrorType;
+
 use super::MetaGenerator;
 
 pub struct UserMetaGenerator {

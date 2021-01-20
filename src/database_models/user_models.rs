@@ -1,9 +1,8 @@
 use diesel::prelude::*;
 
 use crate::errors::ErrorType;
-use crate::schema::users;
 use crate::properties::UserRole;
-use crate::errors::ErrorType::BadRequestError;
+use crate::schema::users;
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable, Identifiable)]
 #[table_name = "users"]
@@ -30,7 +29,7 @@ impl UserRowModel {
         connection: &PgConnection,
     ) -> Result<UserRowModel, ErrorType> {
         if UserRowModel::is_username_exists(&username, connection) {
-            return Err(BadRequestError(String::from("Username exists.")));
+            return Err(ErrorType::BadRequestError(String::from("Username exists.")));
         }
         let new_user = NewUserRowModel {
             username,
@@ -179,7 +178,7 @@ mod tests {
                 &display_name,
                 &hashed_password,
                 UserRole::Superuser,
-                &test_connection
+                &test_connection,
             );
 
             let user = UserRowModel::get(&username, &test_connection).unwrap();

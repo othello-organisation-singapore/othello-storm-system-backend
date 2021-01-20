@@ -1,4 +1,17 @@
 table! {
+    players (id) {
+        id -> Int4,
+        tournament_id -> Int4,
+        joueurs_id -> Varchar,
+        first_name -> Varchar,
+        last_name -> Varchar,
+        country -> Varchar,
+        rating -> Int4,
+        meta_data -> Json,
+    }
+}
+
+table! {
     tournaments (id) {
         id -> Int4,
         name -> Varchar,
@@ -27,11 +40,13 @@ table! {
     }
 }
 
+joinable!(players -> tournaments (tournament_id));
 joinable!(tournaments -> users (creator));
 joinable!(tournaments_admin -> tournaments (tournament_id));
 joinable!(tournaments_admin -> users (admin_username));
 
 allow_tables_to_appear_in_same_query!(
+    players,
     tournaments,
     tournaments_admin,
     users,

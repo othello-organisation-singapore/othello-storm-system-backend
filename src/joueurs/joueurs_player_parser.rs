@@ -2,7 +2,6 @@ use crate::tournament_manager::Player;
 use super::joueurs_name_parser::NameParser;
 
 const DEFAULT_RATING: i32 = 1200;
-const DEFAULT_ID: i32 = -1;
 
 #[derive(Debug, PartialEq)]
 enum PlayerParserState {
@@ -40,7 +39,7 @@ impl PlayerParser {
         let parsed_name = name_parser.parse(&self.name);
 
         Player {
-            joueurs_id: self.id.parse::<i32>().unwrap_or(DEFAULT_ID),
+            joueurs_id: self.id.clone(),
             first_name: parsed_name.first_name,
             last_name: parsed_name.last_name,
             country: country.clone(),
@@ -95,7 +94,7 @@ mod tests {
         use crate::joueurs::joueurs_player_parser::{PlayerParser, DEFAULT_RATING};
 
         fn test_parse_player(
-            player: &String, expected_id: &i32, expected_first_name: &String,
+            player: &String, expected_id: &String, expected_first_name: &String,
             expected_last_name: &String, expected_rating: &i32,
         ) -> bool {
             let mut parser = PlayerParser::create();
@@ -113,7 +112,7 @@ mod tests {
             let player = String::from("280216 ACUNA SSX, Ricardo                       %_<1484>");
             let expected_first_name = String::from("Ricardo");
             let expected_last_name = String::from("ACUNA SSX");
-            let expected_id = 280216;
+            let expected_id = String::from("280216");
             let expected_rating = 1484;
             assert_eq!(
                 test_parse_player(
@@ -129,7 +128,7 @@ mod tests {
             let player = String::from("280216 ACUNA SSX, Ricardo                       %_<-1484>");
             let expected_first_name = String::from("Ricardo");
             let expected_last_name = String::from("ACUNA SSX");
-            let expected_id = 280216;
+            let expected_id = String::from("280216");
             let expected_rating = -1484;
             assert_eq!(
                 test_parse_player(
@@ -145,7 +144,7 @@ mod tests {
             let player = String::from("281018 GRECO, Alejandra de                    ");
             let expected_first_name = String::from("Alejandra de");
             let expected_last_name = String::from("GRECO");
-            let expected_id = 281018;
+            let expected_id = String::from("281018");
             let expected_rating = DEFAULT_RATING;
             assert_eq!(
                 test_parse_player(
@@ -161,7 +160,7 @@ mod tests {
             let player = String::from("281018 GRECO,                    ");
             let expected_first_name = String::from("");
             let expected_last_name = String::from("GRECO");
-            let expected_id = 281018;
+            let expected_id = String::from("281018");
             let expected_rating = DEFAULT_RATING;
             assert_eq!(
                 test_parse_player(
@@ -177,7 +176,7 @@ mod tests {
             let player = String::from("   957 BRUTUS S (Geoffroy-Piotte)             %_<2410>");
             let expected_first_name = String::from("Geoffroy-Piotte");
             let expected_last_name = String::from("BRUTUS S");
-            let expected_id = 957;
+            let expected_id = String::from("957");
             let expected_rating = 2410;
             assert_eq!(
                 test_parse_player(
@@ -193,7 +192,7 @@ mod tests {
             let player = String::from("   957 BRUTUS S (Geoffroy-Piotte)             %_<-2410>");
             let expected_first_name = String::from("Geoffroy-Piotte");
             let expected_last_name = String::from("BRUTUS S");
-            let expected_id = 957;
+            let expected_id = String::from("957");
             let expected_rating = -2410;
             assert_eq!(
                 test_parse_player(
@@ -209,7 +208,7 @@ mod tests {
             let player = String::from("   349 EXPERT5 (Reversi Othello)                   ");
             let expected_first_name = String::from("Reversi Othello");
             let expected_last_name = String::from("EXPERT5");
-            let expected_id = 349;
+            let expected_id = String::from("349");
             let expected_rating = DEFAULT_RATING;
             assert_eq!(
                 test_parse_player(
@@ -225,7 +224,7 @@ mod tests {
             let player = String::from("   349 EXPERT5 ()                   ");
             let expected_first_name = String::from("");
             let expected_last_name = String::from("EXPERT5");
-            let expected_id = 349;
+            let expected_id = String::from("349");
             let expected_rating = DEFAULT_RATING;
             assert_eq!(
                 test_parse_player(

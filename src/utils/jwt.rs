@@ -27,7 +27,7 @@ impl JWTMediator {
 
     fn generate_claims(username: &String) -> Claims {
         Claims {
-            exp: 60 * 60 * 30 + get_current_timestamp(),
+            exp: 60 * 60 * 24 * 30 + get_current_timestamp(),
             iss: JWTMediator::get_issuer(),
             username: username.clone(),
         }

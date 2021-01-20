@@ -1,9 +1,9 @@
-use serde_json::{Value, Map};
 use diesel::prelude::*;
+use serde_json::{Map, Value};
 
 use crate::errors::ErrorType;
-use crate::schema::tournaments;
 use crate::properties::TournamentType;
+use crate::schema::tournaments;
 use crate::tournament_manager::Player;
 
 use super::UserRowModel;
@@ -157,6 +157,40 @@ impl TournamentRowModel {
             }
         }
     }
+
+    pub fn get_player_with_joueurs_id(&self, joueurs_id: &String) -> Result<Player, ErrorType> {
+        let players = self.get_players_from_joueurs()?;
+        let player = match players
+            .iter()
+            .find(|&player| &player.joueurs_id == joueurs_id) {
+            Some(player) => Ok(player),
+            None => Err(ErrorType::BadRequestError(String::from("Invalid joueurs id")))
+        }?;
+        Ok(Player{
+            joueurs_id: player.joueurs_id.clone(),
+            first_name: player.first_name.clone(),
+            last_name: player.last_name.clone(),
+            country: player.country.clone(),
+            rating: player.rating.clone(),
+        })
+    }
+
+    pub fn get_players_from_joueurs(&self) -> Result<Vec<Player>, ErrorType> {
+        let joueurs = self.joueurs.as_array().unwrap();
+        let players: Vec<Player> = joueurs
+            .iter()
+            .map(|player_json| {
+                let player_data = player_json.as_object().unwrap().clone();
+                match Player::from_serdemap(player_data) {
+                    Ok(player) => Some(player),
+                    Err(_err) => None,
+                }
+            })
+            .filter(|player| player.is_some())
+            .map(|player| player.unwrap())
+            .collect();
+        Ok(players)
+    }
 }
 
 
@@ -164,6 +198,7 @@ impl TournamentRowModel {
 mod tests {
     mod crud {
         use serde_json::Map;
+
         use crate::database_models::TournamentRowModel;
         use crate::properties::TournamentType;
         use crate::tournament_manager::Player;
@@ -174,7 +209,7 @@ mod tests {
         fn test_create_tournament() {
             let test_connection = utils::get_test_connection();
 
-            let user = create_mock_user(&test_connection,);
+            let user = create_mock_user(&test_connection);
 
             let name = utils::generate_random_string(20);
             let country = utils::generate_random_string(10);
@@ -208,7 +243,7 @@ mod tests {
             let second_creator_username = second_user.username.clone();
 
             let tournament = create_mock_tournament_with_creator(
-                &creator_username, &test_connection
+                &creator_username, &test_connection,
             );
             let _ = create_mock_tournament_with_creator(&creator_username, &test_connection);
             let _ = create_mock_tournament_with_creator(&second_creator_username, &test_connection);
@@ -240,7 +275,7 @@ mod tests {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
             let mut tournament = create_mock_tournament_with_creator(
-                &user.username, &test_connection
+                &user.username, &test_connection,
             );
 
             let updated_name = String::from("new name");
@@ -266,7 +301,7 @@ mod tests {
 
             let user = create_mock_user(&test_connection);
             let tournament = create_mock_tournament_with_creator(
-                &user.username, &test_connection
+                &user.username, &test_connection,
             );
 
             let _ = tournament.delete(&test_connection);
@@ -279,6 +314,59 @@ mod tests {
                 &test_connection
             ).unwrap();
             assert_eq!(updated_all_tournaments.len() - initial_count, 0);
+        }
+    }
+
+    mod players {
+        use crate::tournament_manager::Player;
+        use crate::utils;
+        use crate::utils::{create_mock_tournament_with_creator_and_joueurs, create_mock_user};
+
+        #[test]
+        fn test_get_player() {
+            let test_connection = utils::get_test_connection();
+            let user = create_mock_user(&test_connection);
+
+            let first_name = utils::generate_random_string(5);
+            let last_name = utils::generate_random_string(5);
+            let country = utils::generate_random_string(3);
+            let joueurs_id = utils::generate_random_string(10);
+            let rating = 100;
+            let player = Player {
+                joueurs_id: joueurs_id.clone(),
+                first_name: first_name.clone(),
+                last_name: last_name.clone(),
+                country: country.clone(),
+                rating: rating.clone(),
+            };
+
+            let tournament = create_mock_tournament_with_creator_and_joueurs(
+                &user.username,
+                vec![player],
+                &test_connection,
+            );
+            let player = tournament.get_player_with_joueurs_id(&joueurs_id).unwrap();
+
+            assert_eq!(player.joueurs_id, joueurs_id);
+            assert_eq!(player.first_name, first_name);
+            assert_eq!(player.last_name, last_name);
+            assert_eq!(player.country, country);
+            assert_eq!(player.rating, rating);
+        }
+
+        #[test]
+        fn test_get_player_not_found() {
+            let test_connection = utils::get_test_connection();
+            let user = create_mock_user(&test_connection);
+            let joueurs_id = utils::generate_random_string(10);
+
+            let tournament = create_mock_tournament_with_creator_and_joueurs(
+                &user.username,
+                vec![],
+                &test_connection,
+            );
+            let player = tournament.get_player_with_joueurs_id(&joueurs_id);
+            assert_eq!(player.is_err(), true);
         }
     }
 }
