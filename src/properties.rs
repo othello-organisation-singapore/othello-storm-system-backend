@@ -48,6 +48,34 @@ impl TournamentType {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum RoundType {
+    Unidentified,
+    Automatic,
+    ManualNormal,
+    ManualSpecial
+}
+
+impl RoundType {
+    pub fn from_i32(round_type: i32) -> RoundType {
+        match round_type {
+            1 => RoundType::Automatic,
+            2 => RoundType::ManualNormal,
+            3 => RoundType::ManualSpecial,
+            _ => RoundType::Unidentified,
+        }
+    }
+
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            RoundType::Unidentified => 0,
+            RoundType::Automatic => 1,
+            RoundType::ManualNormal => 2,
+            RoundType::ManualSpecial => 3,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     mod test_user_role {
@@ -107,6 +135,42 @@ mod tests {
             assert_eq!(TournamentType::RoundRobin.to_string(), String::from("round_robin"));
             assert_eq!(TournamentType::SwissPairing.to_string(), String::from("swiss_pairing"));
             assert_eq!(TournamentType::Unidentified.to_string(), String::from("unidentified"));
+        }
+    }
+
+    mod test_round_type {
+        use crate::properties::RoundType;
+
+        #[test]
+        fn test_from_i32() {
+            assert_eq!(
+                RoundType::from_i32(1),
+                RoundType::Automatic
+            );
+            assert_eq!(
+                RoundType::from_i32(2),
+                RoundType::ManualNormal
+            );
+            assert_eq!(
+                RoundType::from_i32(3),
+                RoundType::ManualSpecial
+            );
+            assert_eq!(
+                RoundType::from_i32(4),
+                RoundType::Unidentified
+            );
+            assert_eq!(
+                RoundType::from_i32(0),
+                RoundType::Unidentified
+            );
+        }
+
+        #[test]
+        fn test_to_i32() {
+            assert_eq!(RoundType::Automatic.to_i32(), 1);
+            assert_eq!(RoundType::ManualNormal.to_i32(), 2);
+            assert_eq!(RoundType::ManualSpecial.to_i32(), 3);
+            assert_eq!(RoundType::Unidentified.to_i32(), 0);
         }
     }
 }
