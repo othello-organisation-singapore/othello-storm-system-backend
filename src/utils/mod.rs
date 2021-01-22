@@ -8,6 +8,7 @@ pub use test_helpers::{
     create_mock_tournament_with_creator,
     create_mock_tournament_with_creator_and_joueurs,
     create_mock_user,
+    create_mock_round_from_tournament,
 };
 
 mod database_connection;

@@ -1,8 +1,8 @@
 use diesel::PgConnection;
 use serde_json::Map;
 
-use crate::database_models::{TournamentRowModel, UserRowModel};
-use crate::properties::{TournamentType, UserRole};
+use crate::database_models::{TournamentRowModel, UserRowModel, RoundDAO, RoundRowModel};
+use crate::properties::{TournamentType, UserRole, RoundType};
 use crate::tournament_manager::Player;
 use crate::utils;
 
@@ -54,6 +54,20 @@ pub fn create_mock_tournament_with_creator_and_joueurs(
         &creator_username,
         joueurs,
         tournament_type,
+        Map::new(),
+        connection,
+    ).unwrap()
+}
+
+pub fn create_mock_round_from_tournament(
+    tournament_id: &i32,
+    connection: &PgConnection,
+) -> RoundRowModel {
+    let name = utils::generate_random_string(10);
+    RoundRowModel::create(
+        tournament_id,
+        &name,
+        RoundType::ManualNormal,
         Map::new(),
         connection,
     ).unwrap()
