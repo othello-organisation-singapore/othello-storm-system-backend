@@ -27,10 +27,13 @@ pub fn create_mock_tournament_with_creator(
     let country = utils::generate_random_string(10);
     let joueurs: Vec<Player> = Vec::new();
     let tournament_type = TournamentType::RoundRobin;
+    let date = utils::create_date_format(2020, 1, 1);
 
     TournamentRowModel::create(
         &name,
         &country,
+        &date,
+        &date,
         &username,
         joueurs,
         tournament_type,
@@ -47,10 +50,13 @@ pub fn create_mock_tournament_with_creator_and_joueurs(
     let name = utils::generate_random_string(20);
     let country = utils::generate_random_string(10);
     let tournament_type = TournamentType::RoundRobin;
+    let date = utils::create_date_format(2020, 1, 1);
 
     TournamentRowModel::create(
         &name,
         &country,
+        &date,
+        &date,
         &creator_username,
         joueurs,
         tournament_type,

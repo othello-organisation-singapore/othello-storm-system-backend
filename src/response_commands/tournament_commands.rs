@@ -12,6 +12,7 @@ use crate::meta_generator::{
     TournamentDetailsMetaGenerator,
 };
 use crate::properties::TournamentType;
+use crate::utils::string_to_date;
 
 use super::generate_tournaments_meta;
 use super::ResponseCommand;
@@ -78,6 +79,8 @@ pub struct CreateTournamentCommand<'a> {
     pub name: String,
     pub country: String,
     pub tournament_type: String,
+    pub start_date: String,
+    pub end_date: String,
 }
 
 impl ResponseCommand for CreateTournamentCommand<'_> {
@@ -94,9 +97,14 @@ impl ResponseCommand for CreateTournamentCommand<'_> {
 
         let raw_joueurs = Joueurs::get(3)?;
         let parsed_joueurs = JoueursParser::parse(&raw_joueurs)?;
+
+        let start_date = string_to_date(self.start_date.clone())?;
+        let end_date = string_to_date(self.end_date.clone())?;
         TournamentRowModel::create(
             &self.name,
             &self.country,
+            &start_date,
+            &end_date,
             &account.get_username(),
             parsed_joueurs,
             tournament_type,
@@ -116,6 +124,8 @@ pub struct UpdateTournamentCommand<'a> {
     pub id: i32,
     pub updated_name: String,
     pub updated_country: String,
+    pub updated_start_date: String,
+    pub updated_end_date: String,
 }
 
 impl UpdateTournamentCommand<'_> {
@@ -140,6 +150,8 @@ impl ResponseCommand for UpdateTournamentCommand<'_> {
 
         tournament_model.name = self.updated_name.clone();
         tournament_model.country = self.updated_country.clone();
+        tournament_model.start_date = string_to_date(self.updated_start_date.clone())?;
+        tournament_model.end_date = string_to_date(self.updated_end_date.clone())?;
         tournament_model.update(connection)?;
         Ok(json!({"message": "Tournament updated."}))
     }

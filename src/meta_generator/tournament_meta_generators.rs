@@ -1,7 +1,9 @@
 use serde_json::{Map, Value};
 
-use crate::database_models::{UserRowModel, TournamentRowModel};
-use super::{MetaGenerator};
+use crate::database_models::{TournamentRowModel, UserRowModel};
+use crate::utils::date_to_string;
+
+use super::MetaGenerator;
 
 pub struct TournamentPreviewMetaGenerator {
     tournament: TournamentRowModel
@@ -34,6 +36,14 @@ impl MetaGenerator for TournamentPreviewMetaGenerator {
             String::from("creator_username"),
             Value::from(self.tournament.creator.clone()),
         );
+        meta.insert(
+            String::from("start_date"),
+            Value::from(date_to_string(self.tournament.start_date.clone())),
+        );
+        meta.insert(
+            String::from("end_date"),
+            Value::from(date_to_string(self.tournament.end_date.clone())),
+        );
         meta
     }
 }
@@ -58,6 +68,14 @@ impl MetaGenerator for TournamentDetailsMetaGenerator {
         );
         meta.insert(
             String::from("country"), Value::from(self.tournament.country.clone()),
+        );
+        meta.insert(
+            String::from("start_date"),
+            Value::from(date_to_string(self.tournament.start_date.clone())),
+        );
+        meta.insert(
+            String::from("end_date"),
+            Value::from(date_to_string(self.tournament.end_date.clone())),
         );
 
         let mut creator_meta = Map::new();

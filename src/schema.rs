@@ -42,6 +42,8 @@ table! {
         creator -> Varchar,
         joueurs -> Json,
         meta_data -> Json,
+        start_date -> Date,
+        end_date -> Date,
     }
 }
 

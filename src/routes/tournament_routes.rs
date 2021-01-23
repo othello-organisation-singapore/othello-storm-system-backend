@@ -35,6 +35,8 @@ pub struct TournamentCreationRequest {
     name: String,
     country: String,
     tournament_type: String,
+    start_date: String,
+    end_date: String,
 }
 
 #[post("/", data = "<request>")]
@@ -48,6 +50,8 @@ pub fn create_tournament(
         name: request.name.clone(),
         country: request.country.clone(),
         tournament_type: request.tournament_type.clone(),
+        start_date: request.start_date.clone(),
+        end_date: request.end_date.clone(),
     }.execute(&connection)
 }
 
@@ -55,6 +59,8 @@ pub fn create_tournament(
 pub struct TournamentUpdateRequest {
     name: String,
     country: String,
+    start_date: String,
+    end_date: String,
 }
 
 #[patch("/<id>", data = "<request>")]
@@ -69,6 +75,8 @@ pub fn update_tournament(
         id,
         updated_name: request.name.clone(),
         updated_country: request.country.clone(),
+        updated_start_date: request.start_date.clone(),
+        updated_end_date: request.end_date.clone(),
     }.execute(&connection)
 }
 

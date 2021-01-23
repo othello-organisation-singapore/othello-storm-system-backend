@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use diesel::prelude::*;
 use serde_json::{Map, Value};
 
@@ -19,6 +20,8 @@ pub struct TournamentRowModel {
     pub creator: String,
     pub joueurs: Value,
     pub meta_data: Value,
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
 }
 
 
@@ -31,6 +34,8 @@ struct NewTournamentRowModel<'a> {
     pub creator: &'a String,
     pub joueurs: &'a Value,
     pub meta_data: &'a Value,
+    pub start_date: &'a NaiveDate,
+    pub end_date: &'a NaiveDate,
 }
 
 
@@ -38,6 +43,8 @@ impl TournamentRowModel {
     pub fn create(
         name: &String,
         country: &String,
+        start_date: &NaiveDate,
+        end_date: &NaiveDate,
         creator_username: &String,
         joueurs: Vec<Player>,
         tournament_type: TournamentType,
@@ -58,6 +65,8 @@ impl TournamentRowModel {
             creator: creator_username,
             joueurs: &joueurs_to_store,
             meta_data: &Value::Object(meta_data),
+            start_date,
+            end_date,
         };
         TournamentRowModel::insert_to_database(new_tournament, connection)
     }
@@ -215,10 +224,13 @@ mod tests {
             let country = utils::generate_random_string(10);
             let joueurs: Vec<Player> = Vec::new();
             let tournament_type = TournamentType::RoundRobin;
+            let date = utils::create_date_format(2020, 1, 1);
 
             let result = TournamentRowModel::create(
                 &name,
                 &country,
+                &date,
+                &date,
                 &user.username,
                 joueurs,
                 tournament_type,

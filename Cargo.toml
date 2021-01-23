@@ -12,10 +12,11 @@ rocket = "0.4.4"
 rocket_contrib = { version = "0.4.5", features = ["json"] }
 
 # ORM
-diesel = { version = "1.4.3", features = ["postgres", "r2d2", "serde_json"] }
-serde_json = { version = "1.0.48", features = ["preserve_order"]}
+diesel = { version = "1.4.3", features = ["postgres", "r2d2", "serde_json", "chrono"] }
+serde_json = { version = "1.0.48", features = ["preserve_order"] }
 dotenv = "0.9.0"
 lazy_static = "1.4.0"
+chrono = { version = "0.4", features = ["serde"] }
 
 # password hashing
 pwhash = "0.3"
@@ -35,4 +36,4 @@ log = "0.4.0"
 env_logger = "0.7.1"
 
 # download from external sources
-reqwest =  { version = "0.10.6", features=["blocking"] }
+reqwest = { version = "0.10.6", features = ["blocking"] }
