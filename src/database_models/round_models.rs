@@ -183,7 +183,7 @@ mod tests {
         }
 
         #[test]
-        fn test_get_all_round() {
+        fn test_get_all_rounds() {
             let test_connection = utils::get_test_connection();
 
             let user = create_mock_user(&test_connection);
@@ -233,7 +233,7 @@ mod tests {
                 &round.id,
                 &test_connection,
             ).unwrap();
-            assert_eq!(round, round_obtained);
+            assert_eq!(round_obtained, round);
         }
 
         #[test]
