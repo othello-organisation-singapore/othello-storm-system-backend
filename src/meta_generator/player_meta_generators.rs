@@ -33,7 +33,7 @@ impl PlayerMetaGenerator {
 impl MetaGenerator for PlayerMetaGenerator {
     fn generate_meta(&self) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.player.id.to_string()));
+        meta.insert(String::from("id"), Value::from(self.player.id.clone()));
         meta.insert(
             String::from("joueurs_id"),
             Value::from(self.player.joueurs_id.clone()),
@@ -51,7 +51,7 @@ impl MetaGenerator for PlayerMetaGenerator {
             Value::from(self.player.country.clone()),
         );
         meta.insert(
-            String::from("rating"), Value::from(self.player.rating.to_string()),
+            String::from("rating"), Value::from(self.player.rating.clone()),
         );
         meta
     }

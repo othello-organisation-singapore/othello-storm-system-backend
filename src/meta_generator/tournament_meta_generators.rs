@@ -23,7 +23,7 @@ impl TournamentPreviewMetaGenerator {
 impl MetaGenerator for TournamentPreviewMetaGenerator {
     fn generate_meta(&self) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.tournament.id.to_string()));
+        meta.insert(String::from("id"), Value::from(self.tournament.id.clone()));
         meta.insert(String::from("name"), Value::from(self.tournament.name.clone()));
         meta.insert(
             String::from("tournament_type"),
@@ -60,7 +60,7 @@ impl TournamentDetailsMetaGenerator {
 impl MetaGenerator for TournamentDetailsMetaGenerator {
     fn generate_meta(&self) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.tournament.id.to_string()));
+        meta.insert(String::from("id"), Value::from(self.tournament.id.clone()));
         meta.insert(String::from("name"), Value::from(self.tournament.name.clone()));
         meta.insert(
             String::from("tournament_type"),
@@ -79,7 +79,10 @@ impl MetaGenerator for TournamentDetailsMetaGenerator {
         );
 
         let mut creator_meta = Map::new();
-        creator_meta.insert(String::from("username"), Value::from(self.creator.username.clone()));
+        creator_meta.insert(
+            String::from("username"),
+            Value::from(self.creator.username.clone())
+        );
         creator_meta.insert(
             String::from("display_name"),
             Value::from(self.creator.display_name.clone()))
