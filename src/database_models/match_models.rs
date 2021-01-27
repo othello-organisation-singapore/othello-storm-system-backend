@@ -4,6 +4,7 @@ use serde_json::{Map, Value};
 
 use crate::errors::ErrorType;
 use crate::schema::matches;
+use crate::tournament_manager::GameMatch;
 
 use super::RoundRowModel;
 
@@ -41,6 +42,11 @@ pub trait MatchDAO where Self: Sized {
         meta_data: Map<String, Value>,
         connection: &PgConnection,
     ) -> Result<Self, ErrorType>;
+    fn create_from(game_match: &GameMatch, connection: &PgConnection) -> Result<Self, ErrorType>;
+    fn bulk_create_from(
+        game_matches: &Vec<GameMatch>,
+        connection: &PgConnection,
+    ) -> Result<Vec<Self>, ErrorType>;
     fn get(id: &i32, connection: &PgConnection) -> Result<Self, ErrorType>;
     fn get_all_from_round(
         round_id: &i32,
@@ -52,19 +58,19 @@ pub trait MatchDAO where Self: Sized {
 
 impl MatchRowModel {
     fn insert_to_database(
-        new_round: NewMatchRowModel,
+        new_match: NewMatchRowModel,
         connection: &PgConnection,
     ) -> Result<MatchRowModel, ErrorType> {
         let result: Result<MatchRowModel, Error> = diesel::insert_into(matches::table)
-            .values(new_round)
+            .values(new_match)
             .get_result(connection);
 
         match result {
-            Ok(othello_match) => {
-                let match_id = othello_match.id.clone();
-                let round_id = othello_match.round_id.clone();
-                let black_player_id = othello_match.black_player_id.clone();
-                let white_player_id = othello_match.white_player_id.clone();
+            Ok(game_match) => {
+                let match_id = game_match.id.clone();
+                let round_id = game_match.round_id.clone();
+                let black_player_id = game_match.black_player_id.clone();
+                let white_player_id = game_match.white_player_id.clone();
 
                 info!(
                     "Match id {} ({} vs {}) is added in round id {}",
@@ -73,7 +79,39 @@ impl MatchRowModel {
                     white_player_id,
                     round_id,
                 );
-                Ok(othello_match)
+                Ok(game_match)
+            }
+            Err(e) => {
+                error!("{}", e);
+                Err(ErrorType::DatabaseError)
+            }
+        }
+    }
+
+    fn bulk_insert_to_database(
+        new_matches: Vec<NewMatchRowModel>,
+        connection: &PgConnection,
+    ) -> Result<Vec<MatchRowModel>, ErrorType> {
+        let result: Result<Vec<MatchRowModel>, Error> = diesel::insert_into(matches::table)
+            .values(new_matches)
+            .get_results(connection);
+
+        match result {
+            Ok(matches) => {
+                matches[..]
+                    .into_iter()
+                    .for_each(
+                        |game_match| {
+                            info!(
+                                "Match id {} ({} vs {}) is added in round id {}",
+                                game_match.id.clone(),
+                                game_match.black_player_id.clone(),
+                                game_match.white_player_id.clone(),
+                                game_match.round_id.clone(),
+                            );
+                        }
+                    );
+                Ok(matches)
             }
             Err(e) => {
                 error!("{}", e);
@@ -105,13 +143,45 @@ impl MatchDAO for MatchRowModel {
         MatchRowModel::insert_to_database(new_match, connection)
     }
 
+    fn create_from(game_match: &GameMatch, connection: &PgConnection) -> Result<Self, ErrorType> {
+        let new_match = NewMatchRowModel {
+            round_id: &game_match.round_id,
+            black_player_id: &game_match.black_player_id,
+            white_player_id: &game_match.white_player_id,
+            black_score: &game_match.black_score,
+            white_score: &game_match.white_score,
+            meta_data: &game_match.meta_data,
+        };
+        MatchRowModel::insert_to_database(new_match, connection)
+    }
+
+    fn bulk_create_from(
+        game_matches: &Vec<GameMatch>,
+        connection: &PgConnection,
+    ) -> Result<Vec<Self>, ErrorType> {
+        let new_matches = game_matches
+            .into_iter()
+            .map(|game_match| {
+                NewMatchRowModel {
+                    round_id: &game_match.round_id,
+                    black_player_id: &game_match.black_player_id,
+                    white_player_id: &game_match.white_player_id,
+                    black_score: &game_match.black_score,
+                    white_score: &game_match.white_score,
+                    meta_data: &game_match.meta_data,
+                }
+            })
+            .collect();
+        MatchRowModel::bulk_insert_to_database(new_matches, connection)
+    }
+
     fn get(id: &i32, connection: &PgConnection) -> Result<Self, ErrorType> {
         let result = matches::table
             .find(id)
             .first(connection);
 
         match result {
-            Ok(othello_match) => Ok(othello_match),
+            Ok(game_match) => Ok(game_match),
             Err(e) => {
                 error!("{}", e);
                 Err(ErrorType::DatabaseError)
@@ -161,9 +231,9 @@ impl MatchDAO for MatchRowModel {
             .set(self)
             .get_result::<MatchRowModel>(connection);
         match result {
-            Ok(othello_match) => {
+            Ok(game_match) => {
                 info!("Match {} is updated.", &self.id);
-                Ok(othello_match)
+                Ok(game_match)
             }
             Err(e) => {
                 error!("{}", e);
@@ -280,17 +350,17 @@ mod tests {
                 &tournament.id,
                 &test_connection,
             );
-            let othello_match = create_mock_match_from_round(
+            let game_match = create_mock_match_from_round(
                 &tournament.id,
                 &round.id,
                 &test_connection,
             );
 
             let match_obtained = MatchRowModel::get(
-                &othello_match.id,
+                &game_match.id,
                 &test_connection,
             ).unwrap();
-            assert_eq!(match_obtained, othello_match);
+            assert_eq!(match_obtained, game_match);
         }
 
         #[test]
@@ -305,7 +375,7 @@ mod tests {
                 &tournament.id,
                 &test_connection,
             );
-            let mut othello_match = create_mock_match_from_round(
+            let mut game_match = create_mock_match_from_round(
                 &tournament.id,
                 &round.id,
                 &test_connection,
@@ -313,12 +383,12 @@ mod tests {
 
             let new_white_score = utils::generate_random_number();
             let new_black_score = utils::generate_random_number();
-            othello_match.white_score = new_white_score.clone();
-            othello_match.black_score = new_black_score.clone();
-            othello_match.update(&test_connection).unwrap();
+            game_match.white_score = new_white_score.clone();
+            game_match.black_score = new_black_score.clone();
+            game_match.update(&test_connection).unwrap();
 
             let match_obtained = MatchRowModel::get(
-                &othello_match.id,
+                &game_match.id,
                 &test_connection,
             ).unwrap();
             assert_eq!(match_obtained.black_score, new_black_score);
@@ -337,12 +407,12 @@ mod tests {
                 &tournament.id,
                 &test_connection,
             );
-            let othello_match = create_mock_match_from_round(
+            let game_match = create_mock_match_from_round(
                 &tournament.id,
                 &round.id,
                 &test_connection,
             );
-            othello_match.delete(&test_connection).unwrap();
+            game_match.delete(&test_connection).unwrap();
             let matches = MatchRowModel::get_all_from_round(
                 &round.id,
                 &test_connection,

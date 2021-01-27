@@ -5,34 +5,34 @@ use crate::database_models::MatchRowModel;
 use super::MetaGenerator;
 
 pub struct MatchMetaGenerator {
-    othello_match: MatchRowModel
+    game_match: MatchRowModel
 }
 
 impl MatchMetaGenerator {
-    pub fn from_match_model(othello_match: MatchRowModel) -> MatchMetaGenerator {
-        MatchMetaGenerator { othello_match }
+    pub fn from_match_model(game_match: MatchRowModel) -> MatchMetaGenerator {
+        MatchMetaGenerator { game_match }
     }
 }
 
 impl MetaGenerator for MatchMetaGenerator {
     fn generate_meta(&self) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.othello_match.id.clone()));
+        meta.insert(String::from("id"), Value::from(self.game_match.id.clone()));
         meta.insert(
             String::from("black_player_id"),
-            Value::from(self.othello_match.black_player_id.clone())
+            Value::from(self.game_match.black_player_id.clone())
         );
         meta.insert(
             String::from("white_player_id"),
-            Value::from(self.othello_match.white_player_id.clone())
+            Value::from(self.game_match.white_player_id.clone())
         );
         meta.insert(
             String::from("black_score"),
-            Value::from(self.othello_match.black_score.clone())
+            Value::from(self.game_match.black_score.clone())
         );
         meta.insert(
             String::from("white_score"),
-            Value::from(self.othello_match.white_score.clone())
+            Value::from(self.game_match.white_score.clone())
         );
         meta
     }
