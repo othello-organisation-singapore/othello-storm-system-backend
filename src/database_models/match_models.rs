@@ -247,9 +247,10 @@ impl MatchDAO for MatchRowModel {
 #[cfg(test)]
 mod tests {
     mod crud {
-        use serde_json::Map;
+        use serde_json::{Map, Value};
 
         use crate::database_models::{MatchDAO, MatchRowModel};
+        use crate::tournament_manager::GameMatch;
         use crate::utils;
         use crate::utils::{
             create_mock_match_from_round,
@@ -293,6 +294,96 @@ mod tests {
                 Map::new(),
                 &test_connection,
             );
+            assert_eq!(result.is_ok(), true);
+        }
+
+        #[test]
+        fn test_create_match_from_game_match() {
+            let test_connection = utils::get_test_connection();
+            let user = create_mock_user(&test_connection);
+            let tournament = create_mock_tournament_with_creator(
+                &user.username,
+                &test_connection,
+            );
+            let round = create_mock_round_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let black_player = create_mock_player_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let black_score = 20;
+            let white_player = create_mock_player_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let white_score = 44;
+
+            let game_match = GameMatch {
+                round_id: round.id.clone(),
+                black_player_id: black_player.id.clone(),
+                white_player_id: white_player.id.clone(),
+                black_score: black_score.clone(),
+                white_score: white_score.clone(),
+                meta_data: Value::from(Map::new()),
+            };
+            let result = MatchRowModel::create_from(&game_match, &test_connection);
+            assert_eq!(result.is_ok(), true);
+        }
+
+        #[test]
+        fn test_create_bulk_match() {
+            let test_connection = utils::get_test_connection();
+            let user = create_mock_user(&test_connection);
+            let tournament = create_mock_tournament_with_creator(
+                &user.username,
+                &test_connection,
+            );
+            let round = create_mock_round_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let black_player_1 = create_mock_player_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let black_score_1 = 20;
+            let white_player_1 = create_mock_player_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let white_score_1 = 44;
+
+            let black_player_2 = create_mock_player_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let black_score_2 = 20;
+            let white_player_2 = create_mock_player_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let white_score_2 = 44;
+
+            let game_match_1 = GameMatch {
+                round_id: round.id.clone(),
+                black_player_id: black_player_1.id.clone(),
+                white_player_id: white_player_1.id.clone(),
+                black_score: black_score_1.clone(),
+                white_score: white_score_1.clone(),
+                meta_data: Value::from(Map::new()),
+            };
+            let game_match_2 = GameMatch {
+                round_id: round.id.clone(),
+                black_player_id: black_player_2.id.clone(),
+                white_player_id: white_player_2.id.clone(),
+                black_score: black_score_2.clone(),
+                white_score: white_score_2.clone(),
+                meta_data: Value::from(Map::new()),
+            };
+            let matches = vec![game_match_1, game_match_2];
+            let result = MatchRowModel::bulk_create_from(&matches, &test_connection);
             assert_eq!(result.is_ok(), true);
         }
 
