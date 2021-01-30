@@ -28,8 +28,8 @@ pub struct RoundDetailsMetaGenerator {
 }
 
 impl RoundDetailsMetaGenerator {
-    pub fn from_round_model(round: RoundRowModel) -> RoundPreviewMetaGenerator {
-        RoundPreviewMetaGenerator { round }
+    pub fn from_round_model(round: RoundRowModel) -> RoundDetailsMetaGenerator {
+        RoundDetailsMetaGenerator { round }
     }
 }
 

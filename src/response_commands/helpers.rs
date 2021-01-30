@@ -2,11 +2,19 @@ use diesel::PgConnection;
 use serde_json::{Map, Value};
 
 use crate::account::Account;
-use crate::database_models::{PlayerRowModel, TournamentRowModel, UserRowModel};
+use crate::database_models::{
+    MatchRowModel,
+    PlayerRowModel,
+    RoundRowModel,
+    TournamentRowModel,
+    UserRowModel,
+};
 use crate::errors::ErrorType;
 use crate::meta_generator::{
+    MatchMetaGenerator,
     MetaGenerator,
     PlayerMetaGenerator,
+    RoundPreviewMetaGenerator,
     TournamentPreviewMetaGenerator,
     UserMetaGenerator,
 };
@@ -45,6 +53,26 @@ pub fn generate_users_meta(user_models: Vec<UserRowModel>) -> Vec<Map<String, Va
         .collect()
 }
 
+pub fn generate_rounds_meta(round_models: Vec<RoundRowModel>) -> Vec<Map<String, Value>> {
+    round_models
+        .into_iter()
+        .map(|round| {
+            let meta_generator = RoundPreviewMetaGenerator::from_round_model(round);
+            meta_generator.generate_meta()
+        })
+        .collect()
+}
+
+pub fn generate_matches_meta(match_models: Vec<MatchRowModel>) -> Vec<Map<String, Value>> {
+    match_models
+        .into_iter()
+        .map(|game_match| {
+            let meta_generator = MatchMetaGenerator::from_match_model(game_match);
+            meta_generator.generate_meta()
+        })
+        .collect()
+}
+
 pub fn is_allowed_to_manage_tournament(
     account: &Account,
     tournament: &TournamentRowModel,
@@ -57,5 +85,5 @@ pub fn is_allowed_to_manage_tournament(
     let username = account.get_username();
     let is_created_by_account = tournament.is_created_by(&username);
     let is_managed_by_account = tournament.is_managed_by(&username, connection)?;
-    return  Ok(is_created_by_account || is_managed_by_account);
+    return Ok(is_created_by_account || is_managed_by_account);
 }
