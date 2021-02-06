@@ -6,7 +6,7 @@ use crate::errors::ErrorType;
 use crate::schema::matches;
 use crate::tournament_manager::GameMatch;
 
-use super::RoundRowModel;
+use super::{RoundDAO, RoundRowModel};
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable, Associations, Identifiable)]
 #[belongs_to(RoundRowModel, foreign_key = "round_id")]
@@ -50,6 +50,10 @@ pub trait MatchDAO where Self: Sized {
     fn get(id: &i32, connection: &PgConnection) -> Result<Self, ErrorType>;
     fn get_all_from_round(
         round_id: &i32,
+        connection: &PgConnection,
+    ) -> Result<Vec<Self>, ErrorType>;
+    fn get_all_from_tournament(
+        tournament_id: &i32,
         connection: &PgConnection,
     ) -> Result<Vec<Self>, ErrorType>;
     fn delete(&self, connection: &PgConnection) -> Result<(), ErrorType>;
@@ -195,6 +199,26 @@ impl MatchDAO for MatchRowModel {
     ) -> Result<Vec<Self>, ErrorType> {
         let result = matches::table
             .filter(matches::round_id.eq(round_id))
+            .load::<MatchRowModel>(connection);
+
+        match result {
+            Ok(matches) => Ok(matches),
+            Err(e) => {
+                error!("{}", e);
+                Err(ErrorType::DatabaseError)
+            }
+        }
+    }
+
+    fn get_all_from_tournament(
+        tournament_id: &i32,
+        connection: &PgConnection,
+    ) -> Result<Vec<Self>, ErrorType> {
+        let rounds = RoundRowModel::get_all_from_tournament(tournament_id, connection)?;
+        let round_ids: Vec<i32> = rounds.iter().map(|round| round.id.clone()).collect();
+
+        let result = matches::table
+            .filter(matches::round_id.eq_any(round_ids))
             .load::<MatchRowModel>(connection);
 
         match result {
@@ -426,6 +450,61 @@ mod tests {
                 &test_connection,
             ).unwrap();
             assert_eq!(round_1_matches, vec![match_1, match_2]);
+        }
+
+        #[test]
+        fn test_get_all_tournament_matches() {
+            let test_connection = utils::get_test_connection();
+
+            let user = create_mock_user(&test_connection);
+            let tournament = create_mock_tournament_with_creator(
+                &user.username,
+                &test_connection,
+            );
+            let round_1 = create_mock_round_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            let round_2 = create_mock_round_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+
+            let match_1 = create_mock_match_from_round(
+                &tournament.id,
+                &round_1.id,
+                &test_connection,
+            );
+            let match_2 = create_mock_match_from_round(
+                &tournament.id,
+                &round_1.id,
+                &test_connection,
+            );
+            let match_3 = create_mock_match_from_round(
+                &tournament.id,
+                &round_2.id,
+                &test_connection,
+            );
+
+            let tournament_2 = create_mock_tournament_with_creator(
+                &user.username,
+                &test_connection,
+            );
+            let tournament_2_round = create_mock_round_from_tournament(
+                &tournament_2.id,
+                &test_connection,
+            );
+            let _tournament_2_match = create_mock_match_from_round(
+                &tournament_2.id,
+                &tournament_2_round.id,
+                &test_connection,
+            );
+
+            let tournament_1_matches = MatchRowModel::get_all_from_tournament(
+                &tournament.id,
+                &test_connection,
+            ).unwrap();
+            assert_eq!(tournament_1_matches, vec![match_1, match_2, match_3]);
         }
 
         #[test]
