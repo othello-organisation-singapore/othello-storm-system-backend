@@ -41,6 +41,7 @@ pub trait RoundDAO where Self: Sized {
         tournament_id: &i32,
         connection: &PgConnection,
     ) -> Result<Vec<Self>, ErrorType>;
+    fn update(&self, connection: &PgConnection) -> Result<Self, ErrorType>;
     fn delete(&self, connection: &PgConnection) -> Result<(), ErrorType>;
 }
 
@@ -117,6 +118,22 @@ impl RoundDAO for RoundRowModel {
 
         match result {
             Ok(rounds) => Ok(rounds),
+            Err(e) => {
+                error!("{}", e);
+                Err(ErrorType::DatabaseError)
+            }
+        }
+    }
+
+    fn update(&self, connection: &PgConnection) -> Result<Self, ErrorType> {
+        let result = diesel::update(self)
+            .set(self)
+            .get_result::<RoundRowModel>(connection);
+        match result {
+            Ok(round) => {
+                info!("Round {} is updated.", &self.id);
+                Ok(round)
+            }
             Err(e) => {
                 error!("{}", e);
                 Err(ErrorType::DatabaseError)
@@ -234,6 +251,25 @@ mod tests {
                 &test_connection,
             ).unwrap();
             assert_eq!(round_obtained, round);
+        }
+
+        #[test]
+        fn test_update_round() {
+            let test_connection = utils::get_test_connection();
+            let user = create_mock_user(&test_connection);
+            let tournament = create_mock_tournament_with_creator(
+                &user.username,
+                &test_connection,
+            );
+            let mut round = create_mock_round_from_tournament(
+                &tournament.id,
+                &test_connection,
+            );
+            round.round_type = RoundType::Unidentified.to_i32();
+            round.update(&test_connection).unwrap();
+
+            let round_obtained = RoundRowModel::get(&round.id, &test_connection).unwrap();
+            assert_eq!(round_obtained.round_type, RoundType::Unidentified.to_i32());
         }
 
         #[test]
