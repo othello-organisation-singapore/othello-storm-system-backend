@@ -3,7 +3,7 @@ use serde_json::{Map, Value};
 use crate::database_models::MatchRowModel;
 
 pub trait IGameMatch where Self: Sized {
-    fn from_match_model(match_model: MatchRowModel) -> Self;
+    fn from_match_model(match_model: &MatchRowModel) -> Self;
     fn create_new(
         round_id: i32,
         black_player_id: i32,
@@ -25,14 +25,14 @@ pub struct GameMatch {
 }
 
 impl IGameMatch for GameMatch {
-    fn from_match_model(match_model: MatchRowModel) -> Self {
+    fn from_match_model(match_model: &MatchRowModel) -> Self {
         return GameMatch {
             round_id: match_model.round_id,
             black_player_id: match_model.black_player_id,
             white_player_id: match_model.white_player_id,
             black_score: match_model.black_score,
             white_score: match_model.white_score,
-            meta_data: match_model.meta_data,
+            meta_data: match_model.meta_data.clone(),
         };
     }
 
@@ -46,8 +46,8 @@ impl IGameMatch for GameMatch {
             round_id,
             black_player_id,
             white_player_id,
-            black_score: 0,
-            white_score: 0,
+            black_score: -1,
+            white_score: -1,
             meta_data: Value::from(meta_data),
         }
     }
@@ -66,7 +66,7 @@ impl IGameMatch for GameMatch {
     }
 
     fn is_finished(&self) -> bool {
-        !(self.black_score == 0 && self.white_score == 0)
+        !(self.black_score == -1 && self.white_score == -1)
     }
 
     fn is_bye(&self) -> bool {
