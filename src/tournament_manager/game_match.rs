@@ -15,6 +15,7 @@ pub trait IGameMatch where Self: Sized {
     fn is_bye(&self) -> bool;
 }
 
+#[derive(Clone)]
 pub struct GameMatch {
     pub round_id: i32,
     pub black_player_id: i32,
