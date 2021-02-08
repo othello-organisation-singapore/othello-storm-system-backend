@@ -2,9 +2,7 @@ use std::cmp::Ordering::Equal;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
-use crate::tournament_manager::IGameMatch;
-
-use super::GameMatch;
+use super::{IGameMatch, GameMatch};
 
 #[derive(Clone)]
 pub struct PlayerStanding {
@@ -198,4 +196,14 @@ fn calculate_minor_score(
             0.0
         })
         .sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tournament_manager::{IGameMatch, GameMatch, ResultKeeper};
+
+    mod test_get_standings {}
+
+    mod test_has_player_met {
+    }
 }
