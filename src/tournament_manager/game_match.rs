@@ -1,6 +1,7 @@
 use serde_json::{Map, Value};
 
 use crate::database_models::MatchRowModel;
+use crate::properties::SpecialConditionScore;
 
 pub trait IGameMatch where Self: Sized {
     fn from_match_model(match_model: &MatchRowModel) -> Self;
@@ -47,22 +48,20 @@ impl IGameMatch for GameMatch {
             round_id,
             black_player_id,
             white_player_id,
-            black_score: -1,
-            white_score: -1,
+            black_score: SpecialConditionScore::NotFinished.to_i32(),
+            white_score: SpecialConditionScore::NotFinished.to_i32(),
             meta_data: Value::from(meta_data),
         }
     }
 
     fn create_new_bye(round_id: i32, player_id: i32, meta_data: Map<String, Value>) -> Self {
-        let mut updated_meta_data = meta_data.clone();
-        updated_meta_data.insert(String::from("is_bye"), Value::from(true));
         GameMatch {
             round_id,
             black_player_id: player_id,
             white_player_id: -1,
-            black_score: 33,
-            white_score: 31,
-            meta_data: Value::from(updated_meta_data),
+            black_score: SpecialConditionScore::Bye.to_i32(),
+            white_score: SpecialConditionScore::Bye.to_i32(),
+            meta_data: Value::from(meta_data),
         }
     }
 
@@ -71,12 +70,7 @@ impl IGameMatch for GameMatch {
     }
 
     fn is_bye(&self) -> bool {
-        self.meta_data
-            .as_object()
-            .unwrap_or(&Map::new())
-            .get("is_bye")
-            .unwrap_or(&Value::from(false))
-            .as_bool()
-            .unwrap_or(false)
+        let bye_score = SpecialConditionScore::Bye.to_i32();
+        self.black_score == bye_score && self.white_score == bye_score
     }
 }

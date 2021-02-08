@@ -53,7 +53,7 @@ pub enum RoundType {
     Unidentified,
     Automatic,
     ManualNormal,
-    ManualSpecial
+    ManualSpecial,
 }
 
 impl RoundType {
@@ -72,6 +72,31 @@ impl RoundType {
             RoundType::Automatic => 1,
             RoundType::ManualNormal => 2,
             RoundType::ManualSpecial => 3,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SpecialConditionScore {
+    Unidentified,
+    NotFinished,
+    Bye,
+}
+
+impl SpecialConditionScore {
+    pub fn from_i32(round_type: i32) -> SpecialConditionScore {
+        match round_type {
+            -1 => SpecialConditionScore::NotFinished,
+            -2 => SpecialConditionScore::Bye,
+            _ => SpecialConditionScore::Unidentified,
+        }
+    }
+
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            SpecialConditionScore::Unidentified => -100,
+            SpecialConditionScore::NotFinished => -1,
+            SpecialConditionScore::Bye => -2,
         }
     }
 }
@@ -171,6 +196,33 @@ mod tests {
             assert_eq!(RoundType::ManualNormal.to_i32(), 2);
             assert_eq!(RoundType::ManualSpecial.to_i32(), 3);
             assert_eq!(RoundType::Unidentified.to_i32(), 0);
+        }
+    }
+
+    mod test_special_condition_score {
+        use crate::properties::SpecialConditionScore;
+
+        #[test]
+        fn test_from_i32() {
+            assert_eq!(
+                SpecialConditionScore::from_i32(-1),
+                SpecialConditionScore::NotFinished
+            );
+            assert_eq!(
+                SpecialConditionScore::from_i32(-2),
+                SpecialConditionScore::Bye
+            );
+            assert_eq!(
+                SpecialConditionScore::from_i32(-100),
+                SpecialConditionScore::Unidentified
+            );
+        }
+
+        #[test]
+        fn test_to_i32() {
+            assert_eq!(SpecialConditionScore::NotFinished.to_i32(), -1);
+            assert_eq!(SpecialConditionScore::Bye.to_i32(), -2);
+            assert_eq!(SpecialConditionScore::Unidentified.to_i32(), -100);
         }
     }
 }
