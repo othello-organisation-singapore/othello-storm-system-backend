@@ -1,8 +1,10 @@
 use std::cmp::Ordering::Equal;
 use std::collections::{HashMap, HashSet};
+use std::env;
 use std::iter::FromIterator;
+use std::str::FromStr;
 
-use super::{IGameMatch, GameMatch};
+use super::{GameMatch, IGameMatch};
 
 #[derive(Clone)]
 pub struct PlayerStanding {
@@ -33,8 +35,13 @@ impl IResultKeeper for ResultKeeper {
         matches[..]
             .iter()
             .for_each(|game_match| {
-                player_ids.insert(game_match.black_player_id);
-                player_ids.insert(game_match.white_player_id);
+                let players_id = game_match.get_players_id();
+                if let Some(id) = players_id.0 {
+                    player_ids.insert(id);
+                }
+                if let Some(id) = players_id.1 {
+                    player_ids.insert(id);
+                }
             });
 
         let sorted_player_standings = get_sorted_player_standings(&player_ids, &matches);
@@ -105,7 +112,6 @@ fn get_sorted_player_standings(player_ids: &HashSet<i32>, matches: &Vec<GameMatc
                 id,
                 &filtered_matches,
                 &major_scores_by_id,
-                &6.0,
             );
             PlayerStanding {
                 player_id: id.clone(),
@@ -138,21 +144,35 @@ fn calculate_major_score(player_id: &i32, matches: &Vec<GameMatch>) -> f64 {
     matches
         .iter()
         .map(|game_match| {
-            if &game_match.black_player_id == player_id {
-                if game_match.black_score > game_match.white_score {
-                    return 1.0;
-                } else if game_match.black_score == game_match.white_score {
-                    return 0.5;
-                }
+            if !(
+                &game_match.black_player_id == player_id
+                    || &game_match.white_player_id == player_id
+            ) {
+                return 0.0;
             }
 
-            if &game_match.white_player_id == player_id {
-                if game_match.black_score < game_match.white_score {
-                    return 1.0;
-                } else if game_match.black_score == game_match.white_score {
-                    return 0.5;
-                }
+            if !game_match.is_finished() {
+                return 0.0;
             }
+
+            if game_match.is_bye() {
+                return 1.0;
+            }
+
+            if game_match.black_score == game_match.white_score {
+                return 0.5;
+            }
+
+            if &game_match.black_player_id == player_id
+                && game_match.black_score > game_match.white_score {
+                return 1.0;
+            }
+
+            if &game_match.white_player_id == player_id
+                && game_match.white_score > game_match.black_score {
+                return 1.0;
+            }
+
             0.0
         })
         .sum()
@@ -162,48 +182,147 @@ fn calculate_minor_score(
     player_id: &i32,
     matches: &Vec<GameMatch>,
     major_scores_by_player_ids: &HashMap<i32, f64>,
-    brightwell_constant: &f64,
 ) -> f64 {
     // Following https://www.worldothello.org/about/world-othello-championship/woc-rules
+    let brightwell_constant = f64::from_str(
+        &env::var("BRIGHTWELL_CONSTANT").unwrap()[..]
+    ).unwrap();
     matches
         .iter()
         .map(|game_match| {
-            if &game_match.black_player_id == player_id {
-                if game_match.is_bye() || game_match.is_finished() {
-                    let self_major_score = major_scores_by_player_ids
-                        .get(player_id)
-                        .unwrap_or(&0.0);
-                    return brightwell_constant * self_major_score;
-                }
-                let opponent_major_score = major_scores_by_player_ids
-                    .get(&game_match.white_player_id)
-                    .unwrap_or(&0.0);
-                return brightwell_constant * opponent_major_score;
+            if !(&game_match.black_player_id == player_id || &game_match.white_player_id == player_id) {
+                return 0.0;
             }
 
-            if &game_match.white_player_id == player_id {
-                if game_match.is_bye() || game_match.is_finished() {
-                    let self_major_score = major_scores_by_player_ids
-                        .get(player_id)
-                        .unwrap_or(&0.0);
-                    return brightwell_constant * self_major_score;
-                }
-                let opponent_major_score = major_scores_by_player_ids
-                    .get(&game_match.black_player_id)
+            if game_match.is_bye() || !game_match.is_finished() {
+                let self_major_score = major_scores_by_player_ids
+                    .get(player_id)
                     .unwrap_or(&0.0);
-                return brightwell_constant * opponent_major_score;
+                return 32.0 + brightwell_constant * self_major_score;
             }
-            0.0
+
+            let opponent_player_id = match &game_match.black_player_id == player_id {
+                true => game_match.white_player_id,
+                false => game_match.black_player_id
+            };
+            let opponent_major_score = major_scores_by_player_ids
+                .get(&opponent_player_id)
+                .unwrap_or(&0.0);
+
+            let disc_count = match &game_match.black_player_id == player_id {
+                true => f64::from(game_match.black_score),
+                false => f64::from(game_match.white_score)
+            };
+
+            disc_count + brightwell_constant * opponent_major_score
         })
         .sum()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::tournament_manager::{IGameMatch, GameMatch, ResultKeeper};
+    mod test_get_standings {
+        use std::env;
+        use std::str::FromStr;
 
-    mod test_get_standings {}
+        use serde_json::{Map, Value};
 
+        use crate::tournament_manager::{
+            GameMatch,
+            IGameMatch,
+            IResultKeeper,
+            ResultKeeper,
+        };
+
+        #[test]
+        fn test_standard() {
+            let game_matches = vec![
+                GameMatch {
+                    round_id: 1,
+                    black_player_id: 1,
+                    white_player_id: 2,
+                    black_score: 40,
+                    white_score: 24,
+                    meta_data: Value::from(Map::new()),
+                },
+                GameMatch::create_new_bye(1, 3, Map::new()),
+                GameMatch {
+                    round_id: 2,
+                    black_player_id: 1,
+                    white_player_id: 3,
+                    black_score: 30,
+                    white_score: 34,
+                    meta_data: Value::from(Map::new()),
+                },
+            ];
+            let result_keeper = ResultKeeper::from_matches(game_matches.clone());
+            let standings = result_keeper.get_detailed_standings();
+            let brightwell_constant = f64::from_str(
+                &env::var("BRIGHTWELL_CONSTANT").unwrap()[..]
+            ).unwrap();
+
+            assert_eq!(standings[0].player_id, 3);
+            assert_eq!(standings[0].major_score, 2.0);
+            assert_eq!(standings[0].minor_score, 66.0 + brightwell_constant * 3.0);
+            assert_eq!(standings[0].match_history.len(), 2);
+            assert_eq!(standings[0].match_history[0], game_matches[1]);
+            assert_eq!(standings[0].match_history[1], game_matches[2]);
+
+            assert_eq!(standings[1].player_id, 1);
+            assert_eq!(standings[1].major_score, 1.0);
+            assert_eq!(standings[1].minor_score, 70.0 + brightwell_constant * 2.0);
+            assert_eq!(standings[1].match_history.len(), 2);
+            assert_eq!(standings[1].match_history[0], game_matches[0]);
+            assert_eq!(standings[1].match_history[1], game_matches[2]);
+
+            assert_eq!(standings[2].player_id, 2);
+            assert_eq!(standings[2].major_score, 0.0);
+            assert_eq!(standings[2].minor_score, 24.0 + brightwell_constant * 1.0);
+            assert_eq!(standings[2].match_history.len(), 1);
+            assert_eq!(standings[2].match_history[0], game_matches[0]);
+        }
+
+
+    }
     mod test_has_player_met {
+        use serde_json::{Map, Value};
+
+        use crate::tournament_manager::{
+            GameMatch,
+            IGameMatch,
+            IResultKeeper,
+            ResultKeeper,
+        };
+
+        #[test]
+        fn test_standard() {
+            let game_matches = vec![
+                GameMatch {
+                    round_id: 1,
+                    black_player_id: 1,
+                    white_player_id: 2,
+                    black_score: 40,
+                    white_score: 24,
+                    meta_data: Value::from(Map::new()),
+                },
+                GameMatch::create_new_bye(1, 3, Map::new()),
+                GameMatch {
+                    round_id: 2,
+                    black_player_id: 1,
+                    white_player_id: 3,
+                    black_score: 30,
+                    white_score: 34,
+                    meta_data: Value::from(Map::new()),
+                },
+            ];
+            let result_keeper = ResultKeeper::from_matches(game_matches.clone());
+            assert_eq!(result_keeper.has_players_met(&1, &2), true);
+            assert_eq!(result_keeper.has_players_met(&1, &3), true);
+            assert_eq!(result_keeper.has_players_met(&2, &3), false);
+            assert_eq!(result_keeper.has_players_met(&2, &1), true);
+            assert_eq!(result_keeper.has_players_met(&3, &1), true);
+            assert_eq!(result_keeper.has_players_met(&3, &2), false);
+        }
+
     }
 }

@@ -14,9 +14,10 @@ pub trait IGameMatch where Self: Sized {
     fn create_new_bye(round_id: i32, player_id: i32, meta_data: Map<String, Value>) -> Self;
     fn is_finished(&self) -> bool;
     fn is_bye(&self) -> bool;
+    fn get_players_id(&self) -> (Option<i32>, Option<i32>);
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct GameMatch {
     pub round_id: i32,
     pub black_player_id: i32,
@@ -72,5 +73,12 @@ impl IGameMatch for GameMatch {
     fn is_bye(&self) -> bool {
         let bye_score = SpecialConditionScore::Bye.to_i32();
         self.black_score == bye_score && self.white_score == bye_score
+    }
+
+    fn get_players_id(&self) -> (Option<i32>, Option<i32>) {
+        if self.is_bye() {
+            return (Some(self.black_player_id), None);
+        }
+        (Some(self.black_player_id), Some(self.white_player_id))
     }
 }
