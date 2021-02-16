@@ -3,8 +3,8 @@ use diesel::result::Error;
 use serde_json::{Map, Value};
 
 use crate::errors::ErrorType;
+use crate::game_match::{GameMatchTransformer, IGameMatch};
 use crate::schema::matches;
-use crate::tournament_manager::GameMatch;
 
 use super::{RoundDAO, RoundRowModel};
 
@@ -42,9 +42,9 @@ pub trait MatchDAO where Self: Sized {
         meta_data: Map<String, Value>,
         connection: &PgConnection,
     ) -> Result<Self, ErrorType>;
-    fn create_from(game_match: &GameMatch, connection: &PgConnection) -> Result<Self, ErrorType>;
+    fn create_from(game_match: &Box<dyn IGameMatch>, connection: &PgConnection) -> Result<Self, ErrorType>;
     fn bulk_create_from(
-        game_matches: &Vec<GameMatch>,
+        game_matches: &Vec<Box<dyn IGameMatch>>,
         connection: &PgConnection,
     ) -> Result<Vec<Self>, ErrorType>;
     fn get(id: &i32, connection: &PgConnection) -> Result<Self, ErrorType>;
@@ -147,32 +147,42 @@ impl MatchDAO for MatchRowModel {
         MatchRowModel::insert_to_database(new_match, connection)
     }
 
-    fn create_from(game_match: &GameMatch, connection: &PgConnection) -> Result<Self, ErrorType> {
+    fn create_from(
+        game_match: &Box<dyn IGameMatch>,
+        connection: &PgConnection,
+    ) -> Result<Self, ErrorType> {
+        let match_data = GameMatchTransformer::transform_to_match_model_data(game_match);
+
         let new_match = NewMatchRowModel {
-            round_id: &game_match.round_id,
-            black_player_id: &game_match.black_player_id,
-            white_player_id: &game_match.white_player_id,
-            black_score: &game_match.black_score,
-            white_score: &game_match.white_score,
-            meta_data: &game_match.meta_data,
+            round_id: &match_data.round_id,
+            black_player_id: &match_data.black_player_id,
+            white_player_id: &match_data.white_player_id,
+            black_score: &match_data.black_score,
+            white_score: &match_data.white_score,
+            meta_data: &match_data.meta_data,
         };
         MatchRowModel::insert_to_database(new_match, connection)
     }
 
     fn bulk_create_from(
-        game_matches: &Vec<GameMatch>,
+        game_matches: &Vec<Box<dyn IGameMatch>>,
         connection: &PgConnection,
     ) -> Result<Vec<Self>, ErrorType> {
-        let new_matches = game_matches
+        let new_matches_data: Vec<MatchRowModel> = game_matches
             .into_iter()
-            .map(|game_match| {
+            .map(|game_match| GameMatchTransformer::transform_to_match_model_data(game_match))
+            .collect();
+
+        let new_matches = new_matches_data
+            .iter()
+            .map(|match_datum| {
                 NewMatchRowModel {
-                    round_id: &game_match.round_id,
-                    black_player_id: &game_match.black_player_id,
-                    white_player_id: &game_match.white_player_id,
-                    black_score: &game_match.black_score,
-                    white_score: &game_match.white_score,
-                    meta_data: &game_match.meta_data,
+                    round_id: &match_datum.round_id,
+                    black_player_id: &match_datum.black_player_id,
+                    white_player_id: &match_datum.white_player_id,
+                    black_score: &match_datum.black_score,
+                    white_score: &match_datum.white_score,
+                    meta_data: &match_datum.meta_data,
                 }
             })
             .collect();
@@ -274,7 +284,7 @@ mod tests {
         use serde_json::{Map, Value};
 
         use crate::database_models::{MatchDAO, MatchRowModel};
-        use crate::tournament_manager::GameMatch;
+        use crate::game_match::GameMatchTransformer;
         use crate::utils;
         use crate::utils::{
             create_mock_match_from_round,
@@ -344,14 +354,17 @@ mod tests {
             );
             let white_score = 44;
 
-            let game_match = GameMatch {
-                round_id: round.id.clone(),
-                black_player_id: black_player.id.clone(),
-                white_player_id: white_player.id.clone(),
-                black_score: black_score.clone(),
-                white_score: white_score.clone(),
-                meta_data: Value::from(Map::new()),
-            };
+            let game_match = GameMatchTransformer::transform_to_game_match(
+                &MatchRowModel {
+                    id: -1,
+                    round_id: round.id.clone(),
+                    black_player_id: black_player.id.clone(),
+                    white_player_id: white_player.id.clone(),
+                    black_score: black_score.clone(),
+                    white_score: white_score.clone(),
+                    meta_data: Value::from(Map::new()),
+                }
+            );
             let result = MatchRowModel::create_from(&game_match, &test_connection);
             assert_eq!(result.is_ok(), true);
         }
@@ -390,22 +403,28 @@ mod tests {
             );
             let white_score_2 = 44;
 
-            let game_match_1 = GameMatch {
-                round_id: round.id.clone(),
-                black_player_id: black_player_1.id.clone(),
-                white_player_id: white_player_1.id.clone(),
-                black_score: black_score_1.clone(),
-                white_score: white_score_1.clone(),
-                meta_data: Value::from(Map::new()),
-            };
-            let game_match_2 = GameMatch {
-                round_id: round.id.clone(),
-                black_player_id: black_player_2.id.clone(),
-                white_player_id: white_player_2.id.clone(),
-                black_score: black_score_2.clone(),
-                white_score: white_score_2.clone(),
-                meta_data: Value::from(Map::new()),
-            };
+            let game_match_1 = GameMatchTransformer::transform_to_game_match(
+                &MatchRowModel {
+                    id: -1,
+                    round_id: round.id.clone(),
+                    black_player_id: black_player_1.id.clone(),
+                    white_player_id: white_player_1.id.clone(),
+                    black_score: black_score_1.clone(),
+                    white_score: white_score_1.clone(),
+                    meta_data: Value::from(Map::new()),
+                }
+            );
+            let game_match_2 = GameMatchTransformer::transform_to_game_match(
+                &MatchRowModel {
+                    id: -1,
+                    round_id: round.id.clone(),
+                    black_player_id: black_player_2.id.clone(),
+                    white_player_id: white_player_2.id.clone(),
+                    black_score: black_score_2.clone(),
+                    white_score: white_score_2.clone(),
+                    meta_data: Value::from(Map::new()),
+                }
+            );
             let matches = vec![game_match_1, game_match_2];
             let result = MatchRowModel::bulk_create_from(&matches, &test_connection);
             assert_eq!(result.is_ok(), true);

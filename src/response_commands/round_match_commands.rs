@@ -5,7 +5,6 @@ use serde_json::{Map, Value};
 use crate::account::Account;
 use crate::database_models::{MatchDAO, MatchRowModel, RoundDAO, RoundRowModel};
 use crate::errors::ErrorType;
-use crate::tournament_manager::GameMatch;
 
 use super::{generate_rounds_meta, generate_matches_meta, is_allowed_to_manage_tournament};
 use super::ResponseCommand;
