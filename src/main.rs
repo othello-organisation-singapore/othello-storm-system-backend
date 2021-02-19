@@ -26,6 +26,7 @@ pub mod errors;
 pub mod game_match;
 pub mod joueurs;
 pub mod meta_generator;
+pub mod pairings_generator;
 pub mod properties;
 pub mod routes;
 pub mod response_commands;
