@@ -14,11 +14,11 @@ pub struct PlayerStanding {
     match_history: Vec<Box<dyn IGameMatch>>,
 }
 
-pub trait IResultKeeper where Self: Sized {
-    fn from_matches(matches: &Vec<Box<dyn IGameMatch>>) -> Self;
+pub trait IResultKeeper {
     fn has_players_met(&self, player_1_id: &i32, player_2_id: &i32) -> bool;
     fn get_standings(&self) -> Vec<i32>;
     fn get_detailed_standings(&self) -> Vec<PlayerStanding>;
+    fn is_empty(&self) -> bool;
 }
 
 pub struct ResultKeeper {
@@ -29,27 +29,6 @@ pub struct ResultKeeper {
 impl ResultKeeper {}
 
 impl IResultKeeper for ResultKeeper {
-    fn from_matches(matches: &Vec<Box<dyn IGameMatch>>) -> Self {
-        let mut player_ids: HashSet<i32> = HashSet::new();
-
-        matches[..]
-            .iter()
-            .for_each(|game_match| {
-                let players_id = game_match.get_players_id();
-                if let Some(id) = players_id.0 {
-                    player_ids.insert(id);
-                }
-                if let Some(id) = players_id.1 {
-                    player_ids.insert(id);
-                }
-            });
-
-        let sorted_player_standings = get_sorted_player_standings(&player_ids, &matches);
-        let opponents_ids_by_player_id = get_opponent_ids_by_player_id(&player_ids, &matches);
-
-        ResultKeeper { sorted_player_standings, opponents_ids_by_player_id }
-    }
-
     fn has_players_met(&self, player_1_id: &i32, player_2_id: &i32) -> bool {
         self.opponents_ids_by_player_id
             .get(player_1_id)
@@ -67,6 +46,32 @@ impl IResultKeeper for ResultKeeper {
     fn get_detailed_standings(&self) -> Vec<PlayerStanding> {
         self.sorted_player_standings.clone()
     }
+
+    fn is_empty(&self) -> bool {
+        self.sorted_player_standings.is_empty()
+    }
+}
+
+
+pub fn create_result_keeper(matches: &Vec<Box<dyn IGameMatch>>) -> Box<dyn IResultKeeper> {
+    let mut player_ids: HashSet<i32> = HashSet::new();
+
+    matches[..]
+        .iter()
+        .for_each(|game_match| {
+            let players_id = game_match.get_players_id();
+            if let Some(id) = players_id.0 {
+                player_ids.insert(id);
+            }
+            if let Some(id) = players_id.1 {
+                player_ids.insert(id);
+            }
+        });
+
+    let sorted_player_standings = get_sorted_player_standings(&player_ids, &matches);
+    let opponents_ids_by_player_id = get_opponent_ids_by_player_id(&player_ids, &matches);
+
+    Box::from(ResultKeeper { sorted_player_standings, opponents_ids_by_player_id })
 }
 
 fn get_opponent_ids_by_player_id(
@@ -167,10 +172,7 @@ mod tests {
         use serde_json::{Map, Value};
 
         use crate::game_match::GameMatchCreator;
-        use crate::tournament_manager::{
-            IResultKeeper,
-            ResultKeeper,
-        };
+        use crate::tournament_manager::create_result_keeper;
 
         #[test]
         fn test_standard() {
@@ -197,7 +199,7 @@ mod tests {
                     &Value::from(Map::new()),
                 ),
             ];
-            let result_keeper = ResultKeeper::from_matches(&game_matches);
+            let result_keeper = create_result_keeper(&game_matches);
             let standings = result_keeper.get_detailed_standings();
             let brightwell_constant = f64::from_str(
                 &env::var("BRIGHTWELL_CONSTANT").unwrap()[..]
@@ -229,10 +231,7 @@ mod tests {
         use serde_json::{Map, Value};
 
         use crate::game_match::GameMatchCreator;
-        use crate::tournament_manager::{
-            IResultKeeper,
-            ResultKeeper,
-        };
+        use crate::tournament_manager::create_result_keeper;
 
         #[test]
         fn test_standard() {
@@ -259,7 +258,7 @@ mod tests {
                     &Value::from(Map::new()),
                 ),
             ];
-            let result_keeper = ResultKeeper::from_matches(&game_matches);
+            let result_keeper = create_result_keeper(&game_matches);
             assert_eq!(result_keeper.has_players_met(&1, &2), true);
             assert_eq!(result_keeper.has_players_met(&1, &3), true);
             assert_eq!(result_keeper.has_players_met(&2, &3), false);

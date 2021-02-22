@@ -1,10 +1,12 @@
+use crate::database_models::PlayerRowModel;
 use crate::game_match::IGameMatch;
-use crate::tournament_manager::{IResultKeeper, Player};
+use crate::tournament_manager::IResultKeeper;
 
 pub trait PairingGenerator {
     fn generate_pairings(
         &self,
-        players: Vec<Player>,
-        past_results: dyn IResultKeeper,
-    ) -> Vec<dyn IGameMatch>;
+        round_id: &i32,
+        players: &Vec<PlayerRowModel>,
+        past_results: &Box<dyn IResultKeeper>,
+    ) -> Vec<Box<dyn IGameMatch>>;
 }
