@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use crate::database_models::MatchRowModel;
+use crate::properties::PlayerColor;
 
 use super::IGameMatch;
 
@@ -19,6 +20,16 @@ pub struct NormalGameMatch {
 impl IGameMatch for NormalGameMatch {
     fn is_player_playing(&self, player_id: &i32) -> bool {
         player_id == &self.black_player_id || player_id == &self.white_player_id
+    }
+
+    fn get_player_color(&self, player_id: &i32) -> Option<PlayerColor> {
+        if !self.is_player_playing(player_id) {
+            return None;
+        }
+        if player_id == &self.black_player_id {
+            return Some(PlayerColor::Black);
+        }
+        Some(PlayerColor::White)
     }
 
     fn get_players_id(&self) -> (Option<i32>, Option<i32>) {

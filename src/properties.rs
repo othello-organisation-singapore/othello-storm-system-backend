@@ -101,6 +101,12 @@ impl SpecialConditionScore {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum PlayerColor {
+    Black,
+    White,
+}
+
 #[cfg(test)]
 mod tests {
     mod test_user_role {

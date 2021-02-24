@@ -2,4 +2,4 @@ pub use abstract_pairings_generator::PairingGenerator;
 
 mod abstract_pairings_generator;
 mod factories;
-mod swiss_pair_pairings_generator;
+mod swiss_pairings_generator;

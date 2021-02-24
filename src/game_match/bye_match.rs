@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use crate::database_models::MatchRowModel;
-use crate::properties::SpecialConditionScore;
+use crate::properties::{SpecialConditionScore, PlayerColor};
 
 use super::IGameMatch;
 
@@ -17,6 +17,13 @@ pub struct ByeGameMatch {
 impl IGameMatch for ByeGameMatch {
     fn is_player_playing(&self, player_id: &i32) -> bool {
         player_id == &self.player_id
+    }
+
+    fn get_player_color(&self, player_id: &i32) -> Option<PlayerColor> {
+        if !self.is_player_playing(player_id) {
+            return None;
+        }
+        None
     }
 
     fn get_players_id(&self) -> (Option<i32>, Option<i32>) {

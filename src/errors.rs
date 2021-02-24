@@ -4,6 +4,7 @@ pub enum ErrorType {
     DatabaseError,
     TokenExpired,
     PermissionDenied,
+    AutomaticPairingError,
     BadRequestError(String),
     ExternalConnectionError(String),
     UnknownError(String),
@@ -19,6 +20,7 @@ impl ErrorType {
             ErrorType::PermissionDenied => 5,
             ErrorType::DatabaseError => 6,
             ErrorType::ExternalConnectionError(_) => 7,
+            ErrorType::AutomaticPairingError => 8,
         }
     }
 
@@ -40,6 +42,9 @@ impl ErrorType {
                 or contact administrator if this error persists."
             ),
             ErrorType::TokenExpired => String::from("Login expired. Please login again."),
+            ErrorType::AutomaticPairingError => String::from(
+                "No possible pairing found, please proceed with manual pairing"
+            ),
         }
     }
 }
