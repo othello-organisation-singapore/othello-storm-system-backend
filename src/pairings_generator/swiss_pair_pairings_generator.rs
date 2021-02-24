@@ -16,13 +16,13 @@ impl SwissPairPairingsGenerator {
         players: &Vec<PlayerRowModel>,
     ) -> Vec<Box<dyn IGameMatch>> {
         let mut matches = Vec::new();
-        for pairs in players
+        let sorted_players =  players
             .into_iter()
             .sorted_by_key(|player| -player.rating)
-            .collect::<Vec<&PlayerRowModel>>()
-            .chunks(2) {
-            if pairs.len() == 1 {
-                let player = pairs.first().unwrap();
+            .collect::<Vec<&PlayerRowModel>>();
+        for pair in sorted_players.chunks(2) {
+            if pair.len() == 1 {
+                let player = pair.first().unwrap();
                 matches.push(Box::from(GameMatchCreator::create_new_bye_match(
                     round_id,
                     &player.id,
@@ -30,8 +30,8 @@ impl SwissPairPairingsGenerator {
                 )));
                 continue;
             }
-            let black_player = pairs.first().unwrap();
-            let white_player = pairs.last().unwrap();
+            let black_player = pair.first().unwrap();
+            let white_player = pair.last().unwrap();
             matches.push(Box::from(GameMatchCreator::create_new_match(
                 round_id,
                 &black_player.id,
