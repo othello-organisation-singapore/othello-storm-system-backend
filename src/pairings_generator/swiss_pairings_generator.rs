@@ -24,7 +24,7 @@ impl SwissPairingsGenerator {
             .sorted_by_key(|player| -player.rating)
             .collect::<Vec<&PlayerRowModel>>();
 
-        let midpoint = (sorted_players.len() as f32 / 2  as f32).ceil() as usize;
+        let midpoint = (sorted_players.len() as f32 / 2 as f32).ceil() as usize;
         let second_part_sorted_players = sorted_players.split_off(midpoint);
         let mut second_part_players_iter = second_part_sorted_players.iter();
 
@@ -47,7 +47,7 @@ impl SwissPairingsGenerator {
                         &white_player_id,
                         &Value::from(Map::new()),
                     )));
-                },
+                }
                 None => {
                     matches.push(Box::from(GameMatchCreator::create_new_bye_match(
                         round_id,
@@ -104,6 +104,10 @@ impl SwissPairingsGenerator {
                 .enumerate()
                 .map(|(idx, player)| (idx as i32, player))
                 .find(|(idx, _)| {
+                    if idx == &player_1_idx {
+                        return false;
+                    }
+
                     if self.has_player_paired(bitmask, idx) {
                         return false;
                     }
@@ -161,7 +165,7 @@ impl SwissPairingsGenerator {
     }
 
     fn has_player_paired(&self, bitmask: &i128, player_index: &i32) -> bool {
-        (1 << player_index ^ bitmask) == 0
+        ((1 << player_index) ^ bitmask) == 0
     }
 
     fn add_new_pair_to_bitmask(
@@ -235,8 +239,8 @@ mod tests {
     mod test_swiss_pairing {
         use serde_json::{Map, Value};
 
-        use crate::database_models::PlayerRowModel;
-        use crate::game_match::{GameMatchCreator, IGameMatch};
+        use crate::database_models::{PlayerRowModel, MatchRowModel};
+        use crate::game_match::{GameMatchCreator, GameMatchTransformer, IGameMatch};
         use crate::pairings_generator::{PairingGenerator, SwissPairingsGenerator};
         use crate::properties::PlayerColor;
         use crate::tournament_manager::{ResultKeeper, IResultKeeper, create_result_keeper};
@@ -253,6 +257,24 @@ mod tests {
                 rating,
                 meta_data: Value::from(Map::new()),
             }
+        }
+
+        fn create_dummy_match(
+            black_player_id: i32,
+            white_player_id: i32,
+            black_score: i32,
+            white_score: i32,
+        ) -> Box<dyn IGameMatch> {
+            let match_model = MatchRowModel {
+                id: 0,
+                round_id: 0,
+                black_player_id,
+                white_player_id,
+                black_score,
+                white_score,
+                meta_data: Value::from(Map::new()),
+            };
+            GameMatchTransformer::transform_to_game_match(&match_model)
         }
 
         #[test]
@@ -301,5 +323,42 @@ mod tests {
             assert_eq!(pairings[2].get_player_color(&1), None);
             assert_eq!(pairings[2].is_player_playing(&1), true);
         }
+
+        #[test]
+        fn test_normal_round_even() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+                create_dummy_player(5, 3000),
+                create_dummy_player(6, 1700),
+            ];
+            let game_matches = vec![
+                create_dummy_match(5, 1, 20, 44),
+                create_dummy_match(3, 2, 32, 32),
+                create_dummy_match(6, 4, 19, 45),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = SwissPairingsGenerator {};
+            let pairings = pairings_generator.generate_pairings(&0, &player_lists, &result_keeper).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&4), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&3), Some(PlayerColor::Black));
+            assert_eq!(pairings[2].get_player_color(&6), Some(PlayerColor::White));
+        }
+
+        #[test]
+        fn test_normal_round_odd() {}
+
+        #[test]
+        fn test_normal_round_only_one_possibility() {}
+
+        #[test]
+        fn test_normal_round_no_possibility() {}
     }
 }
