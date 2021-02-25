@@ -9,10 +9,10 @@ use crate::properties::PlayerColor;
 
 #[derive(Clone)]
 pub struct PlayerStanding {
-    player_id: i32,
-    major_score: f64,
-    minor_score: f64,
-    match_history: Vec<Box<dyn IGameMatch>>,
+    pub player_id: i32,
+    pub major_score: f64,
+    pub minor_score: f64,
+    pub match_history: Vec<Box<dyn IGameMatch>>,
 }
 
 pub trait IResultKeeper {
