@@ -98,48 +98,17 @@ impl SwissPairingsGenerator {
                 .find(|(idx, _)| !self.has_player_paired(bitmask, idx))
                 .unwrap();
 
-
-            let result = standings
-                .iter()
-                .enumerate()
-                .map(|(idx, player)| (idx as i32, player))
-                .find(|(idx, _)| {
-                    if idx == &player_1_idx {
-                        return false;
-                    }
-
-                    if self.has_player_paired(bitmask, idx) {
-                        return false;
-                    }
-                    if past_results.has_players_met(&player_1_idx, idx) {
-                        return false;
-                    }
-
-                    let updated_bitmask = self.add_new_pair_to_bitmask(bitmask, &player_1_idx, &idx);
-                    self
-                        .generate_remaining_pairings(
-                            round_id,
-                            &updated_bitmask,
-                            standings,
-                            past_results,
-                            memo,
-                        )
-                        .is_some()
-                });
-
-            let pairings = match result {
-                Some((player_2_idx, player_2_standing)) => {
-                    let pairing = self.generate_pairing(
+            let pairings = match self.get_no_of_unpaired_players(bitmask, standings) {
+                1 => {
+                    let pairing = GameMatchCreator::create_new_bye_match(
                         round_id,
                         &player_1_standing.player_id,
-                        &player_2_standing.player_id,
-                        past_results,
+                        &Value::from(Map::new())
                     );
-
                     let updated_bitmask = self.add_new_pair_to_bitmask(
                         bitmask,
                         &player_1_idx,
-                        &player_2_idx,
+                        &player_1_idx,
                     );
                     let remaining_pairings = self.generate_remaining_pairings(
                         round_id,
@@ -149,9 +118,64 @@ impl SwissPairingsGenerator {
                         memo,
                     ).unwrap();
                     Some([vec![pairing], remaining_pairings].concat())
+                },
+                _ => {
+                    let result = standings
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, player)| (idx as i32, player))
+                        .find(|(idx, _)| {
+                            if idx == &player_1_idx {
+                                return false;
+                            }
+
+                            if self.has_player_paired(bitmask, idx) {
+                                return false;
+                            }
+                            if past_results.has_players_met(&player_1_idx, idx) {
+                                return false;
+                            }
+
+                            let updated_bitmask = self.add_new_pair_to_bitmask(bitmask, &player_1_idx, &idx);
+                            self
+                                .generate_remaining_pairings(
+                                    round_id,
+                                    &updated_bitmask,
+                                    standings,
+                                    past_results,
+                                    memo,
+                                )
+                                .is_some()
+                        });
+
+                    match result {
+                        Some((player_2_idx, player_2_standing)) => {
+                            let pairing = self.generate_pairing(
+                                round_id,
+                                &player_1_standing.player_id,
+                                &player_2_standing.player_id,
+                                past_results,
+                            );
+
+                            let updated_bitmask = self.add_new_pair_to_bitmask(
+                                bitmask,
+                                &player_1_idx,
+                                &player_2_idx,
+                            );
+                            let remaining_pairings = self.generate_remaining_pairings(
+                                round_id,
+                                &updated_bitmask,
+                                standings,
+                                past_results,
+                                memo,
+                            ).unwrap();
+                            Some([vec![pairing], remaining_pairings].concat())
+                        }
+                        None => None
+                    }
                 }
-                None => None
             };
+
             memo.insert(bitmask.clone(), pairings);
         }
 
@@ -166,6 +190,16 @@ impl SwissPairingsGenerator {
 
     fn has_player_paired(&self, bitmask: &i128, player_index: &i32) -> bool {
         ((1 << player_index) & bitmask) != 0
+    }
+
+    fn get_no_of_unpaired_players(&self, bitmask: &i128, standings: &Vec<PlayerStanding>) -> i32 {
+        let mut cnt = 0;
+        for i in 0..standings.len() {
+            if self.has_player_paired(bitmask, &(i as i32)) {
+                cnt +=1 ;
+            }
+        }
+        cnt
     }
 
     fn add_new_pair_to_bitmask(
@@ -353,7 +387,31 @@ mod tests {
         }
 
         #[test]
-        fn test_normal_round_odd() {}
+        fn test_normal_round_odd() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+                create_dummy_player(5, 3000),
+            ];
+            let game_matches = vec![
+                create_dummy_match(5, 1, 20, 44),
+                create_dummy_match(3, 2, 32, 32),
+                GameMatchCreator::create_new_bye_match(&0, &4, &Value::from(Map::new())),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = SwissPairingsGenerator {};
+            let pairings = pairings_generator.generate_pairings(&0, &player_lists, &result_keeper).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&4), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&3), None);
+            assert_eq!(pairings[2].is_player_playing(&3), true);
+        }
 
         #[test]
         fn test_normal_round_only_one_possibility() {}
