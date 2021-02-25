@@ -165,7 +165,7 @@ impl SwissPairingsGenerator {
     }
 
     fn has_player_paired(&self, bitmask: &i128, player_index: &i32) -> bool {
-        ((1 << player_index) ^ bitmask) == 0
+        ((1 << player_index) & bitmask) != 0
     }
 
     fn add_new_pair_to_bitmask(
