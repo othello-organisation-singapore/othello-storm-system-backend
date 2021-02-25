@@ -19,28 +19,43 @@ impl SwissPairingsGenerator {
         players: &Vec<PlayerRowModel>,
     ) -> Vec<Box<dyn IGameMatch>> {
         let mut matches = Vec::new();
-        let sorted_players = players
+        let mut sorted_players = players
             .into_iter()
             .sorted_by_key(|player| -player.rating)
             .collect::<Vec<&PlayerRowModel>>();
-        for pair in sorted_players.chunks(2) {
-            if pair.len() == 1 {
-                let player = pair.first().unwrap();
-                matches.push(Box::from(GameMatchCreator::create_new_bye_match(
-                    round_id,
-                    &player.id,
-                    &Value::from(Map::new()),
-                )));
-                continue;
+
+        let midpoint = (sorted_players.len() as f32 / 2  as f32).ceil() as usize;
+        let second_part_sorted_players = sorted_players.split_off(midpoint);
+        let mut second_part_players_iter = second_part_sorted_players.iter();
+
+        for (idx, first_player) in sorted_players.iter().enumerate() {
+            let second_player_option = second_part_players_iter.next();
+            match second_player_option {
+                Some(second_player) => {
+                    let black_player_id = match idx % 2 == 0 {
+                        true => first_player.id,
+                        false => second_player.id,
+                    };
+
+                    let white_player_id = match idx % 2 == 0 {
+                        true => second_player.id,
+                        false => first_player.id,
+                    };
+                    matches.push(Box::from(GameMatchCreator::create_new_match(
+                        round_id,
+                        &black_player_id,
+                        &white_player_id,
+                        &Value::from(Map::new()),
+                    )));
+                },
+                None => {
+                    matches.push(Box::from(GameMatchCreator::create_new_bye_match(
+                        round_id,
+                        &first_player.id,
+                        &Value::from(Map::new()),
+                    )));
+                }
             }
-            let black_player = pair.first().unwrap();
-            let white_player = pair.last().unwrap();
-            matches.push(Box::from(GameMatchCreator::create_new_match(
-                round_id,
-                &black_player.id,
-                &white_player.id,
-                &Value::from(Map::new()),
-            )));
         }
         matches
     }
@@ -257,10 +272,10 @@ mod tests {
             let pairings = pairings_generator.generate_pairings(&0, &player_lists, &result_keeper).unwrap();
 
             assert_eq!(pairings[0].get_player_color(&5), Some(PlayerColor::Black));
-            assert_eq!(pairings[0].get_player_color(&2), Some(PlayerColor::White));
-            assert_eq!(pairings[1].get_player_color(&6), Some(PlayerColor::Black));
-            assert_eq!(pairings[1].get_player_color(&1), Some(PlayerColor::White));
-            assert_eq!(pairings[2].get_player_color(&3), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&3), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&6), Some(PlayerColor::Black));
             assert_eq!(pairings[2].get_player_color(&4), Some(PlayerColor::White));
         }
 
@@ -280,11 +295,11 @@ mod tests {
             let pairings = pairings_generator.generate_pairings(&0, &player_lists, &result_keeper).unwrap();
 
             assert_eq!(pairings[0].get_player_color(&5), Some(PlayerColor::Black));
-            assert_eq!(pairings[0].get_player_color(&2), Some(PlayerColor::White));
-            assert_eq!(pairings[1].get_player_color(&1), Some(PlayerColor::Black));
-            assert_eq!(pairings[1].get_player_color(&3), Some(PlayerColor::White));
-            assert_eq!(pairings[2].get_player_color(&4), None);
-            assert_eq!(pairings[2].is_player_playing(&4), true);
+            assert_eq!(pairings[0].get_player_color(&3), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&4), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&1), None);
+            assert_eq!(pairings[2].is_player_playing(&1), true);
         }
     }
 }
