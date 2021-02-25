@@ -10,7 +10,7 @@ use super::PairingGenerator;
 use crate::errors::ErrorType;
 use crate::properties::PlayerColor;
 
-struct SwissPairingsGenerator {}
+pub struct SwissPairingsGenerator {}
 
 impl SwissPairingsGenerator {
     fn generate_first_round_pairings(
