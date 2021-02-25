@@ -213,3 +213,78 @@ impl PairingGenerator for SwissPairingsGenerator {
         self.generate_normal_pairings(round_id, past_results)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    mod test_swiss_pairing {
+        use serde_json::{Map, Value};
+
+        use crate::database_models::PlayerRowModel;
+        use crate::game_match::{GameMatchCreator, IGameMatch};
+        use crate::pairings_generator::{PairingGenerator, SwissPairingsGenerator};
+        use crate::properties::PlayerColor;
+        use crate::tournament_manager::{ResultKeeper, IResultKeeper, create_result_keeper};
+        use crate::utils::generate_random_string;
+
+        fn create_dummy_player(id: i32, rating: i32) -> PlayerRowModel {
+            PlayerRowModel {
+                id,
+                tournament_id: 0,
+                joueurs_id: generate_random_string(5),
+                first_name: generate_random_string(10),
+                last_name: generate_random_string(10),
+                country: generate_random_string(10),
+                rating,
+                meta_data: Value::from(Map::new()),
+            }
+        }
+
+        #[test]
+        fn test_first_round_even() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+                create_dummy_player(5, 3000),
+                create_dummy_player(6, 1700),
+            ];
+            let game_matches: Vec<Box<dyn IGameMatch>> = Vec::new();
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = SwissPairingsGenerator {};
+            let pairings = pairings_generator.generate_pairings(&0, &player_lists, &result_keeper).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&5), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&2), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&6), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&1), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&3), Some(PlayerColor::Black));
+            assert_eq!(pairings[2].get_player_color(&4), Some(PlayerColor::White));
+        }
+
+        #[test]
+        fn test_first_round_odd() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+                create_dummy_player(5, 3000),
+            ];
+            let game_matches: Vec<Box<dyn IGameMatch>> = Vec::new();
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = SwissPairingsGenerator {};
+            let pairings = pairings_generator.generate_pairings(&0, &player_lists, &result_keeper).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&5), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&2), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&1), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&3), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&4), None);
+            assert_eq!(pairings[2].is_player_playing(&4), true);
+        }
+    }
+}
