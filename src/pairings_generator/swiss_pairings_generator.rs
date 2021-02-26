@@ -6,7 +6,7 @@ use crate::database_models::PlayerRowModel;
 use crate::game_match::{GameMatchCreator, IGameMatch};
 use crate::tournament_manager::IResultKeeper;
 
-use super::{PairingGenerator, Pairings};
+use super::{PairingGenerator, Pairings, get_player_1_color};
 use crate::errors::ErrorType;
 use crate::properties::PlayerColor;
 
@@ -35,18 +35,18 @@ impl SwissPairingsGenerator {
         let second_part_sorted_players = sorted_players.split_off(midpoint);
         let mut second_part_players_iter = second_part_sorted_players.iter();
 
-        for (idx, first_player) in sorted_players.iter().enumerate() {
-            let second_player_option = second_part_players_iter.next();
-            match second_player_option {
-                Some(second_player) => {
+        for (idx, player_1) in sorted_players.iter().enumerate() {
+            let player_2_option = second_part_players_iter.next();
+            match player_2_option {
+                Some(player_2) => {
                     let black_player_id = match idx % 2 == 0 {
-                        true => first_player.id,
-                        false => second_player.id,
+                        true => player_1.id,
+                        false => player_2.id,
                     };
 
                     let white_player_id = match idx % 2 == 0 {
-                        true => second_player.id,
-                        false => first_player.id,
+                        true => player_2.id,
+                        false => player_1.id,
                     };
                     matches.push(Box::from(GameMatchCreator::create_new_match(
                         round_id,
@@ -58,7 +58,7 @@ impl SwissPairingsGenerator {
                 None => {
                     matches.push(Box::from(GameMatchCreator::create_new_bye_match(
                         round_id,
-                        &first_player.id,
+                        &player_1.id,
                         &Value::from(Map::new()),
                     )));
                 }
@@ -217,7 +217,7 @@ impl SwissPairingsGenerator {
         player_1_id: &i32,
         player_2_id: &i32,
     ) -> Box<dyn IGameMatch> {
-        let player_1_color = self.get_player_1_color(player_1_id, player_2_id);
+        let player_1_color = get_player_1_color(player_1_id, player_2_id, &self.past_results);
         let black_player_id = match player_1_color {
             PlayerColor::Black => player_1_id,
             PlayerColor::White => player_2_id,
@@ -232,18 +232,6 @@ impl SwissPairingsGenerator {
             &white_player_id,
             &Value::from(Map::new()),
         )
-    }
-
-    fn get_player_1_color(&self, player_1_id: &i32, player_2_id: &i32) -> PlayerColor {
-        let player_1_black_count = self.past_results.get_color_count(player_1_id, PlayerColor::Black);
-        let player_1_white_count = self.past_results.get_color_count(player_1_id, PlayerColor::White);
-        let player_2_black_count = self.past_results.get_color_count(player_2_id, PlayerColor::Black);
-        let player_2_white_count = self.past_results.get_color_count(player_2_id, PlayerColor::White);
-
-        if player_1_black_count + player_2_white_count > player_2_black_count + player_1_white_count {
-            return PlayerColor::White;
-        }
-        PlayerColor::Black
     }
 }
 
