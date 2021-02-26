@@ -103,7 +103,7 @@ impl SwissPairingsGenerator {
                     let pairing = GameMatchCreator::create_new_bye_match(
                         round_id,
                         &player_1_standing.player_id,
-                        &Value::from(Map::new())
+                        &Value::from(Map::new()),
                     );
                     let updated_bitmask = self.add_new_pair_to_bitmask(
                         bitmask,
@@ -118,7 +118,7 @@ impl SwissPairingsGenerator {
                         memo,
                     ).unwrap();
                     Some([vec![pairing], remaining_pairings].concat())
-                },
+                }
                 _ => {
                     let result = standings
                         .iter()
@@ -195,8 +195,8 @@ impl SwissPairingsGenerator {
     fn get_no_of_unpaired_players(&self, bitmask: &i128, standings: &Vec<PlayerStanding>) -> i32 {
         let mut cnt = 0;
         for i in 0..standings.len() {
-            if self.has_player_paired(bitmask, &(i as i32)) {
-                cnt +=1 ;
+            if !self.has_player_paired(bitmask, &(i as i32)) {
+                cnt += 1;
             }
         }
         cnt

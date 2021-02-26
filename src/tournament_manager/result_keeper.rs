@@ -144,6 +144,9 @@ fn get_sorted_player_standings<'a>(
         .collect();
     standings.sort_by(|a, b| {
         if a.major_score == b.major_score {
+            if a.minor_score == b.minor_score {
+                return a.player_id.partial_cmp(&b.player_id).unwrap_or(Equal);
+            }
             return b.minor_score.partial_cmp(&a.minor_score).unwrap_or(Equal);
         }
         b.major_score.partial_cmp(&a.major_score).unwrap_or(Equal)
