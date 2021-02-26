@@ -124,7 +124,7 @@ impl SwissPairingsGenerator {
                         .iter()
                         .enumerate()
                         .map(|(idx, player)| (idx as i32, player))
-                        .find(|(idx, _)| {
+                        .find(|(idx, player_2_standing)| {
                             if idx == &player_1_idx {
                                 return false;
                             }
@@ -132,7 +132,11 @@ impl SwissPairingsGenerator {
                             if self.has_player_paired(bitmask, idx) {
                                 return false;
                             }
-                            if past_results.has_players_met(&player_1_idx, idx) {
+
+                            if past_results.has_players_met(
+                                &player_1_standing.player_id,
+                                &player_2_standing.player_id,
+                            ) {
                                 return false;
                             }
 
@@ -414,9 +418,53 @@ mod tests {
         }
 
         #[test]
-        fn test_normal_round_only_one_possibility() {}
+        fn test_normal_round_only_one_possibility() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+            ];
+            let game_matches = vec![
+                create_dummy_match(1, 2, 20, 44),
+                create_dummy_match(3, 4, 32, 32),
+                create_dummy_match(1, 3, 20, 44),
+                create_dummy_match(2, 4, 33, 31),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = SwissPairingsGenerator {};
+            let pairings = pairings_generator.generate_pairings(&0, &player_lists, &result_keeper).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&2), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&3), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&4), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&1), Some(PlayerColor::White));
+        }
 
         #[test]
-        fn test_normal_round_no_possibility() {}
+        fn test_normal_round_no_possibility() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+            ];
+            let game_matches = vec![
+                create_dummy_match(1, 2, 20, 44),
+                create_dummy_match(1, 4, 32, 32),
+                create_dummy_match(1, 3, 20, 44),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = SwissPairingsGenerator {};
+            let pairings_result = pairings_generator.generate_pairings(
+                &0,
+                &player_lists,
+                &result_keeper
+            );
+
+            assert_eq!(pairings_result.is_err(), true);
+        }
     }
 }
