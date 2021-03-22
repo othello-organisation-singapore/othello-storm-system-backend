@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use serde_json::{Map, Value};
 
 use crate::database_models::PlayerRowModel;
@@ -6,6 +5,7 @@ use crate::errors::ErrorType;
 use crate::game_match::GameMatchCreator;
 use crate::properties::PlayerColor;
 use crate::tournament_manager::IResultKeeper;
+use crate::utils::generate_random_number_ranged;
 
 use super::{PairingGenerator, Pairings, get_player_1_color};
 
@@ -90,7 +90,8 @@ impl RRPairingsGenerator {
 impl PairingGenerator for RRPairingsGenerator {
     fn generate_pairings(&self, round_id: &i32) -> Result<Pairings, ErrorType> {
         if self.past_results.is_empty() {
-            return Ok(self.generate_rr_pairings(round_id, &0))
+            let shift = generate_random_number_ranged(0, self.players.len() as i32 - 1);
+            return Ok(self.generate_rr_pairings(round_id, &shift))
         }
 
         let standings = self.past_results.get_standings();
@@ -123,14 +124,15 @@ impl PairingGenerator for RRPairingsGenerator {
 #[cfg(test)]
 mod tests {
     mod test_rr_pairing {
+        use mocktopus::mocking::{Mockable, MockResult};
         use serde_json::{Map, Value};
-        use std::collections::HashSet;
 
         use crate::database_models::{PlayerRowModel, MatchRowModel};
         use crate::game_match::{GameMatchCreator, GameMatchTransformer, IGameMatch};
         use crate::pairings_generator::{PairingGenerator, RRPairingsGenerator};
         use crate::properties::PlayerColor;
         use crate::tournament_manager::create_result_keeper;
+        use crate::utils;
         use crate::utils::generate_random_string;
 
         fn create_dummy_player(id: i32, rating: i32) -> PlayerRowModel {
@@ -166,6 +168,7 @@ mod tests {
 
         #[test]
         fn test_first_round_even() {
+            utils::generate_random_number_ranged.mock_safe(|_, _| MockResult::Return(0));
             let player_lists = vec![
                 create_dummy_player(1, 1500),
                 create_dummy_player(2, 2000),
@@ -186,6 +189,134 @@ mod tests {
             assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::White));
             assert_eq!(pairings[2].get_player_color(&3), Some(PlayerColor::Black));
             assert_eq!(pairings[2].get_player_color(&6), Some(PlayerColor::White));
+        }
+
+        #[test]
+        fn test_first_round_odd() {
+            utils::generate_random_number_ranged.mock_safe(|_, _| MockResult::Return(0));
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+                create_dummy_player(5, 3000),
+            ];
+            let game_matches: Vec<Box<dyn IGameMatch>> = Vec::new();
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
+            let pairings = pairings_generator.generate_pairings(&0).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&4), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&3), None);
+            assert_eq!(pairings[2].is_player_playing(&3), true);
+        }
+
+        #[test]
+        fn test_normal_round_even() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+                create_dummy_player(5, 3000),
+                create_dummy_player(6, 1700),
+            ];
+            let game_matches = vec![
+                create_dummy_match(1, 4, 20, 44),
+                create_dummy_match(2, 5, 32, 32),
+                create_dummy_match(3, 6, 19, 45),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
+            let pairings = pairings_generator.generate_pairings(&0).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&2), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&3), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&6), Some(PlayerColor::Black));
+            assert_eq!(pairings[2].get_player_color(&4), Some(PlayerColor::White));
+        }
+
+        #[test]
+        fn test_normal_round_odd() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+                create_dummy_player(5, 3000),
+            ];
+            let game_matches = vec![
+                create_dummy_match(5, 1, 20, 44),
+                create_dummy_match(3, 2, 32, 32),
+                GameMatchCreator::create_new_bye_match(&0, &4, &Value::from(Map::new())),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
+            let pairings = pairings_generator.generate_pairings(&0).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&4), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&3), None);
+            assert_eq!(pairings[2].is_player_playing(&3), true);
+        }
+
+        #[test]
+        fn test_normal_round_only_one_possibility() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+            ];
+            let game_matches = vec![
+                create_dummy_match(1, 3, 20, 44),
+                create_dummy_match(4, 2, 32, 32),
+                create_dummy_match(1, 2, 20, 44),
+                create_dummy_match(3, 4, 33, 31),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
+            let pairings = pairings_generator.generate_pairings(&0).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&4), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&3), Some(PlayerColor::White));
+        }
+
+        #[test]
+        fn test_normal_round_no_possibility() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+                create_dummy_player(4, 200),
+            ];
+            let game_matches = vec![
+                create_dummy_match(1, 2, 20, 44),
+                create_dummy_match(3, 4, 20, 44),
+                create_dummy_match(1, 4, 32, 32),
+                create_dummy_match(2, 3, 32, 32),
+                create_dummy_match(1, 3, 20, 44),
+                create_dummy_match(4, 2, 20, 44),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
+            let pairings_result = pairings_generator.generate_pairings(&0);
+
+            assert_eq!(pairings_result.is_err(), true);
         }
     }
 }

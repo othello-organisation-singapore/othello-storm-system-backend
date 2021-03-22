@@ -3,7 +3,7 @@ pub use datetime::{get_current_timestamp, create_date_format, string_to_date, da
 pub use hash::{hash, verify};
 pub use http_request::http_get_text;
 pub use jwt::JWTMediator;
-pub use random::{generate_random_number, generate_random_string};
+pub use random::{generate_random_number, generate_random_string, generate_random_number_ranged};
 pub use test_helpers::{
     create_mock_tournament_with_creator,
     create_mock_tournament_with_creator_and_joueurs,
