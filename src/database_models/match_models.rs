@@ -3,9 +3,10 @@ use diesel::result::Error;
 use serde_json::{Map, Value};
 
 use crate::errors::ErrorType;
+use crate::properties::SpecialConditionScore;
 use crate::game_match::{GameMatchTransformer, IGameMatch};
-use crate::schema::matches;
 
+use crate::schema::matches;
 use super::{RoundDAO, RoundRowModel};
 
 #[derive(AsChangeset, PartialEq, Debug, Queryable, Associations, Identifiable)]
@@ -58,6 +59,7 @@ pub trait MatchDAO where Self: Sized {
     ) -> Result<Vec<Self>, ErrorType>;
     fn delete(&self, connection: &PgConnection) -> Result<(), ErrorType>;
     fn update(&self, connection: &PgConnection) -> Result<Self, ErrorType>;
+    fn is_finished(&self) -> bool;
 }
 
 impl MatchRowModel {
@@ -274,6 +276,10 @@ impl MatchDAO for MatchRowModel {
                 Err(ErrorType::DatabaseError)
             }
         }
+    }
+
+    fn is_finished(&self) -> bool {
+        !(self.black_score == SpecialConditionScore::NotFinished.to_i32() || self.white_score == SpecialConditionScore::NotFinished.to_i32())
     }
 }
 
