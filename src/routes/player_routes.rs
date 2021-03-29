@@ -42,7 +42,11 @@ pub struct AddPlayerNewRequest {
 }
 
 #[post("/<id>/players/new", data = "<request>")]
-pub fn add_player_new(cookies: Cookies, id: i32, request: Json<AddPlayerNewRequest>) -> Json<JsonValue> {
+pub fn add_player_new(
+    cookies: Cookies,
+    id: i32,
+    request: Json<AddPlayerNewRequest>,
+) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     let command = response_commands::AddTournamentPlayerNewCommand {
         cookies,

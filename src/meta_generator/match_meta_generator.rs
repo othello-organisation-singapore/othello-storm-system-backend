@@ -5,7 +5,7 @@ use crate::database_models::MatchRowModel;
 use super::MetaGenerator;
 
 pub struct MatchMetaGenerator {
-    game_match: MatchRowModel
+    game_match: MatchRowModel,
 }
 
 impl MatchMetaGenerator {

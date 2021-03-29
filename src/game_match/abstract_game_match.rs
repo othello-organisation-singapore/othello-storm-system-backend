@@ -9,7 +9,10 @@ pub trait ClonableIGameMatch {
     fn clone_box(&self) -> Box<dyn IGameMatch>;
 }
 
-impl<T> ClonableIGameMatch for T where T: 'static + IGameMatch + Clone {
+impl<T> ClonableIGameMatch for T
+where
+    T: 'static + IGameMatch + Clone,
+{
     fn clone_box(&self) -> Box<dyn IGameMatch> {
         Box::new(self.clone())
     }

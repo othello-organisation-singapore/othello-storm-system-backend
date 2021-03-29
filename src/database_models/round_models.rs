@@ -28,7 +28,10 @@ struct NewRoundRowModel<'a> {
     pub meta_data: &'a Value,
 }
 
-pub trait RoundDAO where Self: Sized {
+pub trait RoundDAO
+where
+    Self: Sized,
+{
     fn create(
         tournament_id: &i32,
         name: &String,
@@ -62,9 +65,7 @@ impl RoundRowModel {
 
                 info!(
                     "Round id {} (round {}) is added to tournament {}",
-                    round_id,
-                    round_name,
-                    tournament_id,
+                    round_id, round_name, tournament_id,
                 );
                 Ok(round)
             }
@@ -95,9 +96,7 @@ impl RoundDAO for RoundRowModel {
     }
 
     fn get(id: &i32, connection: &PgConnection) -> Result<Self, ErrorType> {
-        let result = rounds::table
-            .find(id)
-            .first(connection);
+        let result = rounds::table.find(id).first(connection);
 
         match result {
             Ok(round) => Ok(round),
@@ -147,9 +146,7 @@ impl RoundDAO for RoundRowModel {
             Ok(_) => {
                 info!(
                     "Round id {} (round {}) is deleted from tournament {}",
-                    &self.id,
-                    &self.name,
-                    &self.tournament_id
+                    &self.id, &self.name, &self.tournament_id
                 );
                 Ok(())
             }
@@ -161,7 +158,6 @@ impl RoundDAO for RoundRowModel {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     mod crud {
@@ -171,8 +167,7 @@ mod tests {
         use crate::properties::RoundType;
         use crate::utils;
         use crate::utils::{
-            create_mock_round_from_tournament,
-            create_mock_tournament_with_creator,
+            create_mock_round_from_tournament, create_mock_tournament_with_creator,
             create_mock_user,
         };
 
@@ -181,10 +176,7 @@ mod tests {
             let test_connection = utils::get_test_connection();
 
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let name = utils::generate_random_string(10);
 
@@ -204,32 +196,17 @@ mod tests {
             let test_connection = utils::get_test_connection();
 
             let user = create_mock_user(&test_connection);
-            let tournament_1 = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
-            let tournament_2 = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
+            let tournament_1 =
+                create_mock_tournament_with_creator(&user.username, &test_connection);
+            let tournament_2 =
+                create_mock_tournament_with_creator(&user.username, &test_connection);
 
-            let round_1 = create_mock_round_from_tournament(
-                &tournament_1.id,
-                &test_connection,
-            );
-            let round_2 = create_mock_round_from_tournament(
-                &tournament_1.id,
-                &test_connection,
-            );
-            let _round_3 = create_mock_round_from_tournament(
-                &tournament_2.id,
-                &test_connection,
-            );
+            let round_1 = create_mock_round_from_tournament(&tournament_1.id, &test_connection);
+            let round_2 = create_mock_round_from_tournament(&tournament_1.id, &test_connection);
+            let _round_3 = create_mock_round_from_tournament(&tournament_2.id, &test_connection);
 
-            let tournament_1_rounds = RoundRowModel::get_all_from_tournament(
-                &tournament_1.id,
-                &test_connection,
-            ).unwrap();
+            let tournament_1_rounds =
+                RoundRowModel::get_all_from_tournament(&tournament_1.id, &test_connection).unwrap();
             assert_eq!(tournament_1_rounds, vec![round_1, round_2]);
         }
 
@@ -237,19 +214,10 @@ mod tests {
         fn test_get_round() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
-            let round = create_mock_round_from_tournament(
-                &tournament.id,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
+            let round = create_mock_round_from_tournament(&tournament.id, &test_connection);
 
-            let round_obtained = RoundRowModel::get(
-                &round.id,
-                &test_connection,
-            ).unwrap();
+            let round_obtained = RoundRowModel::get(&round.id, &test_connection).unwrap();
             assert_eq!(round_obtained, round);
         }
 
@@ -257,14 +225,8 @@ mod tests {
         fn test_update_round() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
-            let mut round = create_mock_round_from_tournament(
-                &tournament.id,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
+            let mut round = create_mock_round_from_tournament(&tournament.id, &test_connection);
             round.round_type = RoundType::Unidentified.to_i32();
             round.update(&test_connection).unwrap();
 
@@ -276,20 +238,12 @@ mod tests {
         fn test_delete_round() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
-            let round = create_mock_round_from_tournament(
-                &tournament.id,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
+            let round = create_mock_round_from_tournament(&tournament.id, &test_connection);
             round.delete(&test_connection).unwrap();
 
-            let tournament_rounds = RoundRowModel::get_all_from_tournament(
-                &tournament.id,
-                &test_connection,
-            ).unwrap();
+            let tournament_rounds =
+                RoundRowModel::get_all_from_tournament(&tournament.id, &test_connection).unwrap();
             assert_eq!(tournament_rounds, vec![]);
         }
     }

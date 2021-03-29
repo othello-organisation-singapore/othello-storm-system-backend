@@ -1,5 +1,5 @@
-use crate::game_match::IGameMatch;
 use crate::errors::ErrorType;
+use crate::game_match::IGameMatch;
 
 pub type Pairings = Vec<Box<dyn IGameMatch>>;
 

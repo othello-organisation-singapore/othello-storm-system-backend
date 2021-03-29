@@ -27,7 +27,8 @@ pub fn create_user(cookies: Cookies, request: Json<UserCreationRequest>) -> Json
         username: request.username.clone(),
         display_name: request.display_name.clone(),
         password: request.password.clone(),
-    }.execute(&connection)
+    }
+    .execute(&connection)
 }
 
 #[derive(Deserialize)]
@@ -38,7 +39,9 @@ pub struct UserUpdateRequest {
 
 #[patch("/<username>", data = "<request>")]
 pub fn update_user(
-    cookies: Cookies, username: String, request: Json<UserUpdateRequest>,
+    cookies: Cookies,
+    username: String,
+    request: Json<UserUpdateRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::UpdateUserCommand {
@@ -46,5 +49,6 @@ pub fn update_user(
         username,
         display_name: request.display_name.clone(),
         password: request.password.clone(),
-    }.execute(&connection)
+    }
+    .execute(&connection)
 }

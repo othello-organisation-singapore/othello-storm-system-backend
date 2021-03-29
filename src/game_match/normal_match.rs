@@ -78,7 +78,7 @@ impl IGameMatch for NormalGameMatch {
 
         let opponent_player_id = match &self.black_player_id == player_id {
             true => self.white_player_id,
-            false => self.black_player_id
+            false => self.black_player_id,
         };
         let opponent_major_score = major_scores_by_player_ids
             .get(&opponent_player_id)
@@ -86,7 +86,7 @@ impl IGameMatch for NormalGameMatch {
 
         let disc_count = match &self.black_player_id == player_id {
             true => f64::from(self.black_score),
-            false => f64::from(self.white_score)
+            false => f64::from(self.white_score),
         };
 
         disc_count + brightwell_constant * opponent_major_score

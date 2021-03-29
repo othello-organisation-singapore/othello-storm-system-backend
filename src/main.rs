@@ -28,8 +28,8 @@ pub mod joueurs;
 pub mod meta_generator;
 pub mod pairings_generator;
 pub mod properties;
-pub mod routes;
 pub mod response_commands;
+pub mod routes;
 pub mod schema;
 pub mod tournament_manager;
 pub mod utils;
@@ -41,7 +41,11 @@ fn create_default_superuser() {
     let password = env::var("SUPERUSER_PASS").unwrap();
     let hashed_password = utils::hash(&password);
     let _ = database_models::UserRowModel::create(
-        &username, &display_name, &hashed_password, properties::UserRole::Superuser, &connection,
+        &username,
+        &display_name,
+        &hashed_password,
+        properties::UserRole::Superuser,
+        &connection,
     );
 }
 
@@ -51,32 +55,41 @@ fn main() {
     create_default_superuser();
 
     rocket::ignite()
-        .mount("/api/users", routes![
-            routes::user_routes::get_user,
-            routes::user_routes::create_user,
-            routes::user_routes::update_user,
-        ])
-        .mount("/api/tournaments", routes![
-            routes::tournament_routes::get_tournaments,
-            routes::tournament_routes::get_all_created_tournaments,
-            routes::tournament_routes::get_all_managed_tournaments,
-            routes::tournament_routes::get_tournament,
-            routes::tournament_routes::create_tournament,
-            routes::tournament_routes::update_tournament,
-            routes::tournament_routes::delete_tournament,
-            routes::tournament_admin_routes::get_tournament_admins,
-            routes::tournament_admin_routes::get_tournament_potential_admins,
-            routes::tournament_admin_routes::add_admin,
-            routes::tournament_admin_routes::remove_admin,
-            routes::player_routes::get_players,
-            routes::player_routes::get_joueurs_players,
-            routes::player_routes::add_player,
-            routes::player_routes::add_player_new,
-            routes::player_routes::delete_player,
-        ])
-        .mount("/api/", routes![
-            routes::general_routes::login,
-            routes::general_routes::get_current_user_profile,
-        ])
+        .mount(
+            "/api/users",
+            routes![
+                routes::user_routes::get_user,
+                routes::user_routes::create_user,
+                routes::user_routes::update_user,
+            ],
+        )
+        .mount(
+            "/api/tournaments",
+            routes![
+                routes::tournament_routes::get_tournaments,
+                routes::tournament_routes::get_all_created_tournaments,
+                routes::tournament_routes::get_all_managed_tournaments,
+                routes::tournament_routes::get_tournament,
+                routes::tournament_routes::create_tournament,
+                routes::tournament_routes::update_tournament,
+                routes::tournament_routes::delete_tournament,
+                routes::tournament_admin_routes::get_tournament_admins,
+                routes::tournament_admin_routes::get_tournament_potential_admins,
+                routes::tournament_admin_routes::add_admin,
+                routes::tournament_admin_routes::remove_admin,
+                routes::player_routes::get_players,
+                routes::player_routes::get_joueurs_players,
+                routes::player_routes::add_player,
+                routes::player_routes::add_player_new,
+                routes::player_routes::delete_player,
+            ],
+        )
+        .mount(
+            "/api/",
+            routes![
+                routes::general_routes::login,
+                routes::general_routes::get_current_user_profile,
+            ],
+        )
         .launch();
 }

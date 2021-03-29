@@ -57,62 +57,62 @@ impl IResultKeeper for ResultKeeper {
 
     fn get_color_count(&self, player_id: &i32, color: PlayerColor) -> i32 {
         match color {
-            PlayerColor::Black => self.black_color_count_by_player_id.get(player_id).unwrap_or(&0),
-            PlayerColor::White => self.white_color_count_by_player_id.get(player_id).unwrap_or(&0),
-        }.clone()
+            PlayerColor::Black => self
+                .black_color_count_by_player_id
+                .get(player_id)
+                .unwrap_or(&0),
+            PlayerColor::White => self
+                .white_color_count_by_player_id
+                .get(player_id)
+                .unwrap_or(&0),
+        }
+        .clone()
     }
 }
-
 
 pub fn create_result_keeper(matches: &Vec<Box<dyn IGameMatch>>) -> Box<dyn IResultKeeper> {
     let mut player_ids: HashSet<i32> = HashSet::new();
 
-    matches[..]
-        .iter()
-        .for_each(|game_match| {
-            let players_id = game_match.get_players_id();
-            if let Some(id) = players_id.0 {
-                player_ids.insert(id);
-            }
-            if let Some(id) = players_id.1 {
-                player_ids.insert(id);
-            }
-        });
+    matches[..].iter().for_each(|game_match| {
+        let players_id = game_match.get_players_id();
+        if let Some(id) = players_id.0 {
+            player_ids.insert(id);
+        }
+        if let Some(id) = players_id.1 {
+            player_ids.insert(id);
+        }
+    });
 
     let sorted_player_standings = get_sorted_player_standings(&player_ids, &matches);
     let opponents_ids_by_player_id = get_opponent_ids_by_player_id(&player_ids, &matches);
 
-    let black_color_count_by_player_id = get_color_count_by_player_id(&player_ids, &matches, PlayerColor::Black);
-    let white_color_count_by_player_id = get_color_count_by_player_id(&player_ids, &matches, PlayerColor::White);
+    let black_color_count_by_player_id =
+        get_color_count_by_player_id(&player_ids, &matches, PlayerColor::Black);
+    let white_color_count_by_player_id =
+        get_color_count_by_player_id(&player_ids, &matches, PlayerColor::White);
 
-    Box::from(
-        ResultKeeper {
-            sorted_player_standings,
-            opponents_ids_by_player_id,
-            black_color_count_by_player_id,
-            white_color_count_by_player_id
-        }
-    )
+    Box::from(ResultKeeper {
+        sorted_player_standings,
+        opponents_ids_by_player_id,
+        black_color_count_by_player_id,
+        white_color_count_by_player_id,
+    })
 }
 
 fn get_opponent_ids_by_player_id(
     player_ids: &HashSet<i32>,
     matches: &Vec<Box<dyn IGameMatch>>,
 ) -> HashMap<i32, HashSet<i32>> {
-    HashMap::from_iter(
-        player_ids
-            .iter()
-            .map(|id| {
-                let opponent_ids = HashSet::from_iter(
-                    matches[..]
-                        .iter()
-                        .map(|game_match| game_match.get_opponent_id(id))
-                        .filter(|result| result.is_some())
-                        .map(|result| result.unwrap())
-                );
-                (id.clone(), opponent_ids)
-            })
-    )
+    HashMap::from_iter(player_ids.iter().map(|id| {
+        let opponent_ids = HashSet::from_iter(
+            matches[..]
+                .iter()
+                .map(|game_match| game_match.get_opponent_id(id))
+                .filter(|result| result.is_some())
+                .map(|result| result.unwrap()),
+        );
+        (id.clone(), opponent_ids)
+    }))
 }
 
 fn get_sorted_player_standings<'a>(
@@ -129,11 +129,7 @@ fn get_sorted_player_standings<'a>(
                 .map(|game_match| game_match.clone())
                 .collect();
             let major_score = major_scores_by_id.get(id).unwrap_or(&0.0);
-            let minor_score = calculate_minor_score(
-                id,
-                &filtered_matches,
-                &major_scores_by_id,
-            );
+            let minor_score = calculate_minor_score(id, &filtered_matches, &major_scores_by_id);
             PlayerStanding {
                 player_id: id.clone(),
                 major_score: major_score.clone(),
@@ -154,7 +150,6 @@ fn get_sorted_player_standings<'a>(
     standings
 }
 
-
 fn get_major_scores_by_player_id(
     player_ids: &HashSet<i32>,
     matches: &Vec<Box<dyn IGameMatch>>,
@@ -162,10 +157,9 @@ fn get_major_scores_by_player_id(
     HashMap::from_iter(
         player_ids
             .iter()
-            .map(|id| (id.clone(), calculate_major_score(id, matches)))
+            .map(|id| (id.clone(), calculate_major_score(id, matches))),
     )
 }
-
 
 fn calculate_major_score(player_id: &i32, matches: &Vec<Box<dyn IGameMatch>>) -> f64 {
     matches
@@ -180,16 +174,16 @@ fn calculate_minor_score(
     major_scores_by_player_ids: &HashMap<i32, f64>,
 ) -> f64 {
     // Following https://www.worldothello.org/about/world-othello-championship/woc-rules
-    let brightwell_constant = f64::from_str(
-        &env::var("BRIGHTWELL_CONSTANT").unwrap()[..]
-    ).unwrap();
+    let brightwell_constant = f64::from_str(&env::var("BRIGHTWELL_CONSTANT").unwrap()[..]).unwrap();
     matches
         .iter()
-        .map(|game_match| game_match.calculate_minor_score(
-            player_id,
-            major_scores_by_player_ids,
-            &brightwell_constant,
-        ))
+        .map(|game_match| {
+            game_match.calculate_minor_score(
+                player_id,
+                major_scores_by_player_ids,
+                &brightwell_constant,
+            )
+        })
         .sum()
 }
 
@@ -198,18 +192,16 @@ fn get_color_count_by_player_id(
     matches: &Vec<Box<dyn IGameMatch>>,
     color: PlayerColor,
 ) -> HashMap<i32, i32> {
-    HashMap::from_iter(
-        player_ids
-            .iter()
-            .map(|id| (
-                id.clone(),
-                matches
-                    .iter()
-                    .map(|game_match| game_match.get_player_color(id))
-                    .filter(|result| result.is_some() && result.as_ref().unwrap() == &color)
-                    .count() as i32
-            ))
-    )
+    HashMap::from_iter(player_ids.iter().map(|id| {
+        (
+            id.clone(),
+            matches
+                .iter()
+                .map(|game_match| game_match.get_player_color(id))
+                .filter(|result| result.is_some() && result.as_ref().unwrap() == &color)
+                .count() as i32,
+        )
+    }))
 }
 
 #[cfg(test)]
@@ -234,11 +226,7 @@ mod tests {
                     &24,
                     &Value::from(Map::new()),
                 ),
-                GameMatchCreator::create_new_bye_match(
-                    &2,
-                    &3,
-                    &Value::from(Map::new()),
-                ),
+                GameMatchCreator::create_new_bye_match(&2, &3, &Value::from(Map::new())),
                 GameMatchCreator::create_new_finished_match(
                     &2,
                     &1,
@@ -250,29 +238,43 @@ mod tests {
             ];
             let result_keeper = create_result_keeper(&game_matches);
             let standings = result_keeper.get_detailed_standings();
-            let brightwell_constant = f64::from_str(
-                &env::var("BRIGHTWELL_CONSTANT").unwrap()[..]
-            ).unwrap();
+            let brightwell_constant =
+                f64::from_str(&env::var("BRIGHTWELL_CONSTANT").unwrap()[..]).unwrap();
 
             assert_eq!(standings[0].player_id, 3);
             assert_eq!(standings[0].major_score, 2.0);
             assert_eq!(standings[0].minor_score, 66.0 + brightwell_constant * 3.0);
             assert_eq!(standings[0].match_history.len(), 2);
-            assert_eq!(standings[0].match_history[0].extract_data(), game_matches[1].extract_data());
-            assert_eq!(standings[0].match_history[1].extract_data(), game_matches[2].extract_data());
+            assert_eq!(
+                standings[0].match_history[0].extract_data(),
+                game_matches[1].extract_data()
+            );
+            assert_eq!(
+                standings[0].match_history[1].extract_data(),
+                game_matches[2].extract_data()
+            );
 
             assert_eq!(standings[1].player_id, 1);
             assert_eq!(standings[1].major_score, 1.0);
             assert_eq!(standings[1].minor_score, 70.0 + brightwell_constant * 2.0);
             assert_eq!(standings[1].match_history.len(), 2);
-            assert_eq!(standings[1].match_history[0].extract_data(), game_matches[0].extract_data());
-            assert_eq!(standings[1].match_history[1].extract_data(), game_matches[2].extract_data());
+            assert_eq!(
+                standings[1].match_history[0].extract_data(),
+                game_matches[0].extract_data()
+            );
+            assert_eq!(
+                standings[1].match_history[1].extract_data(),
+                game_matches[2].extract_data()
+            );
 
             assert_eq!(standings[2].player_id, 2);
             assert_eq!(standings[2].major_score, 0.0);
             assert_eq!(standings[2].minor_score, 24.0 + brightwell_constant * 1.0);
             assert_eq!(standings[2].match_history.len(), 1);
-            assert_eq!(standings[2].match_history[0].extract_data(), game_matches[0].extract_data());
+            assert_eq!(
+                standings[2].match_history[0].extract_data(),
+                game_matches[0].extract_data()
+            );
         }
     }
 
@@ -293,11 +295,7 @@ mod tests {
                     &24,
                     &Value::from(Map::new()),
                 ),
-                GameMatchCreator::create_new_bye_match(
-                    &2,
-                    &3,
-                    &Value::from(Map::new()),
-                ),
+                GameMatchCreator::create_new_bye_match(&2, &3, &Value::from(Map::new())),
                 GameMatchCreator::create_new_finished_match(
                     &2,
                     &1,
@@ -335,11 +333,7 @@ mod tests {
                     &24,
                     &Value::from(Map::new()),
                 ),
-                GameMatchCreator::create_new_bye_match(
-                    &2,
-                    &3,
-                    &Value::from(Map::new()),
-                ),
+                GameMatchCreator::create_new_bye_match(&2, &3, &Value::from(Map::new())),
                 GameMatchCreator::create_new_finished_match(
                     &2,
                     &1,

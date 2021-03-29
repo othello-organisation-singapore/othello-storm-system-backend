@@ -24,7 +24,6 @@ pub struct TournamentRowModel {
     pub end_date: NaiveDate,
 }
 
-
 #[derive(Insertable)]
 #[table_name = "tournaments"]
 struct NewTournamentRowModel<'a> {
@@ -37,7 +36,6 @@ struct NewTournamentRowModel<'a> {
     pub start_date: &'a NaiveDate,
     pub end_date: &'a NaiveDate,
 }
-
 
 impl TournamentRowModel {
     pub fn create(
@@ -55,7 +53,7 @@ impl TournamentRowModel {
             joueurs
                 .iter()
                 .map(|x| Value::Object(x.to_serdemap()))
-                .collect()
+                .collect(),
         );
 
         let new_tournament = NewTournamentRowModel {
@@ -72,7 +70,8 @@ impl TournamentRowModel {
     }
 
     fn insert_to_database(
-        new_tournament: NewTournamentRowModel, connection: &PgConnection,
+        new_tournament: NewTournamentRowModel,
+        connection: &PgConnection,
     ) -> Result<TournamentRowModel, ErrorType> {
         let tournament_name = new_tournament.name.clone();
         let result = diesel::insert_into(tournaments::table)
@@ -91,9 +90,7 @@ impl TournamentRowModel {
     }
 
     pub fn get(id: &i32, connection: &PgConnection) -> Result<TournamentRowModel, ErrorType> {
-        let result = tournaments::table
-            .find(id)
-            .first(connection);
+        let result = tournaments::table.find(id).first(connection);
 
         match result {
             Ok(tournament) => Ok(tournament),
@@ -116,7 +113,8 @@ impl TournamentRowModel {
     }
 
     pub fn get_all_created_by(
-        username: &String, connection: &PgConnection,
+        username: &String,
+        connection: &PgConnection,
     ) -> Result<Vec<TournamentRowModel>, ErrorType> {
         let result = tournaments::table
             .filter(tournaments::creator.eq(username))
@@ -135,9 +133,7 @@ impl TournamentRowModel {
     }
 
     pub fn update(&self, connection: &PgConnection) -> Result<TournamentRowModel, ErrorType> {
-        let result = diesel::update(self)
-            .set(self)
-            .get_result(connection);
+        let result = diesel::update(self).set(self).get_result(connection);
 
         match result {
             Ok(tournament) => {
@@ -152,8 +148,7 @@ impl TournamentRowModel {
     }
 
     pub fn delete(&self, connection: &PgConnection) -> Result<(), ErrorType> {
-        let result = diesel::delete(self)
-            .execute(connection);
+        let result = diesel::delete(self).execute(connection);
 
         match result {
             Ok(_) => {
@@ -171,11 +166,14 @@ impl TournamentRowModel {
         let players = self.get_players_from_joueurs()?;
         let player = match players
             .iter()
-            .find(|&player| &player.joueurs_id == joueurs_id) {
+            .find(|&player| &player.joueurs_id == joueurs_id)
+        {
             Some(player) => Ok(player),
-            None => Err(ErrorType::BadRequestError(String::from("Invalid joueurs id")))
+            None => Err(ErrorType::BadRequestError(String::from(
+                "Invalid joueurs id",
+            ))),
         }?;
-        Ok(Player{
+        Ok(Player {
             joueurs_id: player.joueurs_id.clone(),
             first_name: player.first_name.clone(),
             last_name: player.last_name.clone(),
@@ -201,7 +199,6 @@ impl TournamentRowModel {
         Ok(players)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -243,9 +240,7 @@ mod tests {
         #[test]
         fn test_get_tournaments() {
             let test_connection = utils::get_test_connection();
-            let initial_tournaments = TournamentRowModel::get_all(
-                &test_connection
-            ).unwrap();
+            let initial_tournaments = TournamentRowModel::get_all(&test_connection).unwrap();
             let initial_count = initial_tournaments.len();
 
             let user = create_mock_user(&test_connection);
@@ -254,28 +249,23 @@ mod tests {
             let second_user = create_mock_user(&test_connection);
             let second_creator_username = second_user.username.clone();
 
-            let tournament = create_mock_tournament_with_creator(
-                &creator_username, &test_connection,
-            );
+            let tournament =
+                create_mock_tournament_with_creator(&creator_username, &test_connection);
             let _ = create_mock_tournament_with_creator(&creator_username, &test_connection);
             let _ = create_mock_tournament_with_creator(&second_creator_username, &test_connection);
 
-            let all_tournaments_result = TournamentRowModel::get_all(
-                &test_connection
-            );
+            let all_tournaments_result = TournamentRowModel::get_all(&test_connection);
             assert_eq!(all_tournaments_result.is_ok(), true);
             let all_tournaments = all_tournaments_result.unwrap();
             assert_eq!(all_tournaments.len() - initial_count, 3);
 
-            let all_first_creator_tournaments_result = TournamentRowModel::get_all_created_by(
-                &creator_username, &test_connection,
-            );
+            let all_first_creator_tournaments_result =
+                TournamentRowModel::get_all_created_by(&creator_username, &test_connection);
             assert_eq!(all_first_creator_tournaments_result.is_ok(), true);
             assert_eq!(all_first_creator_tournaments_result.unwrap().len(), 2);
 
-            let tournament_from_get = TournamentRowModel::get(
-                &tournament.id, &test_connection,
-            ).unwrap();
+            let tournament_from_get =
+                TournamentRowModel::get(&tournament.id, &test_connection).unwrap();
             assert_eq!(tournament.id, tournament_from_get.id);
             assert_eq!(tournament.name, tournament_from_get.name);
             assert_eq!(tournament.creator, tournament_from_get.creator);
@@ -286,9 +276,8 @@ mod tests {
         fn test_update() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let mut tournament = create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let mut tournament =
+                create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let updated_name = String::from("new name");
             let updated_country = String::from("SGP");
@@ -296,9 +285,8 @@ mod tests {
             tournament.country = updated_country.clone();
             let _ = tournament.update(&test_connection);
 
-            let updated_tournament = TournamentRowModel::get(
-                &tournament.id, &test_connection,
-            ).unwrap();
+            let updated_tournament =
+                TournamentRowModel::get(&tournament.id, &test_connection).unwrap();
             assert_eq!(updated_tournament.name, updated_name);
             assert_eq!(updated_tournament.country, updated_country);
         }
@@ -306,25 +294,17 @@ mod tests {
         #[test]
         fn test_delete() {
             let test_connection = utils::get_test_connection();
-            let initial_tournaments = TournamentRowModel::get_all(
-                &test_connection
-            ).unwrap();
+            let initial_tournaments = TournamentRowModel::get_all(&test_connection).unwrap();
             let initial_count = initial_tournaments.len();
 
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let _ = tournament.delete(&test_connection);
-            let updated_get_result = TournamentRowModel::get(
-                &tournament.id, &test_connection,
-            );
+            let updated_get_result = TournamentRowModel::get(&tournament.id, &test_connection);
             assert_eq!(updated_get_result.is_err(), true);
 
-            let updated_all_tournaments = TournamentRowModel::get_all(
-                &test_connection
-            ).unwrap();
+            let updated_all_tournaments = TournamentRowModel::get_all(&test_connection).unwrap();
             assert_eq!(updated_all_tournaments.len() - initial_count, 0);
         }
     }

@@ -7,7 +7,7 @@ use crate::properties::PlayerColor;
 use crate::tournament_manager::IResultKeeper;
 use crate::utils::generate_random_number_ranged;
 
-use super::{PairingGenerator, Pairings, get_player_1_color};
+use super::{get_player_1_color, PairingGenerator, Pairings};
 
 pub struct RRPairingsGenerator {
     players: Vec<PlayerRowModel>,
@@ -19,7 +19,10 @@ impl RRPairingsGenerator {
         players: Vec<PlayerRowModel>,
         past_results: Box<dyn IResultKeeper>,
     ) -> RRPairingsGenerator {
-        RRPairingsGenerator { players, past_results }
+        RRPairingsGenerator {
+            players,
+            past_results,
+        }
     }
 
     fn generate_rr_pairings(&self, round_id: &i32, shift: &i32) -> Pairings {
@@ -27,11 +30,8 @@ impl RRPairingsGenerator {
         let mut remaining_players = player_1_vec.split_off(1);
         let splitted_players = remaining_players.split_off(*shift as usize);
 
-        let mut shifted_players: Vec<&PlayerRowModel> = [
-            player_1_vec,
-            splitted_players,
-            remaining_players,
-        ].concat();
+        let mut shifted_players: Vec<&PlayerRowModel> =
+            [player_1_vec, splitted_players, remaining_players].concat();
         let mut matches = Vec::new();
 
         let midpoint = (shifted_players.len() as f32 / 2 as f32).ceil() as usize;
@@ -42,11 +42,8 @@ impl RRPairingsGenerator {
             let player_2_option = second_part_players_iter.next();
             match player_2_option {
                 Some(player_2) => {
-                    let player_1_color = get_player_1_color(
-                        &player_1.id,
-                        &player_2.id,
-                        &self.past_results,
-                    );
+                    let player_1_color =
+                        get_player_1_color(&player_1.id, &player_2.id, &self.past_results);
 
                     let black_player_id = match player_1_color {
                         PlayerColor::Black => player_1.id,
@@ -76,7 +73,12 @@ impl RRPairingsGenerator {
         matches
     }
 
-    fn is_players_matched(&self, pairings: &Pairings, player_1_id: &i32, player_2_id: &i32) -> bool {
+    fn is_players_matched(
+        &self,
+        pairings: &Pairings,
+        player_1_id: &i32,
+        player_2_id: &i32,
+    ) -> bool {
         pairings
             .iter()
             .find(|pairing| {
@@ -91,23 +93,22 @@ impl PairingGenerator for RRPairingsGenerator {
     fn generate_pairings(&self, round_id: &i32) -> Result<Pairings, ErrorType> {
         if self.past_results.is_empty() {
             let shift = generate_random_number_ranged(0, self.players.len() as i32 - 1);
-            return Ok(self.generate_rr_pairings(round_id, &shift))
+            return Ok(self.generate_rr_pairings(round_id, &shift));
         }
 
         let standings = self.past_results.get_standings();
         let highest_ranked_player_id = standings.first().unwrap();
-        let next_opponent_for_highest_ranked_player = standings
-            .iter()
-            .find(|&id| {
-                id != highest_ranked_player_id
-                    && !self.past_results.has_players_met(highest_ranked_player_id, id)
-            });
+        let next_opponent_for_highest_ranked_player = standings.iter().find(|&id| {
+            id != highest_ranked_player_id
+                && !self
+                    .past_results
+                    .has_players_met(highest_ranked_player_id, id)
+        });
 
         match next_opponent_for_highest_ranked_player {
             Some(opponent_id) => {
                 for shift in 0..standings.len() - 2 {
                     let pairings = self.generate_rr_pairings(round_id, &(shift as i32));
-
 
                     if self.is_players_matched(&pairings, highest_ranked_player_id, opponent_id) {
                         return Ok(pairings);
@@ -115,19 +116,18 @@ impl PairingGenerator for RRPairingsGenerator {
                 }
                 Err(ErrorType::AutomaticPairingError)
             }
-            None => Err(ErrorType::AutomaticPairingError)
+            None => Err(ErrorType::AutomaticPairingError),
         }
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     mod test_rr_pairing {
-        use mocktopus::mocking::{Mockable, MockResult};
+        use mocktopus::mocking::{MockResult, Mockable};
         use serde_json::{Map, Value};
 
-        use crate::database_models::{PlayerRowModel, MatchRowModel};
+        use crate::database_models::{MatchRowModel, PlayerRowModel};
         use crate::game_match::{GameMatchCreator, GameMatchTransformer, IGameMatch};
         use crate::pairings_generator::{PairingGenerator, RRPairingsGenerator};
         use crate::properties::PlayerColor;

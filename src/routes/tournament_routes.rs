@@ -52,7 +52,8 @@ pub fn create_tournament(
         tournament_type: request.tournament_type.clone(),
         start_date: request.start_date.clone(),
         end_date: request.end_date.clone(),
-    }.execute(&connection)
+    }
+    .execute(&connection)
 }
 
 #[derive(Deserialize)]
@@ -77,14 +78,12 @@ pub fn update_tournament(
         updated_country: request.country.clone(),
         updated_start_date: request.start_date.clone(),
         updated_end_date: request.end_date.clone(),
-    }.execute(&connection)
+    }
+    .execute(&connection)
 }
 
 #[delete("/<id>")]
 pub fn delete_tournament(cookies: Cookies, id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();
-    response_commands::DeleteTournamentCommand {
-        cookies,
-        id,
-    }.execute(&connection)
+    response_commands::DeleteTournamentCommand { cookies, id }.execute(&connection)
 }

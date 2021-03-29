@@ -1,14 +1,16 @@
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-use diesel::{Connection, PgConnection};
 use diesel::result::Error;
+use diesel::{Connection, PgConnection};
 use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 use serde_json::{Map, Value};
 
 use crate::account::Account;
-use crate::database_models::{MatchDAO, MatchRowModel, PlayerRowModel, RoundDAO, RoundRowModel, TournamentRowModel};
+use crate::database_models::{
+    MatchDAO, MatchRowModel, PlayerRowModel, RoundDAO, RoundRowModel, TournamentRowModel,
+};
 use crate::errors::ErrorType;
 use crate::game_match::{GameMatchCreator, GameMatchTransformer, IGameMatch};
 use crate::meta_generator::{MetaGenerator, RoundDetailsMetaGenerator};
@@ -16,8 +18,8 @@ use crate::pairings_generator::PairingsGeneratorCreator;
 use crate::properties::{RoundType, TournamentType};
 use crate::tournament_manager::create_result_keeper;
 
-use super::{generate_matches_meta, generate_rounds_meta, is_allowed_to_manage_tournament};
 use super::ResponseCommand;
+use super::{generate_matches_meta, generate_rounds_meta, is_allowed_to_manage_tournament};
 
 pub struct GetTournamentRoundsCommand {
     pub tournament_id: i32,
@@ -25,10 +27,7 @@ pub struct GetTournamentRoundsCommand {
 
 impl ResponseCommand for GetTournamentRoundsCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let rounds = RoundRowModel::get_all_from_tournament(
-            &self.tournament_id,
-            connection,
-        )?;
+        let rounds = RoundRowModel::get_all_from_tournament(&self.tournament_id, connection)?;
         let rounds_meta = generate_rounds_meta(rounds);
         Ok(json!({
             "tournament_id": &self.tournament_id,
@@ -85,12 +84,9 @@ impl CreateManualNormalRoundCommand<'_> {
                 player_ids.insert(player_model.id.clone());
             });
 
-        let player_not_in_db = self.match_data
-            .iter()
-            .find(|match_datum| {
-                !(player_ids.contains(&match_datum.0)
-                    && player_ids.contains(&match_datum.1))
-            });
+        let player_not_in_db = self.match_data.iter().find(|match_datum| {
+            !(player_ids.contains(&match_datum.0) && player_ids.contains(&match_datum.1))
+        });
 
         let no_of_players = player_ids.len();
         if no_of_players % 2 == 1 {
@@ -109,19 +105,16 @@ impl ResponseCommand for CreateManualNormalRoundCommand<'_> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
 
         if !self.is_match_data_valid(connection) {
-            return Err(ErrorType::BadRequestError(
-                String::from("Invalid match data, some players are not available")
-            ));
+            return Err(ErrorType::BadRequestError(String::from(
+                "Invalid match data, some players are not available",
+            )));
         }
         let round = RoundRowModel::create(
             &self.tournament_id,
@@ -130,22 +123,28 @@ impl ResponseCommand for CreateManualNormalRoundCommand<'_> {
             Map::new(),
             connection,
         )?;
-        let mut pairings: Vec<Box<dyn IGameMatch>> = self.match_data
+        let mut pairings: Vec<Box<dyn IGameMatch>> = self
+            .match_data
             .iter()
-            .map(|match_datum| GameMatchCreator::create_new_match(
-                &round.id,
-                &match_datum.0,
-                &match_datum.1,
-                &Value::from(Map::new()),
-            ))
+            .map(|match_datum| {
+                GameMatchCreator::create_new_match(
+                    &round.id,
+                    &match_datum.0,
+                    &match_datum.1,
+                    &Value::from(Map::new()),
+                )
+            })
             .collect();
-        let bye_pairings: Vec<Box<dyn IGameMatch>> = self.bye_match_data
+        let bye_pairings: Vec<Box<dyn IGameMatch>> = self
+            .bye_match_data
             .iter()
-            .map(|player_id| GameMatchCreator::create_new_bye_match(
-                &round.id,
-                player_id,
-                &Value::from(Map::new()),
-            ))
+            .map(|player_id| {
+                GameMatchCreator::create_new_bye_match(
+                    &round.id,
+                    player_id,
+                    &Value::from(Map::new()),
+                )
+            })
             .collect();
 
         pairings.extend(bye_pairings);
@@ -155,7 +154,10 @@ impl ResponseCommand for CreateManualNormalRoundCommand<'_> {
     }
 
     fn get_request_summary(&self) -> String {
-        String::from(format!("CreateManualNormalRound for {}", &self.tournament_id))
+        String::from(format!(
+            "CreateManualNormalRound for {}",
+            &self.tournament_id
+        ))
     }
 }
 
@@ -172,11 +174,8 @@ impl ResponseCommand for CreateManualSpecialRoundCommand<'_> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
@@ -187,22 +186,28 @@ impl ResponseCommand for CreateManualSpecialRoundCommand<'_> {
             Map::new(),
             connection,
         )?;
-        let mut pairings: Vec<Box<dyn IGameMatch>> = self.match_data
+        let mut pairings: Vec<Box<dyn IGameMatch>> = self
+            .match_data
             .iter()
-            .map(|match_datum| GameMatchCreator::create_new_match(
-                &round.id,
-                &match_datum.0,
-                &match_datum.1,
-                &Value::from(Map::new()),
-            ))
+            .map(|match_datum| {
+                GameMatchCreator::create_new_match(
+                    &round.id,
+                    &match_datum.0,
+                    &match_datum.1,
+                    &Value::from(Map::new()),
+                )
+            })
             .collect();
-        let bye_pairings: Vec<Box<dyn IGameMatch>> = self.bye_match_data
+        let bye_pairings: Vec<Box<dyn IGameMatch>> = self
+            .bye_match_data
             .iter()
-            .map(|player_id| GameMatchCreator::create_new_bye_match(
-                &round.id,
-                player_id,
-                &Value::from(Map::new()),
-            ))
+            .map(|player_id| {
+                GameMatchCreator::create_new_bye_match(
+                    &round.id,
+                    player_id,
+                    &Value::from(Map::new()),
+                )
+            })
             .collect();
 
         pairings.extend(bye_pairings);
@@ -212,7 +217,10 @@ impl ResponseCommand for CreateManualSpecialRoundCommand<'_> {
     }
 
     fn get_request_summary(&self) -> String {
-        String::from(format!("CreateManualSpecialRound for {}", &self.tournament_id))
+        String::from(format!(
+            "CreateManualSpecialRound for {}",
+            &self.tournament_id
+        ))
     }
 }
 
@@ -235,13 +243,11 @@ impl CreateAutomaticRoundCommand<'_> {
                     round.round_type == RoundType::ManualNormal.to_i32()
                         || round.round_type == RoundType::Automatic.to_i32()
                 })
-                .map(|round| round.id)
+                .map(|round| round.id),
         );
 
-        let previous_matches = MatchRowModel::get_all_from_tournament(
-            &tournament_model.id,
-            connection,
-        )?;
+        let previous_matches =
+            MatchRowModel::get_all_from_tournament(&tournament_model.id, connection)?;
         let previous_normal_matches: Vec<Box<dyn IGameMatch>> = previous_matches
             .into_iter()
             .filter(|game_match| normal_round_ids.contains(&game_match.round_id))
@@ -249,10 +255,7 @@ impl CreateAutomaticRoundCommand<'_> {
             .collect();
         let result_keeper = create_result_keeper(&previous_normal_matches);
 
-        let players = PlayerRowModel::get_all_from_tournament(
-            &tournament_model.id,
-            connection,
-        )?;
+        let players = PlayerRowModel::get_all_from_tournament(&tournament_model.id, connection)?;
 
         let pairing_generator = PairingsGeneratorCreator::create_automatic_pairings_generator(
             TournamentType::from_string(tournament_model.tournament_type.clone()),
@@ -278,11 +281,8 @@ impl ResponseCommand for CreateAutomaticRoundCommand<'_> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
@@ -294,7 +294,9 @@ impl ResponseCommand for CreateAutomaticRoundCommand<'_> {
             }?;
             Ok(())
         }) {
-            return Err(ErrorType::UnknownError(String::from("Error from generating automatic pairings")));
+            return Err(ErrorType::UnknownError(String::from(
+                "Error from generating automatic pairings",
+            )));
         }
 
         Ok(json!({"message": "New round pairings (Automatic) is added to the tournament."}))
@@ -317,11 +319,8 @@ impl ResponseCommand for UpdateRoundCommand<'_> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
@@ -334,7 +333,10 @@ impl ResponseCommand for UpdateRoundCommand<'_> {
     }
 
     fn get_request_summary(&self) -> String {
-        String::from(format!("UpdateRound for {} in tournament {}", &self.round_id, &self.tournament_id))
+        String::from(format!(
+            "UpdateRound for {} in tournament {}",
+            &self.round_id, &self.tournament_id
+        ))
     }
 }
 
@@ -349,11 +351,8 @@ impl ResponseCommand for DeleteRoundCommand<'_> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
@@ -365,7 +364,10 @@ impl ResponseCommand for DeleteRoundCommand<'_> {
     }
 
     fn get_request_summary(&self) -> String {
-        String::from(format!("DeleteRound for {} in tournament {}", &self.round_id, &self.tournament_id))
+        String::from(format!(
+            "DeleteRound for {} in tournament {}",
+            &self.round_id, &self.tournament_id
+        ))
     }
 }
 
@@ -375,10 +377,7 @@ pub struct GetRoundMatchesCommand {
 
 impl ResponseCommand for GetRoundMatchesCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let matches = MatchRowModel::get_all_from_round(
-            &self.round_id,
-            connection,
-        )?;
+        let matches = MatchRowModel::get_all_from_round(&self.round_id, connection)?;
         let matches_meta = generate_matches_meta(matches);
         Ok(json!({
             "round_id": &self.round_id,
@@ -404,11 +403,8 @@ impl ResponseCommand for UpdateMatchCommand<'_> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
@@ -422,6 +418,9 @@ impl ResponseCommand for UpdateMatchCommand<'_> {
     }
 
     fn get_request_summary(&self) -> String {
-        String::from(format!("UpdateMatch for {} in tournament {}", &self.match_id, &self.tournament_id))
+        String::from(format!(
+            "UpdateMatch for {} in tournament {}",
+            &self.match_id, &self.tournament_id
+        ))
     }
 }

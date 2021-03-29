@@ -14,7 +14,9 @@ fn get_reqwest_error_message(e: Error) -> String {
 fn http_get(url: &String) -> Result<Response, ErrorType> {
     match get(url) {
         Ok(response) => Ok(response),
-        Err(e) => Err(ErrorType::ExternalConnectionError(get_reqwest_error_message(e))),
+        Err(e) => Err(ErrorType::ExternalConnectionError(
+            get_reqwest_error_message(e),
+        )),
     }
 }
 
@@ -23,6 +25,8 @@ pub fn http_get_text(url: &String) -> Result<String, ErrorType> {
     let response = http_get(url)?;
     match response.text() {
         Ok(text) => Ok(text),
-        Err(e) => Err(ErrorType::ExternalConnectionError(get_reqwest_error_message(e))),
+        Err(e) => Err(ErrorType::ExternalConnectionError(
+            get_reqwest_error_message(e),
+        )),
     }
 }

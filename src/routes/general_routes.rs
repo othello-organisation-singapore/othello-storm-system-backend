@@ -1,5 +1,5 @@
 use rocket::http::Cookies;
-use rocket_contrib::json::{JsonValue, Json};
+use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 
 use crate::response_commands;
@@ -19,7 +19,8 @@ pub fn login(request: Json<UserLoginRequest>) -> Json<JsonValue> {
     response_commands::LoginCommand {
         username: request.username.clone(),
         password: request.password.clone(),
-    }.execute(&connection)
+    }
+    .execute(&connection)
 }
 
 #[get("/profile")]

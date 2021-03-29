@@ -60,9 +60,9 @@ impl PlayerRowModel {
         let meta_data_json = Value::from(meta_data);
 
         if PlayerRowModel::is_player_exists(player, tournament_id, connection)? {
-            return Err(
-                ErrorType::BadRequestError(String::from("Player exists in the tournament."))
-            );
+            return Err(ErrorType::BadRequestError(String::from(
+                "Player exists in the tournament.",
+            )));
         }
 
         let new_player = NewPlayerRowModel {
@@ -79,9 +79,7 @@ impl PlayerRowModel {
     }
 
     pub fn get(id: &i32, connection: &PgConnection) -> Result<PlayerRowModel, ErrorType> {
-        let result = players::table
-            .find(id)
-            .first(connection);
+        let result = players::table.find(id).first(connection);
 
         match result {
             Ok(player) => Ok(player),
@@ -117,9 +115,7 @@ impl PlayerRowModel {
             Ok(_) => {
                 info!(
                     "Player id {} with joueurs_id {} is deleted from tournament {} ",
-                    &self.id,
-                    &self.joueurs_id,
-                    &self.tournament_id
+                    &self.id, &self.joueurs_id, &self.tournament_id
                 );
                 Ok(())
             }
@@ -145,13 +141,12 @@ impl PlayerRowModel {
         tournament_id: &i32,
         connection: &PgConnection,
     ) -> Result<bool, ErrorType> {
-        let result = select(
-            exists(
-                players::table
-                    .filter(players::tournament_id.eq(tournament_id))
-                    .filter(players::joueurs_id.eq(&player.joueurs_id))
-            )
-        ).get_result(connection);
+        let result = select(exists(
+            players::table
+                .filter(players::tournament_id.eq(tournament_id))
+                .filter(players::joueurs_id.eq(&player.joueurs_id)),
+        ))
+        .get_result(connection);
 
         match result {
             Ok(exist) => Ok(exist),
@@ -163,7 +158,8 @@ impl PlayerRowModel {
     }
 
     fn insert_to_database(
-        new_player: NewPlayerRowModel, connection: &PgConnection,
+        new_player: NewPlayerRowModel,
+        connection: &PgConnection,
     ) -> Result<PlayerRowModel, ErrorType> {
         let tournament_id = new_player.tournament_id.clone();
         let player_name = format!("{}{}", &new_player.first_name, &new_player.last_name);
@@ -176,9 +172,7 @@ impl PlayerRowModel {
             Ok(player) => {
                 info!(
                     "Player {} with joueurs id {} is added to tournament {}",
-                    player_name,
-                    player_joueurs_id,
-                    tournament_id
+                    player_name, player_joueurs_id, tournament_id
                 );
                 Ok(player)
             }
@@ -189,7 +183,6 @@ impl PlayerRowModel {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -205,10 +198,7 @@ mod tests {
         fn test_create_player() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let first_name = utils::generate_random_string(5);
             let last_name = utils::generate_random_string(5);
@@ -224,12 +214,9 @@ mod tests {
             };
             let meta_data = Map::new();
 
-            let player = PlayerRowModel::create(
-                &tournament.id,
-                &player,
-                meta_data,
-                &test_connection,
-            ).unwrap();
+            let player =
+                PlayerRowModel::create(&tournament.id, &player, meta_data, &test_connection)
+                    .unwrap();
 
             assert_eq!(player.joueurs_id, joueurs_id);
             assert_eq!(player.first_name, first_name);
@@ -242,10 +229,7 @@ mod tests {
         fn test_create_existed_player() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let first_name = utils::generate_random_string(5);
             let last_name = utils::generate_random_string(5);
@@ -259,19 +243,10 @@ mod tests {
                 country: country.clone(),
                 rating: rating.clone(),
             };
-            PlayerRowModel::create(
-                &tournament.id,
-                &player,
-                Map::new(),
-                &test_connection,
-            ).unwrap();
+            PlayerRowModel::create(&tournament.id, &player, Map::new(), &test_connection).unwrap();
 
-            let result = PlayerRowModel::create(
-                &tournament.id,
-                &player,
-                Map::new(),
-                &test_connection,
-            );
+            let result =
+                PlayerRowModel::create(&tournament.id, &player, Map::new(), &test_connection);
             assert_eq!(result.is_err(), true);
         }
 
@@ -279,10 +254,7 @@ mod tests {
         fn test_get_all_from_tournament() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let player_1 = Player {
                 joueurs_id: utils::generate_random_string(10),
@@ -291,12 +263,9 @@ mod tests {
                 country: utils::generate_random_string(2),
                 rating: 100,
             };
-            let _player_model_1 = PlayerRowModel::create(
-                &tournament.id,
-                &player_1,
-                Map::new(),
-                &test_connection,
-            ).unwrap();
+            let _player_model_1 =
+                PlayerRowModel::create(&tournament.id, &player_1, Map::new(), &test_connection)
+                    .unwrap();
 
             let player_2 = Player {
                 joueurs_id: utils::generate_random_string(10),
@@ -305,17 +274,11 @@ mod tests {
                 country: utils::generate_random_string(2),
                 rating: 200,
             };
-            let _player_model_2 = PlayerRowModel::create(
-                &tournament.id,
-                &player_2,
-                Map::new(),
-                &test_connection,
-            );
+            let _player_model_2 =
+                PlayerRowModel::create(&tournament.id, &player_2, Map::new(), &test_connection);
 
-            let players = PlayerRowModel::get_all_from_tournament(
-                &tournament.id,
-                &test_connection,
-            ).unwrap();
+            let players =
+                PlayerRowModel::get_all_from_tournament(&tournament.id, &test_connection).unwrap();
             assert_eq!(players.len(), 2);
         }
 
@@ -323,10 +286,7 @@ mod tests {
         fn test_get() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let first_name = utils::generate_random_string(5);
             let last_name = utils::generate_random_string(5);
@@ -340,17 +300,11 @@ mod tests {
                 country: country.clone(),
                 rating: rating.clone(),
             };
-            let player = PlayerRowModel::create(
-                &tournament.id,
-                &player,
-                Map::new(),
-                &test_connection,
-            ).unwrap();
+            let player =
+                PlayerRowModel::create(&tournament.id, &player, Map::new(), &test_connection)
+                    .unwrap();
 
-            let player_obtained = PlayerRowModel::get(
-                &player.id,
-                &test_connection,
-            ).unwrap();
+            let player_obtained = PlayerRowModel::get(&player.id, &test_connection).unwrap();
             assert_eq!(player_obtained.joueurs_id, joueurs_id);
             assert_eq!(player_obtained.first_name, first_name);
             assert_eq!(player_obtained.last_name, last_name);
@@ -370,10 +324,7 @@ mod tests {
         fn test_get_joueurs() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let first_name = utils::generate_random_string(5);
             let last_name = utils::generate_random_string(5);
@@ -387,18 +338,16 @@ mod tests {
                 country: country.clone(),
                 rating: rating.clone(),
             };
-            let player = PlayerRowModel::create(
-                &tournament.id,
-                &player,
-                Map::new(),
-                &test_connection,
-            ).unwrap();
+            let player =
+                PlayerRowModel::create(&tournament.id, &player, Map::new(), &test_connection)
+                    .unwrap();
 
             let player_obtained = PlayerRowModel::get_from_joueurs_id(
                 &player.joueurs_id,
                 &player.tournament_id,
                 &test_connection,
-            ).unwrap();
+            )
+            .unwrap();
             assert_eq!(player_obtained.joueurs_id, joueurs_id);
             assert_eq!(player_obtained.first_name, first_name);
             assert_eq!(player_obtained.last_name, last_name);
@@ -423,10 +372,7 @@ mod tests {
         fn test_delete() {
             let test_connection = utils::get_test_connection();
             let user = create_mock_user(&test_connection);
-            let tournament = create_mock_tournament_with_creator(
-                &user.username,
-                &test_connection,
-            );
+            let tournament = create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let first_name = utils::generate_random_string(5);
             let last_name = utils::generate_random_string(5);
@@ -440,12 +386,9 @@ mod tests {
                 country: country.clone(),
                 rating: rating.clone(),
             };
-            let player = PlayerRowModel::create(
-                &tournament.id,
-                &player,
-                Map::new(),
-                &test_connection,
-            ).unwrap();
+            let player =
+                PlayerRowModel::create(&tournament.id, &player, Map::new(), &test_connection)
+                    .unwrap();
 
             let result = player.delete(&test_connection);
             assert_eq!(result.is_ok(), true);

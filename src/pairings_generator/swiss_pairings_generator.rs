@@ -6,10 +6,9 @@ use crate::database_models::PlayerRowModel;
 use crate::game_match::{GameMatchCreator, IGameMatch};
 use crate::tournament_manager::IResultKeeper;
 
-use super::{PairingGenerator, Pairings, get_player_1_color};
+use super::{get_player_1_color, PairingGenerator, Pairings};
 use crate::errors::ErrorType;
 use crate::properties::PlayerColor;
-
 
 pub struct SwissPairingsGenerator {
     players: Vec<PlayerRowModel>,
@@ -21,7 +20,10 @@ impl SwissPairingsGenerator {
         players: Vec<PlayerRowModel>,
         past_results: Box<dyn IResultKeeper>,
     ) -> SwissPairingsGenerator {
-        SwissPairingsGenerator { players, past_results }
+        SwissPairingsGenerator {
+            players,
+            past_results,
+        }
     }
 
     fn generate_first_round_pairings(&self, round_id: &i32) -> Pairings {
@@ -72,11 +74,7 @@ impl SwissPairingsGenerator {
         round_id: &i32,
     ) -> Result<Vec<Box<dyn IGameMatch>>, ErrorType> {
         let mut memo: HashMap<i128, Option<Pairings>> = HashMap::new();
-        match self.generate_remaining_pairings(
-            round_id,
-            &(0 as i128),
-            &mut memo,
-        ) {
+        match self.generate_remaining_pairings(round_id, &(0 as i128), &mut memo) {
             Some(matches) => Ok(matches),
             None => Err(ErrorType::AutomaticPairingError),
         }
@@ -108,16 +106,11 @@ impl SwissPairingsGenerator {
                         &player_1_standing.player_id,
                         &Value::from(Map::new()),
                     );
-                    let updated_bitmask = self.add_new_pair_to_bitmask(
-                        bitmask,
-                        &player_1_idx,
-                        &player_1_idx,
-                    );
-                    let remaining_pairings = self.generate_remaining_pairings(
-                        round_id,
-                        &updated_bitmask,
-                        memo,
-                    ).unwrap();
+                    let updated_bitmask =
+                        self.add_new_pair_to_bitmask(bitmask, &player_1_idx, &player_1_idx);
+                    let remaining_pairings = self
+                        .generate_remaining_pairings(round_id, &updated_bitmask, memo)
+                        .unwrap();
                     Some([vec![pairing], remaining_pairings].concat())
                 }
                 _ => {
@@ -141,13 +134,9 @@ impl SwissPairingsGenerator {
                                 return false;
                             }
 
-                            let updated_bitmask = self.add_new_pair_to_bitmask(bitmask, &player_1_idx, &idx);
-                            self
-                                .generate_remaining_pairings(
-                                    round_id,
-                                    &updated_bitmask,
-                                    memo,
-                                )
+                            let updated_bitmask =
+                                self.add_new_pair_to_bitmask(bitmask, &player_1_idx, &idx);
+                            self.generate_remaining_pairings(round_id, &updated_bitmask, memo)
                                 .is_some()
                         });
 
@@ -159,19 +148,14 @@ impl SwissPairingsGenerator {
                                 &player_2_standing.player_id,
                             );
 
-                            let updated_bitmask = self.add_new_pair_to_bitmask(
-                                bitmask,
-                                &player_1_idx,
-                                &player_2_idx,
-                            );
-                            let remaining_pairings = self.generate_remaining_pairings(
-                                round_id,
-                                &updated_bitmask,
-                                memo,
-                            ).unwrap();
+                            let updated_bitmask =
+                                self.add_new_pair_to_bitmask(bitmask, &player_1_idx, &player_2_idx);
+                            let remaining_pairings = self
+                                .generate_remaining_pairings(round_id, &updated_bitmask, memo)
+                                .unwrap();
                             Some([vec![pairing], remaining_pairings].concat())
                         }
-                        None => None
+                        None => None,
                     }
                 }
             };
@@ -244,13 +228,12 @@ impl PairingGenerator for SwissPairingsGenerator {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     mod test_swiss_pairing {
         use serde_json::{Map, Value};
 
-        use crate::database_models::{PlayerRowModel, MatchRowModel};
+        use crate::database_models::{MatchRowModel, PlayerRowModel};
         use crate::game_match::{GameMatchCreator, GameMatchTransformer, IGameMatch};
         use crate::pairings_generator::{PairingGenerator, SwissPairingsGenerator};
         use crate::properties::PlayerColor;

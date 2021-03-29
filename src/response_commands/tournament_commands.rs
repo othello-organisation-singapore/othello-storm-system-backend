@@ -7,10 +7,7 @@ use crate::account::Account;
 use crate::database_models::{TournamentRowModel, UserRowModel};
 use crate::errors::ErrorType;
 use crate::joueurs::{Joueurs, JoueursParser};
-use crate::meta_generator::{
-    MetaGenerator,
-    TournamentDetailsMetaGenerator,
-};
+use crate::meta_generator::{MetaGenerator, TournamentDetailsMetaGenerator};
 use crate::properties::TournamentType;
 use crate::utils::string_to_date;
 
@@ -26,10 +23,8 @@ impl ResponseCommand for GetTournamentCommand {
         let tournament_model = TournamentRowModel::get(&self.id, connection)?;
         let creator_username = &tournament_model.creator;
         let creator = UserRowModel::get(creator_username, connection)?;
-        let meta_generator = TournamentDetailsMetaGenerator::from_tournament(
-            tournament_model,
-            creator,
-        );
+        let meta_generator =
+            TournamentDetailsMetaGenerator::from_tournament(tournament_model, creator);
         Ok(json!(meta_generator.generate_meta()))
     }
 
@@ -44,9 +39,8 @@ impl ResponseCommand for GetAllTournamentsCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let tournament_models = TournamentRowModel::get_all(connection)?;
         let tournament_meta_list = generate_tournaments_meta(tournament_models);
-        Ok(json!({"tournaments": tournament_meta_list}))
+        Ok(json!({ "tournaments": tournament_meta_list }))
     }
-
 
     fn get_request_summary(&self) -> String {
         String::from("GetAllTournaments")
@@ -61,12 +55,10 @@ impl ResponseCommand for GetAllCreatedTournamentsCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let username = account.get_username();
-        let tournament_models = TournamentRowModel::get_all_created_by(
-            &username, connection,
-        )?;
+        let tournament_models = TournamentRowModel::get_all_created_by(&username, connection)?;
 
         let tournament_meta_list = generate_tournaments_meta(tournament_models);
-        Ok(json!({"tournaments": tournament_meta_list}))
+        Ok(json!({ "tournaments": tournament_meta_list }))
     }
 
     fn get_request_summary(&self) -> String {
@@ -91,9 +83,7 @@ impl ResponseCommand for CreateTournamentCommand<'_> {
             return Err(ErrorType::PermissionDenied);
         }
 
-        let tournament_type = TournamentType::from_string(
-            self.tournament_type.clone()
-        );
+        let tournament_type = TournamentType::from_string(self.tournament_type.clone());
 
         let raw_joueurs = Joueurs::get(3)?;
         let parsed_joueurs = JoueursParser::parse(&raw_joueurs)?;
@@ -130,7 +120,9 @@ pub struct UpdateTournamentCommand<'a> {
 
 impl UpdateTournamentCommand<'_> {
     fn is_able_to_update_tournament(
-        &self, tournament_model: &TournamentRowModel, current_account: &Account,
+        &self,
+        tournament_model: &TournamentRowModel,
+        current_account: &Account,
     ) -> bool {
         let username = current_account.get_username();
         current_account.has_superuser_access() || tournament_model.is_created_by(&username)
@@ -140,9 +132,7 @@ impl UpdateTournamentCommand<'_> {
 impl ResponseCommand for UpdateTournamentCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
-        let mut tournament_model = TournamentRowModel::get(
-            &self.id, connection,
-        )?;
+        let mut tournament_model = TournamentRowModel::get(&self.id, connection)?;
 
         if !self.is_able_to_update_tournament(&tournament_model, &account) {
             return Err(ErrorType::PermissionDenied);
@@ -168,7 +158,9 @@ pub struct DeleteTournamentCommand<'a> {
 
 impl DeleteTournamentCommand<'_> {
     fn is_able_to_delete_tournament(
-        &self, tournament_model: &TournamentRowModel, current_account: &Account,
+        &self,
+        tournament_model: &TournamentRowModel,
+        current_account: &Account,
     ) -> bool {
         let username = current_account.get_username();
         current_account.has_superuser_access() || tournament_model.is_created_by(&username)

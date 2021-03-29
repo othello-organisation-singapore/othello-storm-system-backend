@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use crate::database_models::MatchRowModel;
-use crate::properties::{SpecialConditionScore, PlayerColor};
+use crate::properties::{PlayerColor, SpecialConditionScore};
 
 use super::IGameMatch;
 
@@ -61,9 +61,7 @@ impl IGameMatch for UnfinishedGameMatch {
             return 0.0;
         }
 
-        let self_major_score = major_scores_by_player_ids
-            .get(player_id)
-            .unwrap_or(&0.0);
+        let self_major_score = major_scores_by_player_ids.get(player_id).unwrap_or(&0.0);
 
         return 32.0 + brightwell_constant * self_major_score;
     }

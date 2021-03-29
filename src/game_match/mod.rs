@@ -5,8 +5,7 @@ use normal_match::NormalGameMatch;
 use unfinished_match::UnfinishedGameMatch;
 
 mod abstract_game_match;
+mod bye_match;
+mod factories;
 mod normal_match;
 mod unfinished_match;
-mod factories;
-mod bye_match;
-

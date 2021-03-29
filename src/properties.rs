@@ -114,11 +114,23 @@ mod tests {
 
         #[test]
         fn test_from_string() {
-            assert_eq!(UserRole::from_string(String::from("superuser")), UserRole::Superuser);
-            assert_eq!(UserRole::from_string(String::from("admin")), UserRole::Admin);
-            assert_eq!(UserRole::from_string(String::from("visitor")), UserRole::Visitor);
+            assert_eq!(
+                UserRole::from_string(String::from("superuser")),
+                UserRole::Superuser
+            );
+            assert_eq!(
+                UserRole::from_string(String::from("admin")),
+                UserRole::Admin
+            );
+            assert_eq!(
+                UserRole::from_string(String::from("visitor")),
+                UserRole::Visitor
+            );
             assert_eq!(UserRole::from_string(String::from("")), UserRole::Visitor);
-            assert_eq!(UserRole::from_string(String::from("random junk")), UserRole::Visitor);
+            assert_eq!(
+                UserRole::from_string(String::from("random junk")),
+                UserRole::Visitor
+            );
         }
 
         #[test]
@@ -130,11 +142,26 @@ mod tests {
 
         #[test]
         fn test_from_and_to_string() {
-            assert_eq!(UserRole::from_string(String::from("superuser")).to_string(), String::from("superuser"));
-            assert_eq!(UserRole::from_string(String::from("admin")).to_string(), String::from("admin"));
-            assert_eq!(UserRole::from_string(String::from("visitor")).to_string(), String::from("visitor"));
-            assert_eq!(UserRole::from_string(String::from("junk string")).to_string(), String::from("visitor"));
-            assert_eq!(UserRole::from_string(String::from("")).to_string(), String::from("visitor"));
+            assert_eq!(
+                UserRole::from_string(String::from("superuser")).to_string(),
+                String::from("superuser")
+            );
+            assert_eq!(
+                UserRole::from_string(String::from("admin")).to_string(),
+                String::from("admin")
+            );
+            assert_eq!(
+                UserRole::from_string(String::from("visitor")).to_string(),
+                String::from("visitor")
+            );
+            assert_eq!(
+                UserRole::from_string(String::from("junk string")).to_string(),
+                String::from("visitor")
+            );
+            assert_eq!(
+                UserRole::from_string(String::from("")).to_string(),
+                String::from("visitor")
+            );
         }
     }
 
@@ -163,9 +190,18 @@ mod tests {
 
         #[test]
         fn test_to_string() {
-            assert_eq!(TournamentType::RoundRobin.to_string(), String::from("round_robin"));
-            assert_eq!(TournamentType::SwissPairing.to_string(), String::from("swiss_pairing"));
-            assert_eq!(TournamentType::Unidentified.to_string(), String::from("unidentified"));
+            assert_eq!(
+                TournamentType::RoundRobin.to_string(),
+                String::from("round_robin")
+            );
+            assert_eq!(
+                TournamentType::SwissPairing.to_string(),
+                String::from("swiss_pairing")
+            );
+            assert_eq!(
+                TournamentType::Unidentified.to_string(),
+                String::from("unidentified")
+            );
         }
     }
 
@@ -174,26 +210,11 @@ mod tests {
 
         #[test]
         fn test_from_i32() {
-            assert_eq!(
-                RoundType::from_i32(1),
-                RoundType::Automatic
-            );
-            assert_eq!(
-                RoundType::from_i32(2),
-                RoundType::ManualNormal
-            );
-            assert_eq!(
-                RoundType::from_i32(3),
-                RoundType::ManualSpecial
-            );
-            assert_eq!(
-                RoundType::from_i32(4),
-                RoundType::Unidentified
-            );
-            assert_eq!(
-                RoundType::from_i32(0),
-                RoundType::Unidentified
-            );
+            assert_eq!(RoundType::from_i32(1), RoundType::Automatic);
+            assert_eq!(RoundType::from_i32(2), RoundType::ManualNormal);
+            assert_eq!(RoundType::from_i32(3), RoundType::ManualSpecial);
+            assert_eq!(RoundType::from_i32(4), RoundType::Unidentified);
+            assert_eq!(RoundType::from_i32(0), RoundType::Unidentified);
         }
 
         #[test]

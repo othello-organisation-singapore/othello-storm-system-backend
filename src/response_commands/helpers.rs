@@ -3,20 +3,12 @@ use serde_json::{Map, Value};
 
 use crate::account::Account;
 use crate::database_models::{
-    MatchRowModel,
-    PlayerRowModel,
-    RoundRowModel,
-    TournamentRowModel,
-    UserRowModel,
+    MatchRowModel, PlayerRowModel, RoundRowModel, TournamentRowModel, UserRowModel,
 };
 use crate::errors::ErrorType;
 use crate::meta_generator::{
-    MatchMetaGenerator,
-    MetaGenerator,
-    PlayerMetaGenerator,
-    RoundPreviewMetaGenerator,
-    TournamentPreviewMetaGenerator,
-    UserMetaGenerator,
+    MatchMetaGenerator, MetaGenerator, PlayerMetaGenerator, RoundPreviewMetaGenerator,
+    TournamentPreviewMetaGenerator, UserMetaGenerator,
 };
 
 pub fn generate_players_meta(player_models: Vec<PlayerRowModel>) -> Vec<Map<String, Value>> {
@@ -30,14 +22,12 @@ pub fn generate_players_meta(player_models: Vec<PlayerRowModel>) -> Vec<Map<Stri
 }
 
 pub fn generate_tournaments_meta(
-    tournament_models: Vec<TournamentRowModel>
+    tournament_models: Vec<TournamentRowModel>,
 ) -> Vec<Map<String, Value>> {
     tournament_models
         .into_iter()
         .map(|tournament| {
-            let meta_generator = TournamentPreviewMetaGenerator::from_tournament(
-                tournament
-            );
+            let meta_generator = TournamentPreviewMetaGenerator::from_tournament(tournament);
             meta_generator.generate_meta()
         })
         .collect()

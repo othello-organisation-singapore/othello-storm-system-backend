@@ -17,7 +17,11 @@ pub trait ResponseCommand {
                 }))
             }
             Err(error) => {
-                error!("Failed request for {}, {}", self.get_request_summary(), &error.to_error_message());
+                error!(
+                    "Failed request for {}, {}",
+                    self.get_request_summary(),
+                    &error.to_error_message()
+                );
                 Json(json!({
                     "success": "",
                     "error": {

@@ -2,12 +2,7 @@ use diesel::PgConnection;
 use serde_json::Map;
 
 use crate::database_models::{
-    MatchDAO,
-    MatchRowModel,
-    PlayerRowModel,
-    RoundDAO,
-    RoundRowModel,
-    TournamentRowModel,
+    MatchDAO, MatchRowModel, PlayerRowModel, RoundDAO, RoundRowModel, TournamentRowModel,
     UserRowModel,
 };
 use crate::properties::{RoundType, TournamentType, UserRole};
@@ -25,11 +20,13 @@ pub fn create_mock_user(connection: &PgConnection) -> UserRowModel {
         &hashed_password,
         UserRole::Superuser,
         connection,
-    ).unwrap()
+    )
+    .unwrap()
 }
 
 pub fn create_mock_tournament_with_creator(
-    username: &String, connection: &PgConnection,
+    username: &String,
+    connection: &PgConnection,
 ) -> TournamentRowModel {
     let name = utils::generate_random_string(20);
     let country = utils::generate_random_string(10);
@@ -47,7 +44,8 @@ pub fn create_mock_tournament_with_creator(
         tournament_type,
         Map::new(),
         connection,
-    ).unwrap()
+    )
+    .unwrap()
 }
 
 pub fn create_mock_tournament_with_creator_and_joueurs(
@@ -70,7 +68,8 @@ pub fn create_mock_tournament_with_creator_and_joueurs(
         tournament_type,
         Map::new(),
         connection,
-    ).unwrap()
+    )
+    .unwrap()
 }
 
 pub fn create_mock_round_from_tournament(
@@ -84,7 +83,8 @@ pub fn create_mock_round_from_tournament(
         RoundType::ManualNormal,
         Map::new(),
         connection,
-    ).unwrap()
+    )
+    .unwrap()
 }
 
 pub fn create_mock_player_from_tournament(
@@ -104,12 +104,7 @@ pub fn create_mock_player_from_tournament(
         country,
         rating,
     };
-    PlayerRowModel::create(
-        &tournament_id,
-        &player,
-        Map::new(),
-        connection,
-    ).unwrap()
+    PlayerRowModel::create(&tournament_id, &player, Map::new(), connection).unwrap()
 }
 
 pub fn create_mock_match_from_round(
@@ -130,5 +125,6 @@ pub fn create_mock_match_from_round(
         &white_score,
         Map::new(),
         connection,
-    ).unwrap()
+    )
+    .unwrap()
 }

@@ -5,7 +5,7 @@ use crate::database_models::RoundRowModel;
 use super::MetaGenerator;
 
 pub struct RoundPreviewMetaGenerator {
-    round: RoundRowModel
+    round: RoundRowModel,
 }
 
 impl RoundPreviewMetaGenerator {
@@ -24,7 +24,7 @@ impl MetaGenerator for RoundPreviewMetaGenerator {
 }
 
 pub struct RoundDetailsMetaGenerator {
-    round: RoundRowModel
+    round: RoundRowModel,
 }
 
 impl RoundDetailsMetaGenerator {
@@ -38,7 +38,10 @@ impl MetaGenerator for RoundDetailsMetaGenerator {
         let mut meta = Map::new();
         meta.insert(String::from("id"), Value::from(self.round.id.clone()));
         meta.insert(String::from("name"), Value::from(self.round.name.clone()));
-        meta.insert(String::from("type"), Value::from(self.round.round_type.clone()));
+        meta.insert(
+            String::from("type"),
+            Value::from(self.round.round_type.clone()),
+        );
         meta
     }
 }
