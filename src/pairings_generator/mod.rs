@@ -1,4 +1,5 @@
 pub use abstract_pairings_generator::{PairingGenerator, Pairings};
+pub use factories::PairingsGeneratorCreator;
 pub use helpers::get_player_1_color;
 pub use rr_pairings_generator::RRPairingsGenerator;
 pub use swiss_pairings_generator::SwissPairingsGenerator;
