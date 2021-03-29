@@ -304,3 +304,102 @@ impl ResponseCommand for CreateAutomaticRoundCommand<'_> {
         String::from(format!("CreateAutomaticRound for {}", &self.tournament_id))
     }
 }
+
+pub struct UpdateRoundCommand<'a> {
+    pub cookies: Cookies<'a>,
+    pub tournament_id: i32,
+    pub round_id: i32,
+    pub updated_name: String,
+}
+
+impl ResponseCommand for UpdateRoundCommand<'_> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
+        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
+
+        let is_allowed_to_manage = is_allowed_to_manage_tournament(
+            &account,
+            &tournament_model,
+            connection,
+        )?;
+        if !is_allowed_to_manage {
+            return Err(ErrorType::PermissionDenied);
+        }
+
+        let mut round = RoundRowModel::get(&self.round_id, connection)?;
+        round.name = self.updated_name.clone();
+        round.update(connection)?;
+
+        Ok(json!({"message": "Round has been updated."}))
+    }
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!("UpdateRound for {} in tournament {}", &self.round_id, &self.tournament_id))
+    }
+}
+
+pub struct DeleteRoundCommand<'a> {
+    pub cookies: Cookies<'a>,
+    pub tournament_id: i32,
+    pub round_id: i32,
+}
+
+impl ResponseCommand for DeleteRoundCommand<'_> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
+        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
+
+        let is_allowed_to_manage = is_allowed_to_manage_tournament(
+            &account,
+            &tournament_model,
+            connection,
+        )?;
+        if !is_allowed_to_manage {
+            return Err(ErrorType::PermissionDenied);
+        }
+
+        let round = RoundRowModel::get(&self.round_id, connection)?;
+        round.delete(connection)?;
+
+        Ok(json!({"message": "Round has been deleted."}))
+    }
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!("DeleteRound for {} in tournament {}", &self.round_id, &self.tournament_id))
+    }
+}
+
+pub struct UpdateMatchCommand<'a> {
+    pub cookies: Cookies<'a>,
+    pub tournament_id: i32,
+    pub match_id: i32,
+    pub black_score: i32,
+    pub white_score: i32,
+}
+
+impl ResponseCommand for UpdateMatchCommand<'_> {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
+        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
+
+        let is_allowed_to_manage = is_allowed_to_manage_tournament(
+            &account,
+            &tournament_model,
+            connection,
+        )?;
+        if !is_allowed_to_manage {
+            return Err(ErrorType::PermissionDenied);
+        }
+
+        let mut game_match = MatchRowModel::get(&self.match_id, connection)?;
+        game_match.black_score = self.black_score.clone();
+        game_match.white_score = self.white_score.clone();
+        game_match.update(connection)?;
+
+        Ok(json!({"message": "Match has been updated."}))
+    }
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!("UpdateMatch for {} in tournament {}", &self.match_id, &self.tournament_id))
+    }
+}
