@@ -15,6 +15,17 @@ pub use player_commands::{
     GetTournamentJoueursPlayersCommand,
     GetTournamentPlayersCommand,
 };
+pub use round_match_commands::{
+    GetTournamentRoundsCommand,
+    GetRoundCommand,
+    CreateManualNormalRoundCommand,
+    CreateManualSpecialRoundCommand,
+    CreateAutomaticRoundCommand,
+    UpdateRoundCommand,
+    DeleteRoundCommand,
+    GetRoundMatchesCommand,
+    UpdateMatchCommand,
+};
 pub use tournament_admin_commands::{
     AddAdminCommand,
     GetAllAdminsCommand,

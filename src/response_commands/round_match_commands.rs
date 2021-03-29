@@ -369,6 +369,28 @@ impl ResponseCommand for DeleteRoundCommand<'_> {
     }
 }
 
+pub struct GetRoundMatchesCommand {
+    pub round_id: i32,
+}
+
+impl ResponseCommand for GetRoundMatchesCommand {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
+        let matches = MatchRowModel::get_all_from_round(
+            &self.round_id,
+            connection,
+        )?;
+        let matches_meta = generate_matches_meta(matches);
+        Ok(json!({
+            "round_id": &self.round_id,
+            "matches": matches_meta,
+        }))
+    }
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!("GetRoundMatches for {}", &self.round_id))
+    }
+}
+
 pub struct UpdateMatchCommand<'a> {
     pub cookies: Cookies<'a>,
     pub tournament_id: i32,
