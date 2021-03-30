@@ -6,10 +6,13 @@ use crate::database_models::{
     MatchRowModel, PlayerRowModel, RoundRowModel, TournamentRowModel, UserRowModel,
 };
 use crate::errors::ErrorType;
-use crate::meta_generator::{
+use crate::tournament_manager::PlayerStanding;
+
+use super::{
     MatchMetaGenerator, MetaGenerator, PlayerMetaGenerator, RoundPreviewMetaGenerator,
     TournamentPreviewMetaGenerator, UserMetaGenerator,
 };
+use crate::meta_generator::StandingMetaGenerator;
 
 pub fn generate_players_meta(player_models: Vec<PlayerRowModel>) -> Vec<Map<String, Value>> {
     player_models
@@ -58,6 +61,16 @@ pub fn generate_matches_meta(match_models: Vec<MatchRowModel>) -> Vec<Map<String
         .into_iter()
         .map(|game_match| {
             let meta_generator = MatchMetaGenerator::from_match_model(game_match);
+            meta_generator.generate_meta()
+        })
+        .collect()
+}
+
+pub fn generate_standings_meta(standings: Vec<PlayerStanding>) -> Vec<Map<String, Value>> {
+    standings
+        .into_iter()
+        .map(|player_standing| {
+            let meta_generator = StandingMetaGenerator::from_standing(player_standing);
             meta_generator.generate_meta()
         })
         .collect()

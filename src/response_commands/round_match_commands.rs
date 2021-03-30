@@ -13,13 +13,15 @@ use crate::database_models::{
 };
 use crate::errors::ErrorType;
 use crate::game_match::{GameMatchCreator, GameMatchTransformer, IGameMatch};
-use crate::meta_generator::{MetaGenerator, RoundDetailsMetaGenerator};
+use crate::meta_generator::{
+    generate_matches_meta, generate_rounds_meta, generate_standings_meta,
+    is_allowed_to_manage_tournament, MetaGenerator, RoundDetailsMetaGenerator,
+};
 use crate::pairings_generator::PairingsGeneratorCreator;
 use crate::properties::{RoundType, TournamentType};
-use crate::tournament_manager::create_result_keeper;
 
 use super::ResponseCommand;
-use super::{generate_matches_meta, generate_rounds_meta, is_allowed_to_manage_tournament};
+use crate::tournament_manager::create_result_keeper;
 
 pub struct GetTournamentRoundsCommand {
     pub tournament_id: i32,
@@ -63,6 +65,44 @@ impl ResponseCommand for GetRoundCommand {
 
     fn get_request_summary(&self) -> String {
         String::from(format!("GetRound for {}", &self.round_id))
+    }
+}
+
+pub struct GetStandingsCommand {
+    pub round_id_limit: i32,
+    pub tournament_id: i32,
+}
+
+impl ResponseCommand for GetStandingsCommand {
+    fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
+        let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
+        let round_ids: HashSet<i32> = HashSet::from_iter(
+            RoundRowModel::get_all_from_tournament(&tournament_model.id, connection)?
+                .into_iter()
+                .filter(|round| {
+                    let is_normal_round = round.round_type == RoundType::ManualNormal.to_i32()
+                        || round.round_type == RoundType::Automatic.to_i32();
+                    let is_round_before_limit = round.id <= self.round_id_limit;
+                    is_normal_round && is_round_before_limit
+                })
+                .map(|round| round.id),
+        );
+
+        let previous_matches =
+            MatchRowModel::get_all_from_tournament(&tournament_model.id, connection)?;
+        let filtered_matches: Vec<Box<dyn IGameMatch>> = previous_matches
+            .into_iter()
+            .filter(|game_match| round_ids.contains(&game_match.round_id))
+            .map(|game_match| GameMatchTransformer::transform_to_game_match(&game_match))
+            .collect();
+        let result_keeper = create_result_keeper(&filtered_matches);
+        let standings = result_keeper.get_detailed_standings();
+        let standings_meta = generate_standings_meta(standings);
+        Ok(json!({"tournament_id": self.tournament_id, "standings": standings_meta}))
+    }
+
+    fn get_request_summary(&self) -> String {
+        String::from(format!("GetStandings for {}", &self.tournament_id))
     }
 }
 

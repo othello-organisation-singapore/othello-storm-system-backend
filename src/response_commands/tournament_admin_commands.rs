@@ -5,9 +5,9 @@ use rocket_contrib::json::JsonValue;
 use crate::account::Account;
 use crate::database_models::{TournamentRowModel, UserRowModel};
 use crate::errors::ErrorType;
+use crate::meta_generator::{generate_tournaments_meta, generate_users_meta};
 
 use super::ResponseCommand;
-use super::{generate_tournaments_meta, generate_users_meta};
 
 pub struct GetAllAdminsCommand {
     pub tournament_id: i32,

@@ -7,11 +7,12 @@ use crate::account::Account;
 use crate::database_models::{TournamentRowModel, UserRowModel};
 use crate::errors::ErrorType;
 use crate::joueurs::{Joueurs, JoueursParser};
-use crate::meta_generator::{MetaGenerator, TournamentDetailsMetaGenerator};
+use crate::meta_generator::{
+    generate_tournaments_meta, MetaGenerator, TournamentDetailsMetaGenerator,
+};
 use crate::properties::TournamentType;
 use crate::utils::string_to_date;
 
-use super::generate_tournaments_meta;
 use super::ResponseCommand;
 
 pub struct GetTournamentCommand {

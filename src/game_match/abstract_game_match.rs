@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-
-use serde::export::fmt::Debug;
+use std::fmt::Debug;
 
 use crate::database_models::MatchRowModel;
 use crate::properties::PlayerColor;
