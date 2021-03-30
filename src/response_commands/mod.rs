@@ -6,8 +6,8 @@ pub use player_commands::{
 };
 pub use round_match_commands::{
     CreateAutomaticRoundCommand, CreateManualNormalRoundCommand, CreateManualSpecialRoundCommand,
-    DeleteRoundCommand, GetRoundCommand, GetRoundMatchesCommand, GetTournamentRoundsCommand,
-    UpdateMatchCommand, UpdateRoundCommand,
+    DeleteRoundCommand, GetRoundCommand, GetRoundMatchesCommand, GetStandingsCommand,
+    GetTournamentRoundsCommand, UpdateMatchCommand, UpdateRoundCommand,
 };
 pub use tournament_admin_commands::{
     AddAdminCommand, GetAllAdminsCommand, GetAllManagedTournamentsCommand,

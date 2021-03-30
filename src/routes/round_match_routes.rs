@@ -1,16 +1,33 @@
-// use rocket::http::Cookies;
-// use rocket_contrib::json::{Json, JsonValue};
-// use serde::Deserialize;
-//
-// use crate::response_commands;
-// use crate::response_commands::ResponseCommand;
-// use crate::utils::get_pooled_connection;
-//
-// #[get("/<id>")]
-// pub fn get_tournament_rounds(id: i32) -> Json<JsonValue> {
-//     let connection = get_pooled_connection();
-//     response_commands::Get { id }.execute(&connection)
-// }
+use rocket::http::Cookies;
+use rocket_contrib::json::{Json, JsonValue};
+use serde::Deserialize;
+
+use crate::response_commands;
+use crate::response_commands::ResponseCommand;
+use crate::utils::get_pooled_connection;
+
+#[get("/<id>/rounds")]
+pub fn get_tournament_rounds(id: i32) -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    response_commands::GetTournamentRoundsCommand { tournament_id: id }.execute(&connection)
+}
+
+#[get("/<tournament_id>/rounds/<round_id>")]
+pub fn get_round(_tournament_id: i32, round_id: i32) -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    response_commands::GetRoundCommand { round_id }.execute(&connection)
+}
+
+#[get("/<tournament_id>/rounds/<round_id>/standings")]
+pub fn get_standings(tournament_id: i32, round_id: i32) -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    response_commands::GetStandingsCommand {
+        round_id_limit: round_id,
+        tournament_id,
+    }
+    .execute(&connection)
+}
+
 //
 // #[derive(Deserialize)]
 // pub struct TournamentCreationRequest {
