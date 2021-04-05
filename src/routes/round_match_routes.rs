@@ -118,6 +118,17 @@ pub fn update_round(
     .execute(&connection)
 }
 
+#[delete("/<tournament_id>/rounds/<round_id>")]
+pub fn delete_round(cookies: Cookies, tournament_id: i32, round_id: i32) -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    response_commands::DeleteRoundCommand {
+        cookies,
+        tournament_id,
+        round_id,
+    }
+    .execute(&connection)
+}
+
 #[get("/<_tournament_id>/rounds/<round_id>/matches")]
 pub fn get_round_matches(_tournament_id: i32, round_id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();

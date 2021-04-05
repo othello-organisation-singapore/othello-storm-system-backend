@@ -82,6 +82,16 @@ fn main() {
                 routes::player_routes::add_player,
                 routes::player_routes::add_player_new,
                 routes::player_routes::delete_player,
+                routes::round_match_routes::get_tournament_rounds,
+                routes::round_match_routes::create_manual_normal_round,
+                routes::round_match_routes::create_manual_special_round,
+                routes::round_match_routes::create_automatic_round,
+                routes::round_match_routes::get_round,
+                routes::round_match_routes::get_standings,
+                routes::round_match_routes::update_round,
+                routes::round_match_routes::delete_round,
+                routes::round_match_routes::get_round_matches,
+                routes::round_match_routes::update_match,
             ],
         )
         .mount(
