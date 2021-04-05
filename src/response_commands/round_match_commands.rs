@@ -306,7 +306,7 @@ impl CreateAutomaticRoundCommand<'_> {
         let round = RoundRowModel::create(
             &self.tournament_id,
             &self.name,
-            RoundType::ManualSpecial,
+            RoundType::Automatic,
             Map::new(),
             connection,
         )?;
@@ -398,7 +398,28 @@ impl ResponseCommand for DeleteRoundCommand<'_> {
         }
 
         let round = RoundRowModel::get(&self.round_id, connection)?;
-        round.delete(connection)?;
+        let matches = MatchRowModel::get_all_from_round(&round.id, connection)?;
+
+        if let Err(_) = connection.transaction::<(), Error, _>(|| {
+            let matches_delete_result: Vec<bool> = matches
+                .into_iter()
+                .map(|game_match| game_match.delete(connection).is_err())
+                .filter(|is_err| *is_err)
+                .collect();
+
+            if matches_delete_result.len() > 0 {
+                return Err(Error::RollbackTransaction)
+            }
+
+            if let Err(_) = round.delete(connection) {
+                return Err(Error::RollbackTransaction);
+            }
+            Ok(())
+        }) {
+            return Err(ErrorType::UnknownError(String::from(
+                "Error from deleting round",
+            )));
+        }
 
         Ok(json!({"message": "Round has been deleted."}))
     }

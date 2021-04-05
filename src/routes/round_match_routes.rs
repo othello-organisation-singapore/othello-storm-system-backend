@@ -65,7 +65,7 @@ pub struct CreateAutomaticRoundRequest {
     name: String,
 }
 
-#[post("/<tournament_id>/rounds/create_manual_special", data = "<request>")]
+#[post("/<tournament_id>/rounds/create_automatic", data = "<request>")]
 pub fn create_automatic_round(
     cookies: Cookies,
     tournament_id: i32,

@@ -28,7 +28,7 @@ impl ErrorType {
         match self {
             ErrorType::UnknownError(message) => message.clone(),
             ErrorType::BadRequestError(message) => {
-                String::from(format!("Bad request: {}.", message))
+                String::from(format!("Bad request: {}", message))
             }
             ErrorType::ExternalConnectionError(message) => String::from(format!(
                 "Cannot connect to external source ({}), please try again.",
