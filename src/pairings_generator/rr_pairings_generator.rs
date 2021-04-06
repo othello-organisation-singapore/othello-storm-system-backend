@@ -26,6 +26,7 @@ impl RRPairingsGenerator {
     }
 
     fn generate_rr_pairings(&self, round_id: &i32, shift: &i32) -> Pairings {
+        // TODO: fix bug wrong splitting behaviour, reverse the vec
         let mut player_1_vec = self.players.iter().collect::<Vec<&PlayerRowModel>>();
         let mut remaining_players = player_1_vec.split_off(1);
         let splitted_players = remaining_players.split_off(*shift as usize);
@@ -107,13 +108,19 @@ impl PairingGenerator for RRPairingsGenerator {
 
         match next_opponent_for_highest_ranked_player {
             Some(opponent_id) => {
-                for shift in 0..standings.len() - 2 {
+                for shift in 0..standings.len() - 1 {
                     let pairings = self.generate_rr_pairings(round_id, &(shift as i32));
 
+                    println!("{} {}", shift, self.is_players_matched(&pairings, highest_ranked_player_id, opponent_id));
+                    pairings.iter().for_each(|pairings| {
+                        let players_id = pairings.get_players_id();
+                        println!("{} {}", players_id.0.unwrap(), players_id.1.unwrap());
+                    });
                     if self.is_players_matched(&pairings, highest_ranked_player_id, opponent_id) {
                         return Ok(pairings);
                     }
                 }
+                println!("no shif successful");
                 Err(ErrorType::AutomaticPairingError)
             }
             None => Err(ErrorType::AutomaticPairingError),
