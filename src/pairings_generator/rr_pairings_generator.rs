@@ -2,7 +2,7 @@ use serde_json::{Map, Value};
 
 use crate::database_models::PlayerRowModel;
 use crate::errors::ErrorType;
-use crate::game_match::GameMatchCreator;
+use crate::game_match::{GameMatchCreator, IGameMatch};
 use crate::properties::PlayerColor;
 use crate::tournament_manager::IResultKeeper;
 use crate::utils::generate_random_number_ranged;
@@ -26,52 +26,83 @@ impl RRPairingsGenerator {
     }
 
     fn generate_rr_pairings(&self, round_id: &i32, shift: &i32) -> Pairings {
-        // TODO: fix bug wrong splitting behaviour, reverse the vec
+        let bye_player = self.generate_bye_player();
+
         let mut player_1_vec = self.players.iter().collect::<Vec<&PlayerRowModel>>();
+        if player_1_vec.len() % 2 == 1 {
+            player_1_vec.push(&bye_player);
+        }
+
         let mut remaining_players = player_1_vec.split_off(1);
         let splitted_players = remaining_players.split_off(*shift as usize);
-
         let mut shifted_players: Vec<&PlayerRowModel> =
             [player_1_vec, splitted_players, remaining_players].concat();
-        let mut matches = Vec::new();
 
-        let midpoint = (shifted_players.len() as f32 / 2 as f32).ceil() as usize;
-        let second_part_sorted_players = shifted_players.split_off(midpoint);
+        let midpoint = (shifted_players.len() / 2) as usize;
+        let mut second_part_sorted_players = shifted_players.split_off(midpoint);
+        second_part_sorted_players.reverse(); // For the rr algorithm to work
         let mut second_part_players_iter = second_part_sorted_players.iter();
 
+        let mut matches = Vec::new();
         for player_1 in shifted_players {
-            let player_2_option = second_part_players_iter.next();
-            match player_2_option {
-                Some(player_2) => {
-                    let player_1_color =
-                        get_player_1_color(&player_1.id, &player_2.id, &self.past_results);
-
-                    let black_player_id = match player_1_color {
-                        PlayerColor::Black => player_1.id,
-                        PlayerColor::White => player_2.id,
-                    };
-                    let white_player_id = match player_1_color {
-                        PlayerColor::White => player_1.id,
-                        PlayerColor::Black => player_2.id,
-                    };
-
-                    matches.push(Box::from(GameMatchCreator::create_new_match(
-                        round_id,
-                        &black_player_id,
-                        &white_player_id,
-                        &Value::from(Map::new()),
-                    )));
-                }
-                None => {
-                    matches.push(Box::from(GameMatchCreator::create_new_bye_match(
-                        round_id,
-                        &player_1.id,
-                        &Value::from(Map::new()),
-                    )));
-                }
+            let &player_2 = second_part_players_iter.next().unwrap();
+            if player_1 == &bye_player {
+                matches.push(self.generate_bye_match(round_id, player_2));
+                continue;
             }
+
+            if player_2 == &bye_player {
+                matches.push(self.generate_bye_match(round_id, player_1));
+                continue;
+            }
+
+            matches.push(self.generate_match(round_id, player_1, player_2));
         }
         matches
+    }
+
+    fn generate_bye_player(&self) -> PlayerRowModel {
+        PlayerRowModel {
+            id: 0,
+            tournament_id: 0,
+            joueurs_id: "".to_string(),
+            first_name: "".to_string(),
+            last_name: "".to_string(),
+            country: "".to_string(),
+            rating: 0,
+            meta_data: Default::default(),
+        }
+    }
+
+    fn generate_bye_match(&self, round_id: &i32, player: &PlayerRowModel) -> Box<dyn IGameMatch> {
+        Box::from(GameMatchCreator::create_new_bye_match(
+            round_id,
+            &player.id,
+            &Value::from(Map::new()),
+        ))
+    }
+
+    fn generate_match(
+        &self,
+        round_id: &i32,
+        player_1: &PlayerRowModel,
+        player_2: &PlayerRowModel,
+    ) -> Box<dyn IGameMatch> {
+        let player_1_color = get_player_1_color(&player_1.id, &player_2.id, &self.past_results);
+        let black_player_id = match player_1_color {
+            PlayerColor::Black => player_1.id,
+            PlayerColor::White => player_2.id,
+        };
+        let white_player_id = match player_1_color {
+            PlayerColor::White => player_1.id,
+            PlayerColor::Black => player_2.id,
+        };
+        Box::from(GameMatchCreator::create_new_match(
+            round_id,
+            &black_player_id,
+            &white_player_id,
+            &Value::from(Map::new()),
+        ))
     }
 
     fn is_players_matched(
@@ -110,17 +141,10 @@ impl PairingGenerator for RRPairingsGenerator {
             Some(opponent_id) => {
                 for shift in 0..standings.len() - 1 {
                     let pairings = self.generate_rr_pairings(round_id, &(shift as i32));
-
-                    println!("{} {}", shift, self.is_players_matched(&pairings, highest_ranked_player_id, opponent_id));
-                    pairings.iter().for_each(|pairings| {
-                        let players_id = pairings.get_players_id();
-                        println!("{} {}", players_id.0.unwrap(), players_id.1.unwrap());
-                    });
                     if self.is_players_matched(&pairings, highest_ranked_player_id, opponent_id) {
                         return Ok(pairings);
                     }
                 }
-                println!("no shif successful");
                 Err(ErrorType::AutomaticPairingError)
             }
             None => Err(ErrorType::AutomaticPairingError),
@@ -190,12 +214,12 @@ mod tests {
             let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
             let pairings = pairings_generator.generate_pairings(&0).unwrap();
 
+            assert_eq!(pairings[0].get_player_color(&6), Some(PlayerColor::White));
             assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::Black));
-            assert_eq!(pairings[0].get_player_color(&4), Some(PlayerColor::White));
             assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::Black));
             assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::White));
             assert_eq!(pairings[2].get_player_color(&3), Some(PlayerColor::Black));
-            assert_eq!(pairings[2].get_player_color(&6), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&4), Some(PlayerColor::White));
         }
 
         #[test]
@@ -214,12 +238,12 @@ mod tests {
             let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
             let pairings = pairings_generator.generate_pairings(&0).unwrap();
 
-            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::Black));
-            assert_eq!(pairings[0].get_player_color(&4), Some(PlayerColor::White));
+            assert_eq!(pairings[0].get_player_color(&1), None);
+            assert_eq!(pairings[0].is_player_playing(&1), true);
             assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::Black));
             assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::White));
-            assert_eq!(pairings[2].get_player_color(&3), None);
-            assert_eq!(pairings[2].is_player_playing(&3), true);
+            assert_eq!(pairings[2].get_player_color(&3), Some(PlayerColor::Black));
+            assert_eq!(pairings[2].get_player_color(&4), Some(PlayerColor::White));
         }
 
         #[test]
@@ -242,12 +266,12 @@ mod tests {
             let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
             let pairings = pairings_generator.generate_pairings(&0).unwrap();
 
-            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::Black));
-            assert_eq!(pairings[0].get_player_color(&2), Some(PlayerColor::White));
-            assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::Black));
-            assert_eq!(pairings[1].get_player_color(&3), Some(PlayerColor::White));
-            assert_eq!(pairings[2].get_player_color(&6), Some(PlayerColor::Black));
-            assert_eq!(pairings[2].get_player_color(&4), Some(PlayerColor::White));
+            assert_eq!(pairings[0].get_player_color(&5), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&6), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&4), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&2), Some(PlayerColor::Black));
+            assert_eq!(pairings[2].get_player_color(&3), Some(PlayerColor::White));
         }
 
         #[test]
@@ -271,10 +295,10 @@ mod tests {
 
             assert_eq!(pairings[0].get_player_color(&1), Some(PlayerColor::Black));
             assert_eq!(pairings[0].get_player_color(&4), Some(PlayerColor::White));
-            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::Black));
-            assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::White));
-            assert_eq!(pairings[2].get_player_color(&3), None);
-            assert_eq!(pairings[2].is_player_playing(&3), true);
+            assert_eq!(pairings[1].get_player_color(&5), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&3), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&2), None);
+            assert_eq!(pairings[2].is_player_playing(&2), true);
         }
 
         #[test]
