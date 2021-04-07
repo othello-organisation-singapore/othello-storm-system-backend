@@ -8,7 +8,7 @@ use crate::tournament_manager::Player;
 use super::MetaGenerator;
 
 pub struct PlayerMetaGenerator {
-    player: PlayerRowModel
+    player: PlayerRowModel,
 }
 
 impl PlayerMetaGenerator {
@@ -21,11 +21,8 @@ impl PlayerMetaGenerator {
         tournament_id: &i32,
         connection: &PgConnection,
     ) -> Result<PlayerMetaGenerator, ErrorType> {
-        let player_model = PlayerRowModel::get_from_joueurs_id(
-            &player.joueurs_id,
-            tournament_id,
-            connection,
-        )?;
+        let player_model =
+            PlayerRowModel::get_from_joueurs_id(&player.joueurs_id, tournament_id, connection)?;
         Ok(PlayerMetaGenerator::from_player_model(player_model))
     }
 }
@@ -33,7 +30,7 @@ impl PlayerMetaGenerator {
 impl MetaGenerator for PlayerMetaGenerator {
     fn generate_meta(&self) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.player.id.to_string()));
+        meta.insert(String::from("id"), Value::from(self.player.id.clone()));
         meta.insert(
             String::from("joueurs_id"),
             Value::from(self.player.joueurs_id.clone()),
@@ -51,9 +48,9 @@ impl MetaGenerator for PlayerMetaGenerator {
             Value::from(self.player.country.clone()),
         );
         meta.insert(
-            String::from("rating"), Value::from(self.player.rating.to_string()),
+            String::from("rating"),
+            Value::from(self.player.rating.clone()),
         );
         meta
     }
 }
-

@@ -1,13 +1,13 @@
-use rocket::http::Cookies;
 use diesel::prelude::*;
+use rocket::http::Cookies;
 
 use crate::database_models::UserRowModel;
 use crate::errors::ErrorType;
 use crate::properties::UserRole;
-use crate::utils::{JWTMediator, verify};
+use crate::utils::{verify, JWTMediator};
 
 pub struct Account {
-    pub user: UserRowModel
+    pub user: UserRowModel,
 }
 
 impl Account {
@@ -15,7 +15,7 @@ impl Account {
         match self.user.get_role() {
             UserRole::Superuser => true,
             UserRole::Admin => false,
-            _ => false
+            _ => false,
         }
     }
 
@@ -23,7 +23,7 @@ impl Account {
         match self.user.get_role() {
             UserRole::Superuser => true,
             UserRole::Admin => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -37,7 +37,10 @@ impl Account {
 }
 
 impl Account {
-    pub fn login_from_cookies(cookies: &Cookies, connection: &PgConnection) -> Result<Account, ErrorType> {
+    pub fn login_from_cookies(
+        cookies: &Cookies,
+        connection: &PgConnection,
+    ) -> Result<Account, ErrorType> {
         let cookies_jwt = cookies.get("jwt").map(|c| c.value()).unwrap_or("");
         let jwt = String::from(cookies_jwt);
         Account::login_from_jwt(&jwt, connection)
@@ -51,7 +54,9 @@ impl Account {
     }
 
     pub fn login_from_password(
-        username: &String, password: &String, connection: &PgConnection,
+        username: &String,
+        password: &String,
+        connection: &PgConnection,
     ) -> Result<Account, ErrorType> {
         let user = UserRowModel::get(&username, connection)?;
 
@@ -101,9 +106,8 @@ mod tests {
             );
 
             assert_eq!(result.is_ok(), true);
-            let account = Account::login_from_password(
-                &username, &password, &test_connection,
-            ).unwrap();
+            let account =
+                Account::login_from_password(&username, &password, &test_connection).unwrap();
             assert_eq!(account.has_superuser_access(), true);
             assert_eq!(account.has_admin_access(), true);
             assert_eq!(account.get_username(), username);
@@ -126,9 +130,8 @@ mod tests {
             );
 
             assert_eq!(result.is_ok(), true);
-            let account = Account::login_from_password(
-                &username, &password, &test_connection,
-            ).unwrap();
+            let account =
+                Account::login_from_password(&username, &password, &test_connection).unwrap();
             assert_eq!(account.has_superuser_access(), false);
             assert_eq!(account.has_admin_access(), true);
             assert_eq!(account.get_username(), username);
@@ -151,9 +154,8 @@ mod tests {
             );
 
             assert_eq!(result.is_ok(), true);
-            let login_result = Account::login_from_password(
-                &display_name, &password, &test_connection,
-            );
+            let login_result =
+                Account::login_from_password(&display_name, &password, &test_connection);
             assert_eq!(login_result.is_err(), true);
         }
 
@@ -174,9 +176,8 @@ mod tests {
             );
 
             assert_eq!(result.is_ok(), true);
-            let login_result = Account::login_from_password(
-                &username, &hashed_password, &test_connection,
-            );
+            let login_result =
+                Account::login_from_password(&username, &hashed_password, &test_connection);
             assert_eq!(login_result.is_err(), true);
         }
     }
@@ -205,9 +206,7 @@ mod tests {
             assert_eq!(result.is_ok(), true);
             let jwt = utils::JWTMediator::generate_jwt_from_username(&username).unwrap();
 
-            let account = Account::login_from_jwt(
-                &jwt, &test_connection,
-            ).unwrap();
+            let account = Account::login_from_jwt(&jwt, &test_connection).unwrap();
             assert_eq!(account.has_superuser_access(), true);
             assert_eq!(account.has_admin_access(), true);
             assert_eq!(account.get_username(), username);
@@ -231,9 +230,7 @@ mod tests {
             assert_eq!(result.is_ok(), true);
             let jwt = utils::JWTMediator::generate_jwt_from_username(&username).unwrap();
 
-            let account = Account::login_from_jwt(
-                &jwt, &test_connection,
-            ).unwrap();
+            let account = Account::login_from_jwt(&jwt, &test_connection).unwrap();
             assert_eq!(account.has_superuser_access(), false);
             assert_eq!(account.has_admin_access(), true);
             assert_eq!(account.get_username(), username);
@@ -253,9 +250,7 @@ mod tests {
         fn test_login_random_jwt() {
             let test_connection = utils::get_test_connection();
             let jwt = utils::generate_random_string(20);
-            let login_result = Account::login_from_jwt(
-                &jwt, &test_connection,
-            );
+            let login_result = Account::login_from_jwt(&jwt, &test_connection);
             assert_eq!(login_result.is_err(), true);
         }
     }

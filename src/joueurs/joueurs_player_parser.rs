@@ -1,5 +1,5 @@
-use crate::tournament_manager::Player;
 use super::joueurs_name_parser::NameParser;
+use crate::tournament_manager::Player;
 
 const DEFAULT_RATING: i32 = 1200;
 
@@ -87,15 +87,17 @@ impl PlayerParser {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     mod test_player_parser {
         use crate::joueurs::joueurs_player_parser::{PlayerParser, DEFAULT_RATING};
 
         fn test_parse_player(
-            player: &String, expected_id: &String, expected_first_name: &String,
-            expected_last_name: &String, expected_rating: &i32,
+            player: &String,
+            expected_id: &String,
+            expected_first_name: &String,
+            expected_last_name: &String,
+            expected_rating: &i32,
         ) -> bool {
             let mut parser = PlayerParser::create();
             let country = String::from("test_country");
@@ -116,8 +118,11 @@ mod tests {
             let expected_rating = 1484;
             assert_eq!(
                 test_parse_player(
-                    &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating,
+                    &player,
+                    &expected_id,
+                    &expected_first_name,
+                    &expected_last_name,
+                    &expected_rating,
                 ),
                 true
             );
@@ -132,8 +137,11 @@ mod tests {
             let expected_rating = -1484;
             assert_eq!(
                 test_parse_player(
-                    &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating,
+                    &player,
+                    &expected_id,
+                    &expected_first_name,
+                    &expected_last_name,
+                    &expected_rating,
                 ),
                 true
             );
@@ -148,8 +156,11 @@ mod tests {
             let expected_rating = DEFAULT_RATING;
             assert_eq!(
                 test_parse_player(
-                    &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating,
+                    &player,
+                    &expected_id,
+                    &expected_first_name,
+                    &expected_last_name,
+                    &expected_rating,
                 ),
                 true
             );
@@ -164,11 +175,14 @@ mod tests {
             let expected_rating = DEFAULT_RATING;
             assert_eq!(
                 test_parse_player(
-                    &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating,
+                    &player,
+                    &expected_id,
+                    &expected_first_name,
+                    &expected_last_name,
+                    &expected_rating,
                 ),
-                true)
-            ;
+                true
+            );
         }
 
         #[test]
@@ -180,8 +194,11 @@ mod tests {
             let expected_rating = 2410;
             assert_eq!(
                 test_parse_player(
-                    &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating,
+                    &player,
+                    &expected_id,
+                    &expected_first_name,
+                    &expected_last_name,
+                    &expected_rating,
                 ),
                 true
             );
@@ -196,8 +213,11 @@ mod tests {
             let expected_rating = -2410;
             assert_eq!(
                 test_parse_player(
-                    &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating,
+                    &player,
+                    &expected_id,
+                    &expected_first_name,
+                    &expected_last_name,
+                    &expected_rating,
                 ),
                 true
             );
@@ -212,8 +232,11 @@ mod tests {
             let expected_rating = DEFAULT_RATING;
             assert_eq!(
                 test_parse_player(
-                    &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating,
+                    &player,
+                    &expected_id,
+                    &expected_first_name,
+                    &expected_last_name,
+                    &expected_rating,
                 ),
                 true
             );
@@ -228,8 +251,11 @@ mod tests {
             let expected_rating = DEFAULT_RATING;
             assert_eq!(
                 test_parse_player(
-                    &player, &expected_id, &expected_first_name,
-                    &expected_last_name, &expected_rating,
+                    &player,
+                    &expected_id,
+                    &expected_first_name,
+                    &expected_last_name,
+                    &expected_rating,
                 ),
                 true
             );

@@ -1,10 +1,10 @@
-use std::env;
-use serde::{Deserialize, Serialize};
-use jsonwebtoken::{encode, decode, Header, Validation};
 use jsonwebtoken::errors::ErrorKind;
+use jsonwebtoken::{decode, encode, Header, Validation};
+use serde::{Deserialize, Serialize};
+use std::env;
 
-use crate::errors::ErrorType;
 use super::get_current_timestamp;
+use crate::errors::ErrorType;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -21,7 +21,9 @@ impl JWTMediator {
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
         match encode(&Header::default(), &claims, secret_key.as_ref()) {
             Ok(token) => Ok(token),
-            Err(_) => Err(ErrorType::UnknownError(String::from("Failed to generate token")))
+            Err(_) => Err(ErrorType::UnknownError(String::from(
+                "Failed to generate token",
+            ))),
         }
     }
 
@@ -39,12 +41,17 @@ impl JWTMediator {
 
     pub fn get_username_from_jwt(jwt: &String) -> Result<String, ErrorType> {
         let secret_key = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-        let validation = Validation { iss: Some(JWTMediator::get_issuer()), ..Validation::default() };
+        let validation = Validation {
+            iss: Some(JWTMediator::get_issuer()),
+            ..Validation::default()
+        };
         let token_data = match decode::<Claims>(jwt, secret_key.as_ref(), &validation) {
             Ok(t) => t,
-            Err(err) => return match *err.kind() {
-                ErrorKind::ExpiredSignature => Err(ErrorType::TokenExpired),
-                _ => Err(ErrorType::AuthenticationFailed)
+            Err(err) => {
+                return match *err.kind() {
+                    ErrorKind::ExpiredSignature => Err(ErrorType::TokenExpired),
+                    _ => Err(ErrorType::AuthenticationFailed),
+                }
             }
         };
         Ok(token_data.claims.username)
@@ -54,9 +61,9 @@ impl JWTMediator {
 #[cfg(test)]
 mod tests {
     mod test_get_generate_jwt {
-        use crate::utils::JWTMediator;
         use crate::utils;
-        use mocktopus::mocking::{Mockable, MockResult};
+        use crate::utils::JWTMediator;
+        use mocktopus::mocking::{MockResult, Mockable};
 
         #[test]
         fn test_generate_jwt() {

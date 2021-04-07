@@ -35,6 +35,8 @@ pub struct TournamentCreationRequest {
     name: String,
     country: String,
     tournament_type: String,
+    start_date: String,
+    end_date: String,
 }
 
 #[post("/", data = "<request>")]
@@ -48,13 +50,18 @@ pub fn create_tournament(
         name: request.name.clone(),
         country: request.country.clone(),
         tournament_type: request.tournament_type.clone(),
-    }.execute(&connection)
+        start_date: request.start_date.clone(),
+        end_date: request.end_date.clone(),
+    }
+    .execute(&connection)
 }
 
 #[derive(Deserialize)]
 pub struct TournamentUpdateRequest {
     name: String,
     country: String,
+    start_date: String,
+    end_date: String,
 }
 
 #[patch("/<id>", data = "<request>")]
@@ -69,14 +76,14 @@ pub fn update_tournament(
         id,
         updated_name: request.name.clone(),
         updated_country: request.country.clone(),
-    }.execute(&connection)
+        updated_start_date: request.start_date.clone(),
+        updated_end_date: request.end_date.clone(),
+    }
+    .execute(&connection)
 }
 
 #[delete("/<id>")]
 pub fn delete_tournament(cookies: Cookies, id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();
-    response_commands::DeleteTournamentCommand {
-        cookies,
-        id,
-    }.execute(&connection)
+    response_commands::DeleteTournamentCommand { cookies, id }.execute(&connection)
 }

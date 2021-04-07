@@ -4,6 +4,7 @@ pub enum ErrorType {
     DatabaseError,
     TokenExpired,
     PermissionDenied,
+    AutomaticPairingError,
     BadRequestError(String),
     ExternalConnectionError(String),
     UnknownError(String),
@@ -19,27 +20,32 @@ impl ErrorType {
             ErrorType::PermissionDenied => 5,
             ErrorType::DatabaseError => 6,
             ErrorType::ExternalConnectionError(_) => 7,
+            ErrorType::AutomaticPairingError => 8,
         }
     }
 
     pub fn to_error_message(&self) -> String {
         match self {
             ErrorType::UnknownError(message) => message.clone(),
-            ErrorType::BadRequestError(message) => String::from(
-                format!("Bad request: {}.", message)
-            ),
-            ErrorType::ExternalConnectionError(message) => String::from(
-                format!("Cannot connect to external source ({}), please try again.", message)
-            ),
+            ErrorType::BadRequestError(message) => {
+                String::from(format!("Bad request: {}", message))
+            }
+            ErrorType::ExternalConnectionError(message) => String::from(format!(
+                "Cannot connect to external source ({}), please try again.",
+                message
+            )),
             ErrorType::AuthenticationFailed => String::from("Authentication failed."),
-            ErrorType::PermissionDenied => String::from(
-                "You didn't have permission to do this action."
-            ),
+            ErrorType::PermissionDenied => {
+                String::from("You didn't have permission to do this action.")
+            }
             ErrorType::DatabaseError => String::from(
                 "There is an error in handling the database, please try again \
-                or contact administrator if this error persists."
+                or contact administrator if this error persists.",
             ),
             ErrorType::TokenExpired => String::from("Login expired. Please login again."),
+            ErrorType::AutomaticPairingError => {
+                String::from("No possible pairing found, please proceed with manual pairing")
+            }
         }
     }
 }

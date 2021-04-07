@@ -25,17 +25,17 @@ struct NewTournamentAdminRowModel<'a> {
     pub admin_username: &'a String,
 }
 
-
 impl UserRowModel {
     pub fn get_all_admins_of(
-        tournament_id: &i32, connection: &PgConnection,
+        tournament_id: &i32,
+        connection: &PgConnection,
     ) -> Result<Vec<UserRowModel>, ErrorType> {
         let admin_usernames = get_all_admin_usernames_of(tournament_id, connection)?;
         let users_query_result = users::table
             .filter(users::role.eq_any(vec![
                 UserRole::Superuser.to_string(),
-                UserRole::Admin.to_string()]
-            ))
+                UserRole::Admin.to_string(),
+            ]))
             .filter(users::username.eq_any(admin_usernames))
             .load::<UserRowModel>(connection);
 
@@ -49,14 +49,15 @@ impl UserRowModel {
     }
 
     pub fn get_all_potential_admins_of(
-        tournament_id: &i32, connection: &PgConnection,
+        tournament_id: &i32,
+        connection: &PgConnection,
     ) -> Result<Vec<UserRowModel>, ErrorType> {
         let admin_usernames = get_all_admin_usernames_of(tournament_id, connection)?;
         let users_query_result = users::table
             .filter(users::role.eq_any(vec![
                 UserRole::Superuser.to_string(),
-                UserRole::Admin.to_string()]
-            ))
+                UserRole::Admin.to_string(),
+            ]))
             .filter(users::username.ne_all(admin_usernames))
             .load::<UserRowModel>(connection);
 
@@ -72,7 +73,8 @@ impl UserRowModel {
 
 impl TournamentRowModel {
     pub fn get_all_managed_by(
-        username: &String, connection: &PgConnection,
+        username: &String,
+        connection: &PgConnection,
     ) -> Result<Vec<TournamentRowModel>, ErrorType> {
         let tournament_ids_query_result = tournaments_admin::table
             .filter(tournaments_admin::admin_username.eq(username))
@@ -108,9 +110,9 @@ impl TournamentRowModel {
         }
 
         if self.is_managed_by(username, connection)? {
-            return Err(ErrorType::BadRequestError(
-                String::from("The user is already the admin of this tournament.")
-            ));
+            return Err(ErrorType::BadRequestError(String::from(
+                "The user is already the admin of this tournament.",
+            )));
         }
 
         let new_tournament_admin = NewTournamentAdminRowModel {
@@ -122,7 +124,10 @@ impl TournamentRowModel {
             .execute(connection);
         match result {
             Ok(_) => {
-                info!("{} is added as admin to tournament {} ({})", username, &self.id, &self.name);
+                info!(
+                    "{} is added as admin to tournament {} ({})",
+                    username, &self.id, &self.name
+                );
                 Ok(())
             }
             Err(e) => {
@@ -133,24 +138,29 @@ impl TournamentRowModel {
     }
 
     pub fn remove_admin(
-        &self, username: &String, connection: &PgConnection,
+        &self,
+        username: &String,
+        connection: &PgConnection,
     ) -> Result<(), ErrorType> {
         if !self.is_managed_by(username, connection)? {
-            return Err(ErrorType::BadRequestError(
-                String::from("The user is not the admin of this tournament.")
-            ));
+            return Err(ErrorType::BadRequestError(String::from(
+                "The user is not the admin of this tournament.",
+            )));
         }
 
         let result = diesel::delete(
             tournaments_admin::table
                 .filter(tournaments_admin::admin_username.eq(username))
-                .filter(tournaments_admin::tournament_id.eq(self.id))
+                .filter(tournaments_admin::tournament_id.eq(self.id)),
         )
-            .execute(connection);
+        .execute(connection);
 
         match result {
             Ok(_) => {
-                info!("Admin {} is removed from tournament {} ({})", username, &self.id, &self.name);
+                info!(
+                    "Admin {} is removed from tournament {} ({})",
+                    username, &self.id, &self.name
+                );
                 Ok(())
             }
             Err(e) => {
@@ -161,15 +171,16 @@ impl TournamentRowModel {
     }
 
     pub fn is_managed_by(
-        &self, username: &String, connection: &PgConnection,
+        &self,
+        username: &String,
+        connection: &PgConnection,
     ) -> Result<bool, ErrorType> {
-        let result = select(
-            exists(
-                tournaments_admin::table
-                    .filter(tournaments_admin::tournament_id.eq(&self.id))
-                    .filter(tournaments_admin::admin_username.eq(username))
-            )
-        ).get_result(connection);
+        let result = select(exists(
+            tournaments_admin::table
+                .filter(tournaments_admin::tournament_id.eq(&self.id))
+                .filter(tournaments_admin::admin_username.eq(username)),
+        ))
+        .get_result(connection);
 
         match result {
             Ok(exist) => Ok(exist),
@@ -181,9 +192,9 @@ impl TournamentRowModel {
     }
 }
 
-
 fn get_all_admin_usernames_of(
-    tournament_id: &i32, connection: &PgConnection,
+    tournament_id: &i32,
+    connection: &PgConnection,
 ) -> Result<Vec<String>, ErrorType> {
     let admin_usernames_query_result = tournaments_admin::table
         .filter(tournaments_admin::tournament_id.eq(tournament_id))
@@ -200,7 +211,6 @@ fn get_all_admin_usernames_of(
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     mod test_add_admin {
@@ -210,9 +220,8 @@ mod tests {
         fn test_add_admin() {
             let test_connection = utils::get_test_connection();
             let user = utils::create_mock_user(&test_connection);
-            let tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let result = tournament.add_admin(&user.username, &test_connection);
             assert_eq!(result.is_ok(), true);
@@ -222,9 +231,8 @@ mod tests {
         fn test_add_existed_admin() {
             let test_connection = utils::get_test_connection();
             let user = utils::create_mock_user(&test_connection);
-            let tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let _ = tournament.add_admin(&user.username, &test_connection);
             let result = tournament.add_admin(&user.username, &test_connection);
@@ -239,9 +247,8 @@ mod tests {
         fn test_remove_admin() {
             let test_connection = utils::get_test_connection();
             let user = utils::create_mock_user(&test_connection);
-            let tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let _ = tournament.add_admin(&user.username, &test_connection);
             let result = tournament.remove_admin(&user.username, &test_connection);
@@ -253,9 +260,8 @@ mod tests {
             let test_connection = utils::get_test_connection();
             let user = utils::create_mock_user(&test_connection);
 
-            let tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
 
             let result = tournament.remove_admin(&user.username, &test_connection);
             assert_eq!(result.is_err(), true);
@@ -275,22 +281,29 @@ mod tests {
             let user_4 = utils::create_mock_user(&test_connection);
             let user_5 = utils::create_mock_user(&test_connection);
 
-            let tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
-            let other_tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+            let other_tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
 
-            tournament.add_admin(&user.username, &test_connection).unwrap();
-            tournament.add_admin(&user_2.username, &test_connection).unwrap();
-            tournament.add_admin(&user_3.username, &test_connection).unwrap();
-            other_tournament.add_admin(&user_4.username, &test_connection).unwrap();
+            tournament
+                .add_admin(&user.username, &test_connection)
+                .unwrap();
+            tournament
+                .add_admin(&user_2.username, &test_connection)
+                .unwrap();
+            tournament
+                .add_admin(&user_3.username, &test_connection)
+                .unwrap();
+            other_tournament
+                .add_admin(&user_4.username, &test_connection)
+                .unwrap();
 
-            tournament.remove_admin(&user_2.username, &test_connection).unwrap();
-            let all_admins = UserRowModel::get_all_admins_of(
-                &tournament.id, &test_connection,
-            ).unwrap();
+            tournament
+                .remove_admin(&user_2.username, &test_connection)
+                .unwrap();
+            let all_admins =
+                UserRowModel::get_all_admins_of(&tournament.id, &test_connection).unwrap();
 
             assert_eq!(all_admins.contains(&user), true);
             assert_eq!(all_admins.contains(&user_2), false);
@@ -308,22 +321,30 @@ mod tests {
             let user_4 = utils::create_mock_user(&test_connection);
             let user_5 = utils::create_mock_user(&test_connection);
 
-            let tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
-            let other_tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+            let other_tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
 
-            tournament.add_admin(&user.username, &test_connection).unwrap();
-            tournament.add_admin(&user_2.username, &test_connection).unwrap();
-            tournament.add_admin(&user_3.username, &test_connection).unwrap();
-            other_tournament.add_admin(&user_4.username, &test_connection).unwrap();
+            tournament
+                .add_admin(&user.username, &test_connection)
+                .unwrap();
+            tournament
+                .add_admin(&user_2.username, &test_connection)
+                .unwrap();
+            tournament
+                .add_admin(&user_3.username, &test_connection)
+                .unwrap();
+            other_tournament
+                .add_admin(&user_4.username, &test_connection)
+                .unwrap();
 
-            tournament.remove_admin(&user_2.username, &test_connection).unwrap();
-            let all_potential_admins = UserRowModel::get_all_potential_admins_of(
-                &tournament.id, &test_connection,
-            ).unwrap();
+            tournament
+                .remove_admin(&user_2.username, &test_connection)
+                .unwrap();
+            let all_potential_admins =
+                UserRowModel::get_all_potential_admins_of(&tournament.id, &test_connection)
+                    .unwrap();
 
             assert_eq!(all_potential_admins.contains(&user), false);
             assert_eq!(all_potential_admins.contains(&user_2), true);
@@ -338,31 +359,35 @@ mod tests {
             let other_user = utils::create_mock_user(&test_connection);
             let user = utils::create_mock_user(&test_connection);
 
-            let tournament_1 = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
-            let tournament_2 = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
-            let tournament_3 = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
-            let tournament_4 = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
-            let tournament_5 = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
-            );
+            let tournament_1 =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+            let tournament_2 =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+            let tournament_3 =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+            let tournament_4 =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+            let tournament_5 =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
 
-            tournament_1.add_admin(&user.username, &test_connection).unwrap();
-            tournament_2.add_admin(&user.username, &test_connection).unwrap();
-            tournament_3.add_admin(&user.username, &test_connection).unwrap();
-            tournament_4.add_admin(&other_user.username, &test_connection).unwrap();
+            tournament_1
+                .add_admin(&user.username, &test_connection)
+                .unwrap();
+            tournament_2
+                .add_admin(&user.username, &test_connection)
+                .unwrap();
+            tournament_3
+                .add_admin(&user.username, &test_connection)
+                .unwrap();
+            tournament_4
+                .add_admin(&other_user.username, &test_connection)
+                .unwrap();
 
-            tournament_2.remove_admin(&user.username, &test_connection).unwrap();
-            let all_tournaments_managed = TournamentRowModel::get_all_managed_by(
-                &user.username, &test_connection,
-            ).unwrap();
+            tournament_2
+                .remove_admin(&user.username, &test_connection)
+                .unwrap();
+            let all_tournaments_managed =
+                TournamentRowModel::get_all_managed_by(&user.username, &test_connection).unwrap();
 
             assert_eq!(all_tournaments_managed.contains(&tournament_1), true);
             assert_eq!(all_tournaments_managed.contains(&tournament_2), false);
@@ -384,32 +409,92 @@ mod tests {
             let user_4 = utils::create_mock_user(&test_connection);
             let user_5 = utils::create_mock_user(&test_connection);
 
-            let tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
+            let tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+            let other_tournament =
+                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+
+            tournament
+                .add_admin(&user.username, &test_connection)
+                .unwrap();
+            tournament
+                .add_admin(&user_2.username, &test_connection)
+                .unwrap();
+            tournament
+                .add_admin(&user_3.username, &test_connection)
+                .unwrap();
+            other_tournament
+                .add_admin(&user_3.username, &test_connection)
+                .unwrap();
+            other_tournament
+                .add_admin(&user_4.username, &test_connection)
+                .unwrap();
+
+            tournament
+                .remove_admin(&user_2.username, &test_connection)
+                .unwrap();
+
+            assert_eq!(
+                tournament
+                    .is_managed_by(&user.username, &test_connection)
+                    .unwrap(),
+                true
             );
-            let other_tournament = utils::create_mock_tournament_with_creator(
-                &user.username, &test_connection,
+            assert_eq!(
+                tournament
+                    .is_managed_by(&user_2.username, &test_connection)
+                    .unwrap(),
+                false
+            );
+            assert_eq!(
+                tournament
+                    .is_managed_by(&user_3.username, &test_connection)
+                    .unwrap(),
+                true
+            );
+            assert_eq!(
+                tournament
+                    .is_managed_by(&user_4.username, &test_connection)
+                    .unwrap(),
+                false
+            );
+            assert_eq!(
+                tournament
+                    .is_managed_by(&user_5.username, &test_connection)
+                    .unwrap(),
+                false
             );
 
-            tournament.add_admin(&user.username, &test_connection).unwrap();
-            tournament.add_admin(&user_2.username, &test_connection).unwrap();
-            tournament.add_admin(&user_3.username, &test_connection).unwrap();
-            other_tournament.add_admin(&user_3.username, &test_connection).unwrap();
-            other_tournament.add_admin(&user_4.username, &test_connection).unwrap();
-
-            tournament.remove_admin(&user_2.username, &test_connection).unwrap();
-
-            assert_eq!(tournament.is_managed_by(&user.username, &test_connection).unwrap(), true);
-            assert_eq!(tournament.is_managed_by(&user_2.username, &test_connection).unwrap(), false);
-            assert_eq!(tournament.is_managed_by(&user_3.username, &test_connection).unwrap(), true);
-            assert_eq!(tournament.is_managed_by(&user_4.username, &test_connection).unwrap(), false);
-            assert_eq!(tournament.is_managed_by(&user_5.username, &test_connection).unwrap(), false);
-
-            assert_eq!(other_tournament.is_managed_by(&user.username, &test_connection).unwrap(), false);
-            assert_eq!(other_tournament.is_managed_by(&user_2.username, &test_connection).unwrap(), false);
-            assert_eq!(other_tournament.is_managed_by(&user_3.username, &test_connection).unwrap(), true);
-            assert_eq!(other_tournament.is_managed_by(&user_4.username, &test_connection).unwrap(), true);
-            assert_eq!(other_tournament.is_managed_by(&user_5.username, &test_connection).unwrap(), false);
+            assert_eq!(
+                other_tournament
+                    .is_managed_by(&user.username, &test_connection)
+                    .unwrap(),
+                false
+            );
+            assert_eq!(
+                other_tournament
+                    .is_managed_by(&user_2.username, &test_connection)
+                    .unwrap(),
+                false
+            );
+            assert_eq!(
+                other_tournament
+                    .is_managed_by(&user_3.username, &test_connection)
+                    .unwrap(),
+                true
+            );
+            assert_eq!(
+                other_tournament
+                    .is_managed_by(&user_4.username, &test_connection)
+                    .unwrap(),
+                true
+            );
+            assert_eq!(
+                other_tournament
+                    .is_managed_by(&user_5.username, &test_connection)
+                    .unwrap(),
+                false
+            );
         }
     }
 }

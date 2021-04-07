@@ -12,36 +12,51 @@ pub struct Player {
     pub rating: i32,
 }
 
-
 impl Player {
     pub fn from_hashmap(player_data: HashMap<String, String>) -> Result<Player, ErrorType> {
         let joueurs_id = player_data
             .get("joueurs_id")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .to_string();
 
         let first_name = player_data
             .get("first_name")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .to_string();
 
         let last_name = player_data
             .get("last_name")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .to_string();
 
         let country = player_data
             .get("country")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .to_string();
 
         let rating = player_data
             .get("rating")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .parse::<i32>()
             .map_err(|_| ErrorType::UnknownError(String::from("Rating is not integer")))?;
 
-        Ok(Player{ joueurs_id, first_name, last_name, country, rating})
+        Ok(Player {
+            joueurs_id,
+            first_name,
+            last_name,
+            country,
+            rating,
+        })
     }
 
     pub fn to_hashmap(&self) -> HashMap<String, String> {
@@ -59,70 +74,94 @@ impl Player {
     pub fn from_serdemap(player_data: Map<String, Value>) -> Result<Player, ErrorType> {
         let joueurs_id = player_data
             .get("joueurs_id")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .as_str()
-            .ok_or(ErrorType::UnknownError(String::from("Player data format is wrong.")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Player data format is wrong.",
+            )))?
             .to_string();
 
         let first_name = player_data
             .get("first_name")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .as_str()
-            .ok_or(ErrorType::UnknownError(String::from("Player data format is wrong.")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Player data format is wrong.",
+            )))?
             .to_string();
 
         let last_name = player_data
             .get("last_name")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .as_str()
-            .ok_or(ErrorType::UnknownError(String::from("Player data format is wrong.")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Player data format is wrong.",
+            )))?
             .to_string();
 
         let country = player_data
             .get("country")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .as_str()
-            .ok_or(ErrorType::UnknownError(String::from("Player data format is wrong.")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Player data format is wrong.",
+            )))?
             .to_string();
 
         let rating = player_data
             .get("rating")
-            .ok_or(ErrorType::UnknownError(String::from("Incomplete player data")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Incomplete player data",
+            )))?
             .as_str()
-            .ok_or(ErrorType::UnknownError(String::from("Player data format is wrong.")))?
+            .ok_or(ErrorType::UnknownError(String::from(
+                "Player data format is wrong.",
+            )))?
             .parse::<i32>()
             .map_err(|_| ErrorType::UnknownError(String::from("Rating is not integer")))?;
 
-        Ok(Player{ joueurs_id, first_name, last_name, country, rating})
+        Ok(Player {
+            joueurs_id,
+            first_name,
+            last_name,
+            country,
+            rating,
+        })
     }
 
     pub fn to_serdemap(&self) -> Map<String, Value> {
         let mut player_data = Map::new();
         player_data.insert(
-            String::from("joueurs_id"), Value::from(self.joueurs_id.clone())
+            String::from("joueurs_id"),
+            Value::from(self.joueurs_id.clone()),
         );
         player_data.insert(
-            String::from("first_name"), Value::from(self.first_name.clone())
+            String::from("first_name"),
+            Value::from(self.first_name.clone()),
         );
         player_data.insert(
-            String::from("last_name"), Value::from(self.last_name.clone())
+            String::from("last_name"),
+            Value::from(self.last_name.clone()),
         );
-        player_data.insert(
-            String::from("country"), Value::from(self.country.clone())
-        );
-        player_data.insert(
-            String::from("rating"), Value::from(self.rating.to_string())
-        );
+        player_data.insert(String::from("country"), Value::from(self.country.clone()));
+        player_data.insert(String::from("rating"), Value::from(self.rating.to_string()));
         player_data
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     mod test_from_and_to_hashmap {
-        use std::collections::HashMap;
         use crate::tournament_manager::Player;
+        use std::collections::HashMap;
 
         #[test]
         fn test_from_hashmap_complete() {
@@ -184,20 +223,23 @@ mod tests {
                 first_name: String::from("first_name_1"),
                 last_name: String::from("last_name_1"),
                 country: String::from("country_SGP"),
-                rating: 1250
+                rating: 1250,
             };
             let data = player.to_hashmap();
             assert_eq!(data.get("joueurs_id").unwrap(), &String::from("145"));
-            assert_eq!(data.get("first_name").unwrap(), &String::from("first_name_1"));
+            assert_eq!(
+                data.get("first_name").unwrap(),
+                &String::from("first_name_1")
+            );
             assert_eq!(data.get("last_name").unwrap(), &String::from("last_name_1"));
-            assert_eq!(data.get("country").unwrap(),  &String::from("country_SGP"));
+            assert_eq!(data.get("country").unwrap(), &String::from("country_SGP"));
             assert_eq!(data.get("rating").unwrap(), &String::from("1250"));
         }
     }
 
     mod test_from_and_to_serdemap {
-        use serde_json::{Map, Value};
         use crate::tournament_manager::Player;
+        use serde_json::{Map, Value};
 
         #[test]
         fn test_from_serdemap_complete() {
@@ -259,13 +301,16 @@ mod tests {
                 first_name: String::from("first_name_1"),
                 last_name: String::from("last_name_1"),
                 country: String::from("country_SGP"),
-                rating: 1250
+                rating: 1250,
             };
             let data = player.to_serdemap();
             assert_eq!(data.get("joueurs_id").unwrap(), &Value::from("145"));
-            assert_eq!(data.get("first_name").unwrap(), &Value::from("first_name_1"));
+            assert_eq!(
+                data.get("first_name").unwrap(),
+                &Value::from("first_name_1")
+            );
             assert_eq!(data.get("last_name").unwrap(), &Value::from("last_name_1"));
-            assert_eq!(data.get("country").unwrap(),  &Value::from("country_SGP"));
+            assert_eq!(data.get("country").unwrap(), &Value::from("country_SGP"));
             assert_eq!(data.get("rating").unwrap(), &Value::from("1250"));
         }
     }

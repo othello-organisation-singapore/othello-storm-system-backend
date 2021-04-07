@@ -71,7 +71,9 @@ mod tests {
         use crate::joueurs::joueurs_name_parser::NameParser;
 
         fn test_parse_name(
-            name: &String, expected_first_name: &String, expected_last_name: &String,
+            name: &String,
+            expected_first_name: &String,
+            expected_last_name: &String,
         ) -> bool {
             let mut parser = NameParser::create();
             let player_name = parser.parse(name);
@@ -85,7 +87,10 @@ mod tests {
             let name = String::from("CAMPO, Sebastian");
             let expected_first_name = String::from("Sebastian");
             let expected_last_name = String::from("CAMPO");
-            assert_eq!(test_parse_name(&name, &expected_first_name, &expected_last_name), true);
+            assert_eq!(
+                test_parse_name(&name, &expected_first_name, &expected_last_name),
+                true
+            );
         }
 
         #[test]
@@ -93,7 +98,10 @@ mod tests {
             let name = String::from("DE JONG, Thiago De Oliveira");
             let expected_first_name = String::from("Thiago De Oliveira");
             let expected_last_name = String::from("DE JONG");
-            assert_eq!(test_parse_name(&name, &expected_first_name, &expected_last_name), true);
+            assert_eq!(
+                test_parse_name(&name, &expected_first_name, &expected_last_name),
+                true
+            );
         }
 
         #[test]
@@ -101,7 +109,10 @@ mod tests {
             let name = String::from("DE. GRAAF, Jan C.");
             let expected_first_name = String::from("Jan C.");
             let expected_last_name = String::from("DE. GRAAF");
-            assert_eq!(test_parse_name(&name, &expected_first_name, &expected_last_name), true);
+            assert_eq!(
+                test_parse_name(&name, &expected_first_name, &expected_last_name),
+                true
+            );
         }
 
         #[test]
@@ -109,7 +120,10 @@ mod tests {
             let name = String::from("DAHL-PAULSEN, Per-Helge");
             let expected_first_name = String::from("Per-Helge");
             let expected_last_name = String::from("DAHL-PAULSEN");
-            assert_eq!(test_parse_name(&name, &expected_first_name, &expected_last_name), true);
+            assert_eq!(
+                test_parse_name(&name, &expected_first_name, &expected_last_name),
+                true
+            );
         }
 
         #[test]
@@ -117,7 +131,10 @@ mod tests {
             let name = String::from("SOBEA,");
             let expected_first_name = String::from("");
             let expected_last_name = String::from("SOBEA");
-            assert_eq!(test_parse_name(&name, &expected_first_name, &expected_last_name), true);
+            assert_eq!(
+                test_parse_name(&name, &expected_first_name, &expected_last_name),
+                true
+            );
         }
 
         #[test]
@@ -125,7 +142,10 @@ mod tests {
             let name = String::from("ATHALIE (Calien)");
             let expected_first_name = String::from("Calien");
             let expected_last_name = String::from("ATHALIE");
-            assert_eq!(test_parse_name(&name, &expected_first_name, &expected_last_name), true);
+            assert_eq!(
+                test_parse_name(&name, &expected_first_name, &expected_last_name),
+                true
+            );
         }
 
         #[test]
@@ -133,7 +153,10 @@ mod tests {
             let name = String::from("ATHALIE ()");
             let expected_first_name = String::from("");
             let expected_last_name = String::from("ATHALIE");
-            assert_eq!(test_parse_name(&name, &expected_first_name, &expected_last_name), true);
+            assert_eq!(
+                test_parse_name(&name, &expected_first_name, &expected_last_name),
+                true
+            );
         }
 
         #[test]
@@ -141,8 +164,10 @@ mod tests {
             let name = String::from("HANNIBAL TEST (Piotte-Geoffroy / De Haan)");
             let expected_first_name = String::from("Piotte-Geoffroy / De Haan");
             let expected_last_name = String::from("HANNIBAL TEST");
-            assert_eq!(test_parse_name(&name, &expected_first_name, &expected_last_name), true);
+            assert_eq!(
+                test_parse_name(&name, &expected_first_name, &expected_last_name),
+                true
+            );
         }
     }
 }
-

@@ -17,9 +17,7 @@ pub struct GetUserCommand {
 
 impl ResponseCommand for GetUserCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let meta_generator = UserMetaGenerator::from_username(
-            &self.username, connection,
-        )?;
+        let meta_generator = UserMetaGenerator::from_username(&self.username, connection)?;
         Ok(json!(meta_generator.generate_meta()))
     }
 
@@ -89,7 +87,6 @@ impl ResponseCommand for UpdateUserCommand<'_> {
         user_model.update(connection)?;
         Ok(json!({"message": "User updated."}))
     }
-
 
     fn get_request_summary(&self) -> String {
         String::from(format!("UpdateUser for {}", &self.username))

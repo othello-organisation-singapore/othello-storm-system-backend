@@ -7,17 +7,15 @@ pub struct JoueursParser {}
 
 impl JoueursParser {
     pub fn parse(joueurs: &String) -> Result<Vec<Player>, ErrorType> {
-        let mut country_joueurs: Vec<String> = joueurs
-            .split("pays = ")
-            .map(|x| String::from(x))
-            .collect();
+        let mut country_joueurs: Vec<String> =
+            joueurs.split("pays = ").map(|x| String::from(x)).collect();
 
         if country_joueurs.is_empty() {
-            return Err(ErrorType::ExternalConnectionError(
-                String::from("Joueurs file is empty, please contact the administrator.")
-            ))
+            return Err(ErrorType::ExternalConnectionError(String::from(
+                "Joueurs file is empty, please contact the administrator.",
+            )));
         }
-        country_joueurs.remove(0);  // remove title
+        country_joueurs.remove(0); // remove title
 
         let mut players: Vec<Player> = Vec::new();
         let mut player_parser = PlayerParser::create();
@@ -39,7 +37,6 @@ impl JoueursParser {
         Ok(players)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

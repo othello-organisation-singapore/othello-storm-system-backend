@@ -5,8 +5,8 @@ use rocket_contrib::json::JsonValue;
 use crate::account::Account;
 use crate::database_models::{TournamentRowModel, UserRowModel};
 use crate::errors::ErrorType;
+use crate::meta_generator::{generate_tournaments_meta, generate_users_meta};
 
-use super::{generate_tournaments_meta, generate_users_meta};
 use super::ResponseCommand;
 
 pub struct GetAllAdminsCommand {
@@ -17,7 +17,7 @@ impl ResponseCommand for GetAllAdminsCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let user_models = UserRowModel::get_all_admins_of(&self.tournament_id, connection)?;
         let user_meta_list = generate_users_meta(user_models);
-        Ok(json!({"admins": user_meta_list}))
+        Ok(json!({ "admins": user_meta_list }))
     }
 
     fn get_request_summary(&self) -> String {
@@ -31,9 +31,10 @@ pub struct GetPotentialAdminsCommand {
 
 impl ResponseCommand for GetPotentialAdminsCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let user_models = UserRowModel::get_all_potential_admins_of(&self.tournament_id, connection)?;
+        let user_models =
+            UserRowModel::get_all_potential_admins_of(&self.tournament_id, connection)?;
         let user_meta_list = generate_users_meta(user_models);
-        Ok(json!({"potential_admins": user_meta_list}))
+        Ok(json!({ "potential_admins": user_meta_list }))
     }
 
     fn get_request_summary(&self) -> String {
@@ -49,12 +50,10 @@ impl ResponseCommand for GetAllManagedTournamentsCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
         let username = account.get_username();
-        let tournament_models = TournamentRowModel::get_all_managed_by(
-            &username, connection,
-        )?;
+        let tournament_models = TournamentRowModel::get_all_managed_by(&username, connection)?;
 
         let tournament_meta_list = generate_tournaments_meta(tournament_models);
-        Ok(json!({"tournaments": tournament_meta_list}))
+        Ok(json!({ "tournaments": tournament_meta_list }))
     }
 
     fn get_request_summary(&self) -> String {
@@ -81,9 +80,10 @@ impl ResponseCommand for AddAdminCommand<'_> {
     }
 
     fn get_request_summary(&self) -> String {
-        String::from(
-            format!("AddAdmin {} for tournament id {}", &self.admin_username, &self.tournament_id)
-        )
+        String::from(format!(
+            "AddAdmin {} for tournament id {}",
+            &self.admin_username, &self.tournament_id
+        ))
     }
 }
 
@@ -106,9 +106,10 @@ impl ResponseCommand for RemoveAdminCommand<'_> {
     }
 
     fn get_request_summary(&self) -> String {
-        String::from(
-            format!("RemoveAdmin {} for tournament id {}", &self.admin_username, &self.tournament_id)
-        )
+        String::from(format!(
+            "RemoveAdmin {} for tournament id {}",
+            &self.admin_username, &self.tournament_id
+        ))
     }
 }
 

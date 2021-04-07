@@ -25,7 +25,10 @@ struct NewUserRowModel<'a> {
 
 impl UserRowModel {
     pub fn create(
-        username: &String, display_name: &String, hashed_password: &String, role: UserRole,
+        username: &String,
+        display_name: &String,
+        hashed_password: &String,
+        role: UserRole,
         connection: &PgConnection,
     ) -> Result<UserRowModel, ErrorType> {
         if UserRowModel::is_username_exists(&username, connection) {
@@ -48,7 +51,8 @@ impl UserRowModel {
     }
 
     fn insert_to_database(
-        new_user: NewUserRowModel, connection: &PgConnection,
+        new_user: NewUserRowModel,
+        connection: &PgConnection,
     ) -> Result<UserRowModel, ErrorType> {
         let username = new_user.username.clone();
         let display_name = new_user.display_name.clone();
@@ -59,7 +63,10 @@ impl UserRowModel {
             .get_result::<UserRowModel>(connection);
         match result {
             Ok(user) => {
-                info!("User {} ({}) is created as {}.", username, display_name, role);
+                info!(
+                    "User {} ({}) is created as {}.",
+                    username, display_name, role
+                );
                 Ok(user)
             }
             Err(e) => {
@@ -70,9 +77,7 @@ impl UserRowModel {
     }
 
     pub fn get(username: &String, connection: &PgConnection) -> Result<UserRowModel, ErrorType> {
-        let result = users::table
-            .find(username)
-            .first(connection);
+        let result = users::table.find(username).first(connection);
 
         match result {
             Ok(user) => Ok(user),
@@ -93,7 +98,10 @@ impl UserRowModel {
             .get_result::<UserRowModel>(connection);
         match result {
             Ok(user) => {
-                info!("User {} ({}) is updated.", &self.username, &self.display_name);
+                info!(
+                    "User {} ({}) is updated.",
+                    &self.username, &self.display_name
+                );
                 Ok(user)
             }
             Err(e) => {
@@ -103,7 +111,6 @@ impl UserRowModel {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -216,7 +223,8 @@ mod tests {
                 &hashed_password,
                 UserRole::Superuser,
                 &test_connection,
-            ).unwrap();
+            )
+            .unwrap();
 
             let updated_display_name = utils::generate_random_string(20);
             user.display_name = updated_display_name.clone();

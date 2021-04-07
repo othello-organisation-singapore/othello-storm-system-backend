@@ -6,11 +6,11 @@ use serde_json::{Map, Value};
 use crate::account::Account;
 use crate::database_models::{PlayerRowModel, TournamentRowModel};
 use crate::errors::ErrorType;
+use crate::meta_generator::{generate_players_meta, is_allowed_to_manage_tournament};
 use crate::tournament_manager::Player;
-use crate::utils::generate_random_string;
 
-use super::{generate_players_meta, is_allowed_to_manage_tournament};
 use super::ResponseCommand;
+use crate::utils::generate_random_string;
 
 pub struct GetTournamentPlayersCommand {
     pub tournament_id: i32,
@@ -18,10 +18,7 @@ pub struct GetTournamentPlayersCommand {
 
 impl ResponseCommand for GetTournamentPlayersCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let players = PlayerRowModel::get_all_from_tournament(
-            &self.tournament_id,
-            connection,
-        )?;
+        let players = PlayerRowModel::get_all_from_tournament(&self.tournament_id, connection)?;
         let players_meta = generate_players_meta(players);
         Ok(json!({
             "tournament_id": &self.tournament_id,
@@ -40,10 +37,7 @@ pub struct GetTournamentJoueursPlayersCommand {
 
 impl ResponseCommand for GetTournamentJoueursPlayersCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let tournament_model = TournamentRowModel::get(
-            &self.tournament_id,
-            connection,
-        )?;
+        let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
         let joueurs_players = tournament_model.get_players_from_joueurs()?;
         let joueurs_players_meta: Vec<Map<String, Value>> = joueurs_players
             .iter()
@@ -56,7 +50,10 @@ impl ResponseCommand for GetTournamentJoueursPlayersCommand {
     }
 
     fn get_request_summary(&self) -> String {
-        String::from(format!("GetTournamentJoueursPlayers for {}", &self.tournament_id))
+        String::from(format!(
+            "GetTournamentJoueursPlayers for {}",
+            &self.tournament_id
+        ))
     }
 }
 
@@ -69,36 +66,23 @@ pub struct AddTournamentPlayerCommand<'a> {
 impl ResponseCommand for AddTournamentPlayerCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
-        let tournament_model = TournamentRowModel::get(
-            &self.tournament_id,
-            connection,
-        )?;
+        let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
 
-
         let player = tournament_model.get_player_with_joueurs_id(&self.joueurs_id)?;
-        PlayerRowModel::create(
-            &self.tournament_id,
-            &player,
-            Map::new(),
-            connection,
-        )?;
+        PlayerRowModel::create(&self.tournament_id, &player, Map::new(), connection)?;
         Ok(json!({"message": "Player added to tournament."}))
     }
 
     fn get_request_summary(&self) -> String {
         String::from(format!(
             "AddTournamentPlayer with joueurs id {} for tournament id {}",
-            &self.joueurs_id,
-            &self.tournament_id
+            &self.joueurs_id, &self.tournament_id
         ))
     }
 }
@@ -136,16 +120,10 @@ impl AddTournamentPlayerNewCommand<'_> {
 impl ResponseCommand for AddTournamentPlayerNewCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
-        let tournament_model = TournamentRowModel::get(
-            &self.tournament_id,
-            connection,
-        )?;
+        let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
@@ -157,10 +135,7 @@ impl ResponseCommand for AddTournamentPlayerNewCommand<'_> {
         String::from(format!(
             "AddTournamentPlayerNew \
             with first_name {}, last_name {}, country {} for tournament id {}",
-            &self.first_name,
-            &self.last_name,
-            &self.country,
-            &self.tournament_id
+            &self.first_name, &self.last_name, &self.country, &self.tournament_id
         ))
     }
 }
@@ -174,16 +149,10 @@ pub struct DeleteTournamentPlayerCommand<'a> {
 impl ResponseCommand for DeleteTournamentPlayerCommand<'_> {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
         let account = Account::login_from_cookies(&self.cookies, connection)?;
-        let tournament_model = TournamentRowModel::get(
-            &self.tournament_id,
-            connection,
-        )?;
+        let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
-        let is_allowed_to_manage = is_allowed_to_manage_tournament(
-            &account,
-            &tournament_model,
-            connection,
-        )?;
+        let is_allowed_to_manage =
+            is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
@@ -197,8 +166,7 @@ impl ResponseCommand for DeleteTournamentPlayerCommand<'_> {
     fn get_request_summary(&self) -> String {
         String::from(format!(
             "DeleteTournamentPlayer with player id {} for tournament id {}",
-            &self.player_id,
-            &self.tournament_id,
+            &self.player_id, &self.tournament_id,
         ))
     }
 }

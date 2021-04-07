@@ -1,4 +1,16 @@
 table! {
+    matches (id) {
+        id -> Int4,
+        round_id -> Int4,
+        black_player_id -> Int4,
+        white_player_id -> Int4,
+        black_score -> Int4,
+        white_score -> Int4,
+        meta_data -> Json,
+    }
+}
+
+table! {
     players (id) {
         id -> Int4,
         tournament_id -> Int4,
@@ -12,6 +24,16 @@ table! {
 }
 
 table! {
+    rounds (id) {
+        id -> Int4,
+        tournament_id -> Int4,
+        name -> Varchar,
+        round_type -> Int4,
+        meta_data -> Json,
+    }
+}
+
+table! {
     tournaments (id) {
         id -> Int4,
         name -> Varchar,
@@ -20,6 +42,8 @@ table! {
         creator -> Varchar,
         joueurs -> Json,
         meta_data -> Json,
+        start_date -> Date,
+        end_date -> Date,
     }
 }
 
@@ -40,13 +64,17 @@ table! {
     }
 }
 
+joinable!(matches -> rounds (round_id));
 joinable!(players -> tournaments (tournament_id));
+joinable!(rounds -> tournaments (tournament_id));
 joinable!(tournaments -> users (creator));
 joinable!(tournaments_admin -> tournaments (tournament_id));
 joinable!(tournaments_admin -> users (admin_username));
 
 allow_tables_to_appear_in_same_query!(
+    matches,
     players,
+    rounds,
     tournaments,
     tournaments_admin,
     users,

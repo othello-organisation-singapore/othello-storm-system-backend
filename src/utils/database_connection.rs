@@ -1,6 +1,6 @@
 use diesel::pg::PgConnection;
-use diesel::r2d2::{Pool, PooledConnection, ConnectionManager};
 use diesel::prelude::*;
+use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use dotenv::dotenv;
 use std::env;
 
@@ -8,7 +8,7 @@ type PostgresPool = Pool<ConnectionManager<PgConnection>>;
 pub type PostgresPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
 
 lazy_static! {
-    pub static ref POOL: PostgresPool = { init_pool() };
+    pub static ref POOL: PostgresPool = init_pool();
 }
 
 fn init_pool() -> PostgresPool {
