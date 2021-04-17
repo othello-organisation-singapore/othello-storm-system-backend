@@ -1,24 +1,22 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 #[macro_use]
-extern crate rocket;
-
-#[macro_use]
-extern crate rocket_contrib;
-
-#[macro_use]
 extern crate diesel;
-
 #[macro_use]
 extern crate lazy_static;
-
 #[macro_use]
 extern crate log;
-
 extern crate mocktopus;
 extern crate reqwest;
+#[macro_use]
+extern crate rocket;
+#[macro_use]
+extern crate rocket_contrib;
 extern crate serde_json;
 
 use std::env;
+use std::str::FromStr;
+
+use rocket_cors::{AllowedOrigins, CorsOptions};
 
 pub mod account;
 pub mod database_models;
@@ -54,7 +52,20 @@ fn main() {
     info!("Starting the program");
     create_default_superuser();
 
+    let allowed_methods = ["Get", "Post", "Patch", "Delete"]
+        .iter()
+        .map(|s| FromStr::from_str(s).unwrap())
+        .collect();
+
+    let cors = CorsOptions::default()
+        .allowed_origins(AllowedOrigins::some_exact(&[
+            env::var("FRONTEND_URL").unwrap()
+        ]))
+        .allowed_methods(allowed_methods)
+        .allow_credentials(true);
+
     rocket::ignite()
+        .attach(cors.to_cors().unwrap())
         .mount(
             "/api/users",
             routes![
