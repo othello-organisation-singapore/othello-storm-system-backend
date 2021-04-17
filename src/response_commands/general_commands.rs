@@ -1,6 +1,7 @@
 use diesel::PgConnection;
 use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
+use serde_json::{Value};
 
 use crate::account::Account;
 use crate::errors::ErrorType;
@@ -20,7 +21,11 @@ impl ResponseCommand for LoginCommand {
         info!("{} is logged in.", account.get_username());
 
         let jwt = account.generate_jwt()?;
-        Ok(json!({ "jwt": jwt }))
+        let meta_generator = UserMetaGenerator::from_user(account.user);
+        let mut user_meta = meta_generator.generate_meta();
+        user_meta.insert(String::from("jwt"), Value::from(jwt));
+
+        Ok(json!(user_meta))
     }
 
     fn get_request_summary(&self) -> String {
