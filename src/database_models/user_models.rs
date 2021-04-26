@@ -83,7 +83,7 @@ impl UserRowModel {
             Ok(user) => Ok(user),
             Err(e) => {
                 error!("{}", e);
-                Err(ErrorType::DatabaseError)
+                Err(ErrorType::BadRequestError(String::from("User not found")))
             }
         }
     }

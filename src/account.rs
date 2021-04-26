@@ -58,7 +58,10 @@ impl Account {
         password: &String,
         connection: &PgConnection,
     ) -> Result<Account, ErrorType> {
-        let user = UserRowModel::get(&username, connection)?;
+        let user = match UserRowModel::get(&username, connection) {
+            Ok(user) => user,
+            Err(_) => return Err(ErrorType::AuthenticationFailed)
+        };
 
         let is_password_correct = verify(password, &user.hashed_password);
         if !is_password_correct {
