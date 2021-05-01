@@ -1,5 +1,6 @@
 pub use command_trait::ResponseCommand;
 pub use general_commands::{CurrentUserCommand, LoginCommand};
+pub use helpers::is_allowed_to_manage_tournament;
 pub use player_commands::{
     AddTournamentPlayerCommand, AddTournamentPlayerNewCommand, DeleteTournamentPlayerCommand,
     GetTournamentJoueursPlayersCommand, GetTournamentPlayersCommand,
@@ -26,3 +27,4 @@ mod round_match_commands;
 mod tournament_admin_commands;
 mod tournament_commands;
 mod user_commands;
+mod helpers;

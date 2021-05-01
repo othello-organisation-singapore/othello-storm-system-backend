@@ -15,14 +15,14 @@ use crate::database_models::{
 use crate::errors::ErrorType;
 use crate::game_match::{GameMatchCreator, GameMatchTransformer, IGameMatch};
 use crate::meta_generator::{
-    generate_matches_meta, generate_rounds_meta, generate_standings_meta,
-    is_allowed_to_manage_tournament, MetaGenerator, RoundDetailsMetaGenerator,
+    generate_matches_meta, generate_rounds_meta, generate_standings_meta, MetaGenerator,
+    RoundDetailsMetaGenerator,
 };
 use crate::pairings_generator::PairingsGeneratorCreator;
 use crate::properties::{RoundType, TournamentType};
 use crate::tournament_manager::create_result_keeper;
 
-use super::ResponseCommand;
+use super::{is_allowed_to_manage_tournament, ResponseCommand};
 
 pub struct GetTournamentRoundsCommand {
     pub tournament_id: i32,

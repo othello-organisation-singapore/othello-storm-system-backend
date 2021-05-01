@@ -6,11 +6,11 @@ use serde_json::{Map, Value};
 use crate::account::Account;
 use crate::database_models::{PlayerRowModel, TournamentRowModel};
 use crate::errors::ErrorType;
-use crate::meta_generator::{generate_players_meta, is_allowed_to_manage_tournament};
+use crate::meta_generator::generate_players_meta;
 use crate::tournament_manager::Player;
-
-use super::ResponseCommand;
 use crate::utils::generate_random_string;
+
+use super::{is_allowed_to_manage_tournament, ResponseCommand};
 
 pub struct GetTournamentPlayersCommand {
     pub tournament_id: i32,
