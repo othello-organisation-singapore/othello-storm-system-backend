@@ -1,6 +1,6 @@
 pub use helpers::{
     generate_matches_meta, generate_players_meta, generate_rounds_meta, generate_standings_meta,
-    generate_tournaments_meta, generate_users_meta, is_allowed_to_manage_tournament,
+    generate_tournaments_meta, generate_users_meta,
 };
 pub use match_meta_generator::MatchMetaGenerator;
 pub use meta_generator::MetaGenerator;

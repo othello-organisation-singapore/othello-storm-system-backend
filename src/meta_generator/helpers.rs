@@ -1,18 +1,15 @@
-use diesel::PgConnection;
 use serde_json::{Map, Value};
 
-use crate::account::Account;
 use crate::database_models::{
     MatchRowModel, PlayerRowModel, RoundRowModel, TournamentRowModel, UserRowModel,
 };
-use crate::errors::ErrorType;
+use crate::meta_generator::StandingMetaGenerator;
 use crate::tournament_manager::PlayerStanding;
 
 use super::{
     MatchMetaGenerator, MetaGenerator, PlayerMetaGenerator, RoundPreviewMetaGenerator,
     TournamentPreviewMetaGenerator, UserMetaGenerator,
 };
-use crate::meta_generator::StandingMetaGenerator;
 
 pub fn generate_players_meta(player_models: Vec<PlayerRowModel>) -> Vec<Map<String, Value>> {
     player_models
@@ -74,19 +71,4 @@ pub fn generate_standings_meta(standings: Vec<PlayerStanding>) -> Vec<Map<String
             meta_generator.generate_meta()
         })
         .collect()
-}
-
-pub fn is_allowed_to_manage_tournament(
-    account: &Account,
-    tournament: &TournamentRowModel,
-    connection: &PgConnection,
-) -> Result<bool, ErrorType> {
-    if account.has_superuser_access() {
-        return Ok(true);
-    }
-
-    let username = account.get_username();
-    let is_created_by_account = tournament.is_created_by(&username);
-    let is_managed_by_account = tournament.is_managed_by(&username, connection)?;
-    return Ok(is_created_by_account || is_managed_by_account);
 }
