@@ -92,6 +92,7 @@ impl TournamentRowModel {
 
         let tournaments_query_result = tournaments::table
             .filter(tournaments::id.eq_any(tournament_ids))
+            .or_filter(tournaments::creator.eq(username))
             .load::<TournamentRowModel>(connection);
 
         match tournaments_query_result {
@@ -360,14 +361,16 @@ mod tests {
             let user = utils::create_mock_user(&test_connection);
 
             let tournament_1 =
-                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+                utils::create_mock_tournament_with_creator(&other_user.username, &test_connection);
             let tournament_2 =
-                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+                utils::create_mock_tournament_with_creator(&other_user.username, &test_connection);
             let tournament_3 =
-                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+                utils::create_mock_tournament_with_creator(&other_user.username, &test_connection);
             let tournament_4 =
-                utils::create_mock_tournament_with_creator(&user.username, &test_connection);
+                utils::create_mock_tournament_with_creator(&other_user.username, &test_connection);
             let tournament_5 =
+                utils::create_mock_tournament_with_creator(&other_user.username, &test_connection);
+            let tournament_6 =
                 utils::create_mock_tournament_with_creator(&user.username, &test_connection);
 
             tournament_1
@@ -394,6 +397,7 @@ mod tests {
             assert_eq!(all_tournaments_managed.contains(&tournament_3), true);
             assert_eq!(all_tournaments_managed.contains(&tournament_4), false);
             assert_eq!(all_tournaments_managed.contains(&tournament_5), false);
+            assert_eq!(all_tournaments_managed.contains(&tournament_6), true);
         }
     }
 
