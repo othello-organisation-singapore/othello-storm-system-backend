@@ -4,7 +4,7 @@ use rocket_contrib::json::JsonValue;
 use serde_json::{Map, Value};
 
 use crate::account::Account;
-use crate::database_models::{PlayerRowModel, TournamentRowModel};
+use crate::database_models::{PlayerRowModel, RoundDAO, RoundRowModel, TournamentRowModel};
 use crate::errors::ErrorType;
 use crate::meta_generator::generate_players_meta;
 use crate::tournament_manager::Player;
@@ -74,6 +74,14 @@ impl ResponseCommand for AddTournamentPlayerCommand<'_> {
             return Err(ErrorType::PermissionDenied);
         }
 
+        let tournament_rounds =
+            RoundRowModel::get_all_from_tournament(&self.tournament_id, connection)?;
+        if tournament_rounds.len() > 0 {
+            return Err(ErrorType::BadRequestError(String::from(
+                "You cannot add a player in an ongoing tournament",
+            )));
+        }
+
         let player = tournament_model.get_player_with_joueurs_id(&self.joueurs_id)?;
         PlayerRowModel::create(&self.tournament_id, &player, Map::new(), connection)?;
         Ok(json!({"message": "Player added to tournament."}))
@@ -127,6 +135,15 @@ impl ResponseCommand for AddTournamentPlayerNewCommand<'_> {
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
         }
+
+        let tournament_rounds =
+            RoundRowModel::get_all_from_tournament(&self.tournament_id, connection)?;
+        if tournament_rounds.len() > 0 {
+            return Err(ErrorType::BadRequestError(String::from(
+                "You cannot add a player in an ongoing tournament",
+            )));
+        }
+
         self.try_create_player(connection, 3)?;
         Ok(json!({"message": "Player (new) added to tournament"}))
     }
@@ -155,6 +172,14 @@ impl ResponseCommand for DeleteTournamentPlayerCommand<'_> {
             is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
             return Err(ErrorType::PermissionDenied);
+        }
+
+        let tournament_rounds =
+            RoundRowModel::get_all_from_tournament(&self.tournament_id, connection)?;
+        if tournament_rounds.len() > 0 {
+            return Err(ErrorType::BadRequestError(String::from(
+                "You cannot delete a player in an ongoing tournament",
+            )));
         }
 
         let player_model = PlayerRowModel::get(&self.player_id, connection)?;
