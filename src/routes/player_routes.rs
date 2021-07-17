@@ -52,7 +52,7 @@ pub fn add_player_new(
         cookies,
         tournament_id: id,
         first_name: request.first_name.clone(),
-        last_name: request.last_name.clone(),
+        last_name: request.last_name.clone().to_uppercase(),
         country: request.country.clone(),
     };
     command.execute(&connection)
