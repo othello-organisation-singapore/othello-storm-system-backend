@@ -1,14 +1,15 @@
-use itertools::Itertools;
-use serde_json::{Map, Value};
 use std::collections::HashMap;
 
+use itertools::Itertools;
+use serde_json::{Map, Value};
+
 use crate::database_models::PlayerRowModel;
+use crate::errors::ErrorType;
 use crate::game_match::{GameMatchCreator, IGameMatch};
+use crate::properties::PlayerColor;
 use crate::tournament_manager::IResultKeeper;
 
 use super::{get_player_1_color, PairingGenerator, Pairings};
-use crate::errors::ErrorType;
-use crate::properties::PlayerColor;
 
 pub struct SwissPairingsGenerator {
     players: Vec<PlayerRowModel>,
@@ -101,6 +102,13 @@ impl SwissPairingsGenerator {
 
             let pairings = match self.get_no_of_unpaired_players(bitmask) {
                 1 => {
+                    if self
+                        .past_results
+                        .has_player_bye(&player_1_standing.player_id)
+                    {
+                        return None;
+                    }
+
                     let pairing = GameMatchCreator::create_new_bye_match(
                         round_id,
                         &player_1_standing.player_id,
@@ -417,6 +425,53 @@ mod tests {
             let pairings_result = pairings_generator.generate_pairings(&0);
 
             assert_eq!(pairings_result.is_err(), true);
+        }
+
+        #[test]
+        fn test_normal_round_double_bye() {
+            let player_lists = vec![
+                create_dummy_player(4449, 1500),
+                create_dummy_player(4486, 2000),
+                create_dummy_player(4487, 1000),
+                create_dummy_player(4488, 200),
+                create_dummy_player(4489, 200),
+                create_dummy_player(4490, 200),
+                create_dummy_player(4491, 200),
+                create_dummy_player(4492, 200),
+                create_dummy_player(4493, 200),
+            ];
+            let game_matches = vec![
+                create_dummy_match(4449, 4486, 31, 33),
+                create_dummy_match(4489, 4490, 32, 32),
+                create_dummy_match(4491, 4492, 32, 32),
+                create_dummy_match(4487, 4488, 0, 64),
+                create_dummy_match(4493, -1, -2, -2),
+                create_dummy_match(4488, 4493, 40, 24),
+                create_dummy_match(4486, 4489, 31, 33),
+                create_dummy_match(4490, 4491, 32, 32),
+                create_dummy_match(4492, 4449, 36, 28),
+                create_dummy_match(4487, -1, -2, -2),
+                create_dummy_match(4488, 4489, 35, 29),
+                create_dummy_match(4492, 4490, 39, 25),
+                create_dummy_match(4493, 4491, 32, 32),
+                create_dummy_match(4486, 4487, 30, 34),
+                create_dummy_match(4449, -1, -2, -2),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = SwissPairingsGenerator::new(player_lists, result_keeper);
+            let pairings = pairings_generator.generate_pairings(&0).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&4488), Some(PlayerColor::Black));
+            assert_eq!(pairings[0].get_player_color(&4492), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&4491), Some(PlayerColor::Black));
+            assert_eq!(pairings[1].get_player_color(&4487), Some(PlayerColor::White));
+            assert_eq!(pairings[2].get_player_color(&4489), Some(PlayerColor::Black));
+            assert_eq!(pairings[2].get_player_color(&4493), Some(PlayerColor::White));
+            assert_eq!(pairings[3].get_player_color(&4490), Some(PlayerColor::Black));
+            assert_eq!(pairings[3].get_player_color(&4449), Some(PlayerColor::White));
+            assert_eq!(pairings[4].get_player_color(&4486), None);
+            assert_eq!(pairings[4].is_player_playing(&4486), true);
         }
     }
 }
