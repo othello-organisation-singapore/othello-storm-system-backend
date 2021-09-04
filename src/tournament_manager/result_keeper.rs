@@ -16,6 +16,7 @@ pub struct PlayerStanding {
 }
 
 pub trait IResultKeeper {
+    fn has_player_bye(&self, player_id: &i32) -> bool;
     fn has_players_met(&self, player_1_id: &i32, player_2_id: &i32) -> bool;
     fn get_standings(&self) -> Vec<i32>;
     fn get_detailed_standings(&self) -> Vec<PlayerStanding>;
@@ -33,6 +34,27 @@ pub struct ResultKeeper {
 impl ResultKeeper {}
 
 impl IResultKeeper for ResultKeeper {
+    fn has_player_bye(&self, player_id: &i32) -> bool {
+        let player_standing = self
+            .sorted_player_standings
+            .iter()
+            .find(|standing| &standing.player_id == player_id);
+
+        if player_standing.is_none() {
+            return false;
+        }
+
+        player_standing
+            .unwrap()
+            .match_history
+            .iter()
+            .find(|game_match| {
+                game_match.is_player_playing(player_id)
+                    && game_match.get_opponent_id(player_id).is_none()
+            })
+            .is_some()
+    }
+
     fn has_players_met(&self, player_1_id: &i32, player_2_id: &i32) -> bool {
         self.opponents_ids_by_player_id
             .get(player_1_id)
@@ -312,6 +334,40 @@ mod tests {
             assert_eq!(result_keeper.has_players_met(&2, &1), true);
             assert_eq!(result_keeper.has_players_met(&3, &1), true);
             assert_eq!(result_keeper.has_players_met(&3, &2), false);
+        }
+    }
+
+    mod test_has_player_bye {
+        use serde_json::{Map, Value};
+
+        use crate::game_match::GameMatchCreator;
+        use crate::tournament_manager::create_result_keeper;
+
+        #[test]
+        fn test_standard() {
+            let game_matches = vec![
+                GameMatchCreator::create_new_finished_match(
+                    &1,
+                    &1,
+                    &2,
+                    &40,
+                    &24,
+                    &Value::from(Map::new()),
+                ),
+                GameMatchCreator::create_new_bye_match(&2, &3, &Value::from(Map::new())),
+                GameMatchCreator::create_new_finished_match(
+                    &2,
+                    &1,
+                    &3,
+                    &30,
+                    &34,
+                    &Value::from(Map::new()),
+                ),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+            assert_eq!(result_keeper.has_player_bye(&1), false);
+            assert_eq!(result_keeper.has_player_bye(&2), false);
+            assert_eq!(result_keeper.has_player_bye(&3), true);
         }
     }
 
