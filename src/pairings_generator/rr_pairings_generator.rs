@@ -119,6 +119,16 @@ impl RRPairingsGenerator {
             })
             .is_some()
     }
+
+    fn is_player_bye(&self, pairings: &Pairings, player_id: &i32) -> bool {
+        pairings
+            .iter()
+            .find(|pairing| {
+                let opponent_id = pairing.get_opponent_id(player_id);
+                pairing.is_player_playing(player_id) && opponent_id.is_none()
+            })
+            .is_some()
+    }
 }
 
 impl PairingGenerator for RRPairingsGenerator {
@@ -136,10 +146,15 @@ impl PairingGenerator for RRPairingsGenerator {
                     .past_results
                     .has_players_met(highest_ranked_player_id, id)
         });
+        let is_odd_player_count = standings.len() % 2 == 1;
 
         match next_opponent_for_highest_ranked_player {
             Some(opponent_id) => {
-                for shift in 0..standings.len() - 1 {
+                let mut max_shift = standings.len() - 1;
+                if is_odd_player_count {
+                    max_shift += 1;
+                }
+                for shift in 0..max_shift {
                     let pairings = self.generate_rr_pairings(round_id, &(shift as i32));
                     if self.is_players_matched(&pairings, highest_ranked_player_id, opponent_id) {
                         return Ok(pairings);
@@ -147,7 +162,17 @@ impl PairingGenerator for RRPairingsGenerator {
                 }
                 Err(ErrorType::AutomaticPairingError)
             }
-            None => Err(ErrorType::AutomaticPairingError),
+            None => {
+                if is_odd_player_count && !self.past_results.has_player_bye(highest_ranked_player_id) {
+                    for shift in 0..standings.len() {
+                        let pairings = self.generate_rr_pairings(round_id, &(shift as i32));
+                        if self.is_player_bye(&pairings, highest_ranked_player_id) {
+                            return Ok(pairings);
+                        }
+                    }
+                }
+                Err(ErrorType::AutomaticPairingError)
+            }
         }
     }
 }
@@ -348,6 +373,94 @@ mod tests {
             let pairings_result = pairings_generator.generate_pairings(&0);
 
             assert_eq!(pairings_result.is_err(), true);
+        }
+
+        #[test]
+        fn test_highest_rank_on_bye() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 1000),
+                create_dummy_player(3, 200),
+            ];
+            let game_matches = vec![
+                create_dummy_match(1, 2, 44, 20),
+                create_dummy_match(1, 3, 44, 20),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
+            let pairings_result = pairings_generator.generate_pairings(&0);
+
+            assert_eq!(pairings_result.is_err(), false);
+        }
+
+        #[test]
+        fn test_highest_rank_on_bye_twice() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 1000),
+                create_dummy_player(3, 200),
+            ];
+            let game_matches = vec![
+                create_dummy_match(1, 2, 44, 20),
+                create_dummy_match(1, 3, 44, 20),
+                create_dummy_match(1, -1, -2, -2),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = RRPairingsGenerator::new(player_lists, result_keeper);
+            let pairings_result = pairings_generator.generate_pairings(&0);
+
+            assert_eq!(pairings_result.is_err(), true);
+        }
+
+        #[test]
+        fn test_odd_number_all_shift() {
+            let player_lists_set_1 = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 1000),
+                create_dummy_player(3, 200),
+            ];
+
+            let game_matches_set_1 = vec![
+                create_dummy_match(1, 2, 44, 20),
+                create_dummy_match(1, 3, 44, 20),
+            ];
+            let result_keeper_set_1 = create_result_keeper(&game_matches_set_1);
+            let pairings_generator_set_1 =
+                RRPairingsGenerator::new(player_lists_set_1, result_keeper_set_1);
+            let pairings_result_set_1 = pairings_generator_set_1.generate_pairings(&0);
+            assert_eq!(pairings_result_set_1.is_err(), false);
+
+            let player_lists_set_2 = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 1000),
+                create_dummy_player(3, 200),
+            ];
+            let game_matches_set_2 = vec![
+                create_dummy_match(2, 1, 44, 20),
+                create_dummy_match(2, 3, 44, 20),
+            ];
+            let result_keeper_set_2 = create_result_keeper(&game_matches_set_2);
+            let pairings_generator_set_2 =
+                RRPairingsGenerator::new(player_lists_set_2, result_keeper_set_2);
+            let pairings_result_set_2 = pairings_generator_set_2.generate_pairings(&1);
+            assert_eq!(pairings_result_set_2.is_err(), false);
+
+            let player_lists_set_3 = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 1000),
+                create_dummy_player(3, 200),
+            ];
+            let game_matches_set_3 = vec![
+                create_dummy_match(3, 1, 44, 20),
+                create_dummy_match(3, 2, 44, 20),
+            ];
+            let result_keeper_set_3 = create_result_keeper(&game_matches_set_3);
+            let pairings_generator_set_3 =
+                RRPairingsGenerator::new(player_lists_set_3, result_keeper_set_3);
+            let pairings_result_set_3 = pairings_generator_set_3.generate_pairings(&2);
+            assert_eq!(pairings_result_set_3.is_err(), false);
         }
     }
 }
