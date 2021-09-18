@@ -4,7 +4,6 @@ use std::iter::FromIterator;
 use diesel::result::Error;
 use diesel::{Connection, PgConnection};
 use itertools::Itertools;
-use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 use serde_json::{Map, Value};
 
@@ -112,15 +111,15 @@ impl ResponseCommand for GetStandingsCommand {
     }
 }
 
-pub struct CreateManualNormalRoundCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct CreateManualNormalRoundCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub name: String,
     pub match_data: Vec<(i32, i32)>,
     pub bye_match_data: Vec<i32>,
 }
 
-impl CreateManualNormalRoundCommand<'_> {
+impl CreateManualNormalRoundCommand {
     fn is_match_data_valid(&self, connection: &PgConnection) -> bool {
         let mut player_ids = HashSet::new();
         PlayerRowModel::get_all_from_tournament(&self.tournament_id, connection)
@@ -189,9 +188,9 @@ impl CreateManualNormalRoundCommand<'_> {
     }
 }
 
-impl ResponseCommand for CreateManualNormalRoundCommand<'_> {
+impl ResponseCommand for CreateManualNormalRoundCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =
@@ -229,15 +228,15 @@ impl ResponseCommand for CreateManualNormalRoundCommand<'_> {
     }
 }
 
-pub struct CreateManualSpecialRoundCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct CreateManualSpecialRoundCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub name: String,
     pub match_data: Vec<(i32, i32)>,
     pub bye_match_data: Vec<i32>,
 }
 
-impl CreateManualSpecialRoundCommand<'_> {
+impl CreateManualSpecialRoundCommand {
     fn is_match_data_valid(&self, connection: &PgConnection) -> bool {
         let mut player_ids = HashSet::new();
         PlayerRowModel::get_all_from_tournament(&self.tournament_id, connection)
@@ -296,9 +295,9 @@ impl CreateManualSpecialRoundCommand<'_> {
     }
 }
 
-impl ResponseCommand for CreateManualSpecialRoundCommand<'_> {
+impl ResponseCommand for CreateManualSpecialRoundCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =
@@ -336,13 +335,13 @@ impl ResponseCommand for CreateManualSpecialRoundCommand<'_> {
     }
 }
 
-pub struct CreateAutomaticRoundCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct CreateAutomaticRoundCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub name: String,
 }
 
-impl CreateAutomaticRoundCommand<'_> {
+impl CreateAutomaticRoundCommand {
     fn create_new_automatic_pairings_round(
         &self,
         tournament_model: &TournamentRowModel,
@@ -388,9 +387,9 @@ impl CreateAutomaticRoundCommand<'_> {
     }
 }
 
-impl ResponseCommand for CreateAutomaticRoundCommand<'_> {
+impl ResponseCommand for CreateAutomaticRoundCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =
@@ -419,16 +418,16 @@ impl ResponseCommand for CreateAutomaticRoundCommand<'_> {
     }
 }
 
-pub struct UpdateRoundCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct UpdateRoundCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub round_id: i32,
     pub updated_name: String,
 }
 
-impl ResponseCommand for UpdateRoundCommand<'_> {
+impl ResponseCommand for UpdateRoundCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =
@@ -452,15 +451,15 @@ impl ResponseCommand for UpdateRoundCommand<'_> {
     }
 }
 
-pub struct DeleteRoundCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct DeleteRoundCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub round_id: i32,
 }
 
-impl ResponseCommand for DeleteRoundCommand<'_> {
+impl ResponseCommand for DeleteRoundCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =
@@ -528,17 +527,17 @@ impl ResponseCommand for GetRoundMatchesCommand {
     }
 }
 
-pub struct UpdateMatchCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct UpdateMatchCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub match_id: i32,
     pub black_score: i32,
     pub white_score: i32,
 }
 
-impl ResponseCommand for UpdateMatchCommand<'_> {
+impl ResponseCommand for UpdateMatchCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =

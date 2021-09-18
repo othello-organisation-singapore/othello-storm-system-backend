@@ -1,10 +1,11 @@
-use rocket::http::Cookies;
 use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 
 use crate::response_commands;
 use crate::response_commands::ResponseCommand;
 use crate::utils::get_pooled_connection;
+
+use super::Token;
 
 #[derive(Deserialize)]
 pub struct UserLoginRequest {
@@ -24,7 +25,7 @@ pub fn login(request: Json<UserLoginRequest>) -> Json<JsonValue> {
 }
 
 #[get("/profile")]
-pub fn get_current_user_profile(cookies: Cookies) -> Json<JsonValue> {
+pub fn get_current_user_profile(token: Token) -> Json<JsonValue> {
     let connection = get_pooled_connection();
-    response_commands::CurrentUserCommand { cookies }.execute(&connection)
+    response_commands::CurrentUserCommand { jwt: token.jwt }.execute(&connection)
 }

@@ -1,5 +1,4 @@
 use diesel::PgConnection;
-use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 
 use crate::account::Account;
@@ -26,16 +25,16 @@ impl ResponseCommand for GetUserCommand {
     }
 }
 
-pub struct CreateUserCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct CreateUserCommand {
+    pub jwt: String,
     pub username: String,
     pub display_name: String,
     pub password: String,
 }
 
-impl ResponseCommand for CreateUserCommand<'_> {
+impl ResponseCommand for CreateUserCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, &connection)?;
+        let account = Account::login_from_jwt(&self.jwt, &connection)?;
 
         if !account.has_superuser_access() {
             return Err(ErrorType::PermissionDenied);
@@ -56,22 +55,22 @@ impl ResponseCommand for CreateUserCommand<'_> {
     }
 }
 
-pub struct UpdateUserCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct UpdateUserCommand {
+    pub jwt: String,
     pub username: String,
     pub display_name: Option<String>,
     pub password: Option<String>,
 }
 
-impl UpdateUserCommand<'_> {
+impl UpdateUserCommand {
     fn is_able_to_update_user(&self, username: &String, current_account: &Account) -> bool {
         current_account.has_superuser_access() || &current_account.get_username() == username
     }
 }
 
-impl ResponseCommand for UpdateUserCommand<'_> {
+impl ResponseCommand for UpdateUserCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, &connection)?;
+        let account = Account::login_from_jwt(&self.jwt, &connection)?;
 
         if !(self.is_able_to_update_user(&self.username, &account)) {
             return Err(ErrorType::PermissionDenied);

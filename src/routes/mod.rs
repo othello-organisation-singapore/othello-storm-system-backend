@@ -4,3 +4,6 @@ pub mod round_match_routes;
 pub mod tournament_admin_routes;
 pub mod tournament_routes;
 pub mod user_routes;
+mod request_guards;
+
+use request_guards::Token;

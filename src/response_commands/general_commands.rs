@@ -1,7 +1,6 @@
 use diesel::PgConnection;
-use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
-use serde_json::{Value};
+use serde_json::Value;
 
 use crate::account::Account;
 use crate::errors::ErrorType;
@@ -33,13 +32,13 @@ impl ResponseCommand for LoginCommand {
     }
 }
 
-pub struct CurrentUserCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct CurrentUserCommand {
+    pub jwt: String,
 }
 
-impl ResponseCommand for CurrentUserCommand<'_> {
+impl ResponseCommand for CurrentUserCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let meta_generator = UserMetaGenerator::from_username(&account.get_username(), connection)?;
         Ok(json!(meta_generator.generate_meta()))
     }
