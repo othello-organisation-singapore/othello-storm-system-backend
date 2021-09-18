@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde_json::{Map, Value};
 
 use crate::database_models::{
@@ -8,7 +10,7 @@ use crate::tournament_manager::PlayerStanding;
 
 use super::{
     MatchMetaGenerator, MetaGenerator, PlayerMetaGenerator, RoundPreviewMetaGenerator,
-    TournamentPreviewMetaGenerator, UserMetaGenerator,
+    TournamentMetaGenerator, TournamentPreviewMetaGenerator, UserMetaGenerator,
 };
 
 pub fn generate_players_meta(player_models: Vec<PlayerRowModel>) -> Vec<Map<String, Value>> {
@@ -23,13 +25,16 @@ pub fn generate_players_meta(player_models: Vec<PlayerRowModel>) -> Vec<Map<Stri
 
 pub fn generate_tournaments_meta(
     tournament_models: Vec<TournamentRowModel>,
+    user_models: Vec<UserRowModel>,
 ) -> Vec<Map<String, Value>> {
+    let mut users_by_username: HashMap<&str, &UserRowModel> = HashMap::new();
+    user_models.iter().for_each(|user| {
+        users_by_username.insert(user.username.as_str(), user.clone());
+    });
+    let meta_generator = TournamentPreviewMetaGenerator { users_by_username };
     tournament_models
         .into_iter()
-        .map(|tournament| {
-            let meta_generator = TournamentPreviewMetaGenerator::from_tournament(tournament);
-            meta_generator.generate_meta()
-        })
+        .map(|tournament| meta_generator.generate_meta_for(&tournament))
         .collect()
 }
 

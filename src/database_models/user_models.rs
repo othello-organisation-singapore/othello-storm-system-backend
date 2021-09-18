@@ -88,6 +88,17 @@ impl UserRowModel {
         }
     }
 
+    pub fn get_all(connection: &PgConnection) -> Result<Vec<UserRowModel>, ErrorType> {
+        let result = users::table.load::<UserRowModel>(connection);
+        match result {
+            Ok(users) => Ok(users),
+            Err(e) => {
+                error!("{}", e);
+                Err(ErrorType::DatabaseError)
+            }
+        }
+    }
+
     pub fn get_role(&self) -> UserRole {
         UserRole::from_string(self.role.clone())
     }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde_json::{Map, Value};
 
 use crate::database_models::{TournamentRowModel, UserRowModel};
@@ -5,8 +7,12 @@ use crate::utils::date_to_string;
 
 use super::MetaGenerator;
 
-pub struct TournamentPreviewMetaGenerator {
-    tournament: TournamentRowModel,
+pub trait TournamentMetaGenerator {
+    fn generate_meta_for(&self, tournament: &TournamentRowModel) -> Map<String, Value>;
+}
+
+pub struct TournamentPreviewMetaGenerator<'a> {
+    pub users_by_username: HashMap<&'a str, &'a UserRowModel>,
 }
 
 pub struct TournamentDetailsMetaGenerator {
@@ -14,39 +20,41 @@ pub struct TournamentDetailsMetaGenerator {
     creator: UserRowModel,
 }
 
-impl TournamentPreviewMetaGenerator {
-    pub fn from_tournament(tournament: TournamentRowModel) -> TournamentPreviewMetaGenerator {
-        TournamentPreviewMetaGenerator { tournament }
-    }
-}
-
-impl MetaGenerator for TournamentPreviewMetaGenerator {
-    fn generate_meta(&self) -> Map<String, Value> {
+impl TournamentMetaGenerator for TournamentPreviewMetaGenerator<'_> {
+    fn generate_meta_for(&self, tournament: &TournamentRowModel) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.tournament.id.clone()));
-        meta.insert(
-            String::from("name"),
-            Value::from(self.tournament.name.clone()),
-        );
+        meta.insert(String::from("id"), Value::from(tournament.id.clone()));
+        meta.insert(String::from("name"), Value::from(tournament.name.clone()));
         meta.insert(
             String::from("tournament_type"),
-            Value::from(self.tournament.tournament_type.clone()),
+            Value::from(tournament.tournament_type.clone()),
         );
         meta.insert(
             String::from("country"),
-            Value::from(self.tournament.country.clone()),
+            Value::from(tournament.country.clone()),
         );
         meta.insert(
             String::from("creator_username"),
-            Value::from(self.tournament.creator.clone()),
+            Value::from(tournament.creator.clone()),
         );
+
+        let creator = self.users_by_username.get(tournament.creator.as_str());
+        let creator_display_name = match creator {
+            Some(user) => user.display_name.clone(),
+            None => String::from("Unknown User"),
+        };
+        meta.insert(
+            String::from("creator_display_name"),
+            Value::from(creator_display_name.clone()),
+        );
+
         meta.insert(
             String::from("start_date"),
-            Value::from(date_to_string(self.tournament.start_date.clone())),
+            Value::from(date_to_string(tournament.start_date.clone())),
         );
         meta.insert(
             String::from("end_date"),
-            Value::from(date_to_string(self.tournament.end_date.clone())),
+            Value::from(date_to_string(tournament.end_date.clone())),
         );
         meta
     }
