@@ -1,10 +1,11 @@
-use rocket::http::Cookies;
 use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 
 use crate::response_commands;
 use crate::response_commands::ResponseCommand;
 use crate::utils::get_pooled_connection;
+
+use super::Token;
 
 #[get("/<id>/players")]
 pub fn get_players(id: i32) -> Json<JsonValue> {
@@ -24,10 +25,10 @@ pub struct AddPlayerRequest {
 }
 
 #[post("/<id>/players", data = "<request>")]
-pub fn add_player(cookies: Cookies, id: i32, request: Json<AddPlayerRequest>) -> Json<JsonValue> {
+pub fn add_player(token: Token, id: i32, request: Json<AddPlayerRequest>) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     let command = response_commands::AddTournamentPlayerCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id: id,
         joueurs_id: request.joueurs_id.clone(),
     };
@@ -43,13 +44,13 @@ pub struct AddPlayerNewRequest {
 
 #[post("/<id>/players/new", data = "<request>")]
 pub fn add_player_new(
-    cookies: Cookies,
+    token: Token,
     id: i32,
     request: Json<AddPlayerNewRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     let command = response_commands::AddTournamentPlayerNewCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id: id,
         first_name: request.first_name.clone(),
         last_name: request.last_name.clone().to_uppercase(),
@@ -59,10 +60,10 @@ pub fn add_player_new(
 }
 
 #[delete("/<tournament_id>/players/<player_id>")]
-pub fn delete_player(cookies: Cookies, tournament_id: i32, player_id: i32) -> Json<JsonValue> {
+pub fn delete_player(token: Token, tournament_id: i32, player_id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     let command = response_commands::DeleteTournamentPlayerCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id,
         player_id,
     };

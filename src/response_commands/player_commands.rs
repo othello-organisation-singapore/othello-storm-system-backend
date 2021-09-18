@@ -1,5 +1,4 @@
 use diesel::PgConnection;
-use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 use serde_json::{Map, Value};
 
@@ -57,15 +56,15 @@ impl ResponseCommand for GetTournamentJoueursPlayersCommand {
     }
 }
 
-pub struct AddTournamentPlayerCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct AddTournamentPlayerCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub joueurs_id: String,
 }
 
-impl ResponseCommand for AddTournamentPlayerCommand<'_> {
+impl ResponseCommand for AddTournamentPlayerCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =
@@ -95,15 +94,15 @@ impl ResponseCommand for AddTournamentPlayerCommand<'_> {
     }
 }
 
-pub struct AddTournamentPlayerNewCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct AddTournamentPlayerNewCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub first_name: String,
     pub last_name: String,
     pub country: String,
 }
 
-impl AddTournamentPlayerNewCommand<'_> {
+impl AddTournamentPlayerNewCommand {
     fn try_create_player(&self, connection: &PgConnection, retry: i32) -> Result<(), ErrorType> {
         let joueurs_id = String::from("+") + &generate_random_string(4);
         let player = Player {
@@ -125,9 +124,9 @@ impl AddTournamentPlayerNewCommand<'_> {
     }
 }
 
-impl ResponseCommand for AddTournamentPlayerNewCommand<'_> {
+impl ResponseCommand for AddTournamentPlayerNewCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =
@@ -157,15 +156,15 @@ impl ResponseCommand for AddTournamentPlayerNewCommand<'_> {
     }
 }
 
-pub struct DeleteTournamentPlayerCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct DeleteTournamentPlayerCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub player_id: i32,
 }
 
-impl ResponseCommand for DeleteTournamentPlayerCommand<'_> {
+impl ResponseCommand for DeleteTournamentPlayerCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         let is_allowed_to_manage =

@@ -1,5 +1,4 @@
 use diesel::PgConnection;
-use rocket::http::Cookies;
 use rocket_contrib::json::JsonValue;
 
 use crate::account::Account;
@@ -42,13 +41,13 @@ impl ResponseCommand for GetPotentialAdminsCommand {
     }
 }
 
-pub struct GetAllManagedTournamentsCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct GetAllManagedTournamentsCommand {
+    pub jwt: String,
 }
 
-impl ResponseCommand for GetAllManagedTournamentsCommand<'_> {
+impl ResponseCommand for GetAllManagedTournamentsCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let username = account.get_username();
         let tournament_models = TournamentRowModel::get_all_managed_by(&username, connection)?;
 
@@ -61,15 +60,15 @@ impl ResponseCommand for GetAllManagedTournamentsCommand<'_> {
     }
 }
 
-pub struct AddAdminCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct AddAdminCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub admin_username: String,
 }
 
-impl ResponseCommand for AddAdminCommand<'_> {
+impl ResponseCommand for AddAdminCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         if !is_allowed_to_manage_admin(&account, &tournament_model) {
@@ -87,15 +86,15 @@ impl ResponseCommand for AddAdminCommand<'_> {
     }
 }
 
-pub struct RemoveAdminCommand<'a> {
-    pub cookies: Cookies<'a>,
+pub struct RemoveAdminCommand {
+    pub jwt: String,
     pub tournament_id: i32,
     pub admin_username: String,
 }
 
-impl ResponseCommand for RemoveAdminCommand<'_> {
+impl ResponseCommand for RemoveAdminCommand {
     fn do_execute(&self, connection: &PgConnection) -> Result<JsonValue, ErrorType> {
-        let account = Account::login_from_cookies(&self.cookies, connection)?;
+        let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
         if !is_allowed_to_manage_admin(&account, &tournament_model) {

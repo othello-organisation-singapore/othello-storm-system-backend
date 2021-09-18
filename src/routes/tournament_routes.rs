@@ -1,10 +1,11 @@
-use rocket::http::Cookies;
 use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 
 use crate::response_commands;
 use crate::response_commands::ResponseCommand;
 use crate::utils::get_pooled_connection;
+
+use super::Token;
 
 #[get("/")]
 pub fn get_tournaments() -> Json<JsonValue> {
@@ -13,15 +14,15 @@ pub fn get_tournaments() -> Json<JsonValue> {
 }
 
 #[get("/created_by_me")]
-pub fn get_all_created_tournaments(cookies: Cookies) -> Json<JsonValue> {
+pub fn get_all_created_tournaments(token: Token) -> Json<JsonValue> {
     let connection = get_pooled_connection();
-    response_commands::GetAllCreatedTournamentsCommand { cookies }.execute(&connection)
+    response_commands::GetAllCreatedTournamentsCommand { jwt: token.jwt }.execute(&connection)
 }
 
 #[get("/managed_by_me")]
-pub fn get_all_managed_tournaments(cookies: Cookies) -> Json<JsonValue> {
+pub fn get_all_managed_tournaments(token: Token) -> Json<JsonValue> {
     let connection = get_pooled_connection();
-    response_commands::GetAllManagedTournamentsCommand { cookies }.execute(&connection)
+    response_commands::GetAllManagedTournamentsCommand { jwt: token.jwt }.execute(&connection)
 }
 
 #[get("/<id>")]
@@ -41,12 +42,12 @@ pub struct TournamentCreationRequest {
 
 #[post("/", data = "<request>")]
 pub fn create_tournament(
-    cookies: Cookies,
+    token: Token,
     request: Json<TournamentCreationRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::CreateTournamentCommand {
-        cookies,
+        jwt: token.jwt,
         name: request.name.clone(),
         country: request.country.clone(),
         tournament_type: request.tournament_type.clone(),
@@ -66,13 +67,13 @@ pub struct TournamentUpdateRequest {
 
 #[patch("/<id>", data = "<request>")]
 pub fn update_tournament(
-    cookies: Cookies,
+    token: Token,
     id: i32,
     request: Json<TournamentUpdateRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::UpdateTournamentCommand {
-        cookies,
+        jwt: token.jwt,
         id,
         updated_name: request.name.clone(),
         updated_country: request.country.clone(),
@@ -83,7 +84,7 @@ pub fn update_tournament(
 }
 
 #[delete("/<id>")]
-pub fn delete_tournament(cookies: Cookies, id: i32) -> Json<JsonValue> {
+pub fn delete_tournament(token: Token, id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();
-    response_commands::DeleteTournamentCommand { cookies, id }.execute(&connection)
+    response_commands::DeleteTournamentCommand { jwt: token.jwt, id }.execute(&connection)
 }

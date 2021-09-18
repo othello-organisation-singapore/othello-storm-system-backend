@@ -1,10 +1,11 @@
-use rocket::http::Cookies;
 use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 
 use crate::response_commands;
 use crate::response_commands::ResponseCommand;
 use crate::utils::get_pooled_connection;
+
+use super::Token;
 
 #[get("/<tournament_id>/rounds")]
 pub fn get_tournament_rounds(tournament_id: i32) -> Json<JsonValue> {
@@ -21,13 +22,13 @@ pub struct CreateManualNormalRoundRequest {
 
 #[post("/<tournament_id>/rounds/create_manual_normal", data = "<request>")]
 pub fn create_manual_normal_round(
-    cookies: Cookies,
+    token: Token,
     tournament_id: i32,
     request: Json<CreateManualNormalRoundRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::CreateManualNormalRoundCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id,
         name: request.name.clone(),
         match_data: request.match_data.clone(),
@@ -45,13 +46,13 @@ pub struct CreateManualSpecialRoundRequest {
 
 #[post("/<tournament_id>/rounds/create_manual_special", data = "<request>")]
 pub fn create_manual_special_round(
-    cookies: Cookies,
+    token: Token,
     tournament_id: i32,
     request: Json<CreateManualSpecialRoundRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::CreateManualSpecialRoundCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id,
         name: request.name.clone(),
         match_data: request.match_data.clone(),
@@ -67,13 +68,13 @@ pub struct CreateAutomaticRoundRequest {
 
 #[post("/<tournament_id>/rounds/create_automatic", data = "<request>")]
 pub fn create_automatic_round(
-    cookies: Cookies,
+    token: Token,
     tournament_id: i32,
     request: Json<CreateAutomaticRoundRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::CreateAutomaticRoundCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id,
         name: request.name.clone(),
     }
@@ -103,14 +104,14 @@ pub struct UpdateRoundRequest {
 
 #[patch("/<tournament_id>/rounds/<round_id>", data = "<request>")]
 pub fn update_round(
-    cookies: Cookies,
+    token: Token,
     tournament_id: i32,
     round_id: i32,
     request: Json<UpdateRoundRequest>,
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::UpdateRoundCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id,
         round_id,
         updated_name: request.updated_name.clone(),
@@ -119,10 +120,10 @@ pub fn update_round(
 }
 
 #[delete("/<tournament_id>/rounds/<round_id>")]
-pub fn delete_round(cookies: Cookies, tournament_id: i32, round_id: i32) -> Json<JsonValue> {
+pub fn delete_round(token: Token, tournament_id: i32, round_id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::DeleteRoundCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id,
         round_id,
     }
@@ -146,7 +147,7 @@ pub struct UpdateMatchRequest {
     data = "<request>"
 )]
 pub fn update_match(
-    cookies: Cookies,
+    token: Token,
     tournament_id: i32,
     _round_id: i32,
     match_id: i32,
@@ -154,7 +155,7 @@ pub fn update_match(
 ) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::UpdateMatchCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id,
         match_id,
         black_score: request.black_score.clone(),

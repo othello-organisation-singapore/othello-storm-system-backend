@@ -1,5 +1,4 @@
 use diesel::prelude::*;
-use rocket::http::Cookies;
 
 use crate::database_models::UserRowModel;
 use crate::errors::ErrorType;
@@ -37,15 +36,6 @@ impl Account {
 }
 
 impl Account {
-    pub fn login_from_cookies(
-        cookies: &Cookies,
-        connection: &PgConnection,
-    ) -> Result<Account, ErrorType> {
-        let cookies_jwt = cookies.get("jwt").map(|c| c.value()).unwrap_or("");
-        let jwt = String::from(cookies_jwt);
-        Account::login_from_jwt(&jwt, connection)
-    }
-
     pub fn login_from_jwt(jwt: &String, connection: &PgConnection) -> Result<Account, ErrorType> {
         let username = JWTMediator::get_username_from_jwt(jwt)?;
 

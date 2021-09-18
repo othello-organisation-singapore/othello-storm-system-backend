@@ -1,10 +1,11 @@
-use rocket::http::Cookies;
 use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 
 use crate::response_commands;
 use crate::response_commands::ResponseCommand;
 use crate::utils::get_pooled_connection;
+
+use super::Token;
 
 #[get("/<id>/admins")]
 pub fn get_tournament_admins(id: i32) -> Json<JsonValue> {
@@ -24,10 +25,10 @@ pub struct AddAdminRequest {
 }
 
 #[post("/<id>/admins", data = "<request>")]
-pub fn add_admin(cookies: Cookies, id: i32, request: Json<AddAdminRequest>) -> Json<JsonValue> {
+pub fn add_admin(token: Token, id: i32, request: Json<AddAdminRequest>) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     let command = response_commands::AddAdminCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id: id,
         admin_username: request.username.clone(),
     };
@@ -35,10 +36,10 @@ pub fn add_admin(cookies: Cookies, id: i32, request: Json<AddAdminRequest>) -> J
 }
 
 #[delete("/<id>/admins/<username>")]
-pub fn remove_admin(cookies: Cookies, id: i32, username: String) -> Json<JsonValue> {
+pub fn remove_admin(token: Token, id: i32, username: String) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     let command = response_commands::RemoveAdminCommand {
-        cookies,
+        jwt: token.jwt,
         tournament_id: id,
         admin_username: username,
     };
