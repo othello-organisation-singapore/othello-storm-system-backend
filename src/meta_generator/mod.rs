@@ -8,7 +8,7 @@ pub use player_meta_generators::PlayerMetaGenerator;
 pub use round_meta_generators::{RoundDetailsMetaGenerator, RoundPreviewMetaGenerator};
 pub use standing_meta_generators::StandingMetaGenerator;
 pub use tournament_meta_generators::{
-    TournamentDetailsMetaGenerator, TournamentPreviewMetaGenerator,
+    TournamentDetailsMetaGenerator, TournamentMetaGenerator, TournamentPreviewMetaGenerator,
 };
 pub use user_meta_generators::UserMetaGenerator;
 

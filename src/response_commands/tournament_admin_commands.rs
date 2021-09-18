@@ -50,8 +50,9 @@ impl ResponseCommand for GetAllManagedTournamentsCommand {
         let account = Account::login_from_jwt(&self.jwt, connection)?;
         let username = account.get_username();
         let tournament_models = TournamentRowModel::get_all_managed_by(&username, connection)?;
+        let user_models = UserRowModel::get_all(connection)?;
 
-        let tournament_meta_list = generate_tournaments_meta(tournament_models);
+        let tournament_meta_list = generate_tournaments_meta(tournament_models, user_models);
         Ok(json!({ "tournaments": tournament_meta_list }))
     }
 
