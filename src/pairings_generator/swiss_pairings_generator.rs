@@ -163,7 +163,32 @@ impl SwissPairingsGenerator {
                                 .unwrap();
                             Some([vec![pairing], remaining_pairings].concat())
                         }
-                        None => None,
+                        None => {
+                            if self.get_no_of_unpaired_players(bitmask) % 2 == 0 {
+                                return None;
+                            }
+
+                            if self
+                                .past_results
+                                .has_player_bye(&player_1_standing.player_id)
+                            {
+                                return None;
+                            }
+                            let updated_bitmask =
+                                self.add_new_pair_to_bitmask(bitmask, &player_1_idx, &player_1_idx);
+                            let remaining_pairings_option =
+                                self.generate_remaining_pairings(round_id, &updated_bitmask, memo);
+                            if remaining_pairings_option.is_none() {
+                                return None;
+                            }
+
+                            let pairing = GameMatchCreator::create_new_bye_match(
+                                round_id,
+                                &player_1_standing.player_id,
+                                &Value::from(Map::new()),
+                            );
+                            Some([vec![pairing], remaining_pairings_option.unwrap()].concat())
+                        }
                     }
                 }
             };
@@ -462,16 +487,62 @@ mod tests {
             let pairings_generator = SwissPairingsGenerator::new(player_lists, result_keeper);
             let pairings = pairings_generator.generate_pairings(&0).unwrap();
 
-            assert_eq!(pairings[0].get_player_color(&4488), Some(PlayerColor::Black));
-            assert_eq!(pairings[0].get_player_color(&4492), Some(PlayerColor::White));
-            assert_eq!(pairings[1].get_player_color(&4491), Some(PlayerColor::Black));
-            assert_eq!(pairings[1].get_player_color(&4487), Some(PlayerColor::White));
-            assert_eq!(pairings[2].get_player_color(&4489), Some(PlayerColor::Black));
-            assert_eq!(pairings[2].get_player_color(&4493), Some(PlayerColor::White));
-            assert_eq!(pairings[3].get_player_color(&4490), Some(PlayerColor::Black));
-            assert_eq!(pairings[3].get_player_color(&4449), Some(PlayerColor::White));
+            assert_eq!(
+                pairings[0].get_player_color(&4488),
+                Some(PlayerColor::Black)
+            );
+            assert_eq!(
+                pairings[0].get_player_color(&4492),
+                Some(PlayerColor::White)
+            );
+            assert_eq!(
+                pairings[1].get_player_color(&4491),
+                Some(PlayerColor::Black)
+            );
+            assert_eq!(
+                pairings[1].get_player_color(&4487),
+                Some(PlayerColor::White)
+            );
+            assert_eq!(
+                pairings[2].get_player_color(&4489),
+                Some(PlayerColor::Black)
+            );
+            assert_eq!(
+                pairings[2].get_player_color(&4493),
+                Some(PlayerColor::White)
+            );
+            assert_eq!(
+                pairings[3].get_player_color(&4490),
+                Some(PlayerColor::Black)
+            );
+            assert_eq!(
+                pairings[3].get_player_color(&4449),
+                Some(PlayerColor::White)
+            );
             assert_eq!(pairings[4].get_player_color(&4486), None);
             assert_eq!(pairings[4].is_player_playing(&4486), true);
+        }
+
+        #[test]
+        fn test_normal_round_odd_highest_bye() {
+            let player_lists = vec![
+                create_dummy_player(1, 1500),
+                create_dummy_player(2, 2000),
+                create_dummy_player(3, 1000),
+            ];
+            let game_matches = vec![
+                create_dummy_match(1, 2, 44, 20),
+                create_dummy_match(1, 3, 35, 29),
+            ];
+            let result_keeper = create_result_keeper(&game_matches);
+
+            let pairings_generator = SwissPairingsGenerator::new(player_lists, result_keeper);
+            let pairings = pairings_generator.generate_pairings(&0).unwrap();
+
+            assert_eq!(pairings[0].get_player_color(&1), None);
+            assert_eq!(pairings[0].is_player_playing(&1), true);
+            assert_eq!(pairings[1].get_player_color(&2), Some(PlayerColor::White));
+            assert_eq!(pairings[1].get_player_color(&3), Some(PlayerColor::Black));
         }
     }
 }
