@@ -193,6 +193,12 @@ impl ResponseCommand for CreateManualNormalRoundCommand {
         let account = Account::login_from_jwt(&self.jwt, connection)?;
         let tournament_model = TournamentRowModel::get(&self.tournament_id, connection)?;
 
+        if tournament_model.tournament_type == TournamentType::RoundRobin.to_string() {
+            return Err(ErrorType::BadRequestError(String::from(
+                "Manual pairing is unavailable for Round Robin tournaments",
+            )));
+        }
+
         let is_allowed_to_manage =
             is_allowed_to_manage_tournament(&account, &tournament_model, connection)?;
         if !is_allowed_to_manage {
@@ -347,13 +353,16 @@ impl CreateAutomaticRoundCommand {
         tournament_model: &TournamentRowModel,
         connection: &PgConnection,
     ) -> Result<(), ErrorType> {
+        let automatic_round_ids: HashSet<i32> = HashSet::from_iter(
+            RoundRowModel::get_all_from_tournament(&tournament_model.id, connection)?
+                .into_iter()
+                .filter(|round| round.round_type == RoundType::Automatic.to_i32())
+                .map(|round| round.id),
+        );
         let normal_round_ids: HashSet<i32> = HashSet::from_iter(
             RoundRowModel::get_all_from_tournament(&tournament_model.id, connection)?
                 .into_iter()
-                .filter(|round| {
-                    round.round_type == RoundType::ManualNormal.to_i32()
-                        || round.round_type == RoundType::Automatic.to_i32()
-                })
+                .filter(|round| round.round_type == RoundType::ManualNormal.to_i32())
                 .map(|round| round.id),
         );
 
@@ -361,7 +370,16 @@ impl CreateAutomaticRoundCommand {
             MatchRowModel::get_all_from_tournament(&tournament_model.id, connection)?;
         let previous_normal_matches: Vec<Box<dyn IGameMatch>> = previous_matches
             .into_iter()
-            .filter(|game_match| normal_round_ids.contains(&game_match.round_id))
+            .filter(|game_match| {
+                if tournament_model.tournament_type == TournamentType::RoundRobin.to_string() {
+                    return automatic_round_ids.contains(&game_match.round_id);
+                }
+                if tournament_model.tournament_type == TournamentType::SwissPairing.to_string() {
+                    return automatic_round_ids.contains(&game_match.round_id)
+                        || normal_round_ids.contains(&game_match.round_id);
+                }
+                false
+            })
             .map(|game_match| GameMatchTransformer::transform_to_game_match(&game_match))
             .collect();
         let result_keeper = create_result_keeper(&previous_normal_matches);
