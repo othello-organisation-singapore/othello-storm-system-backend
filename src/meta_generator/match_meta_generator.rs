@@ -2,37 +2,31 @@ use serde_json::{Map, Value};
 
 use crate::database_models::MatchRowModel;
 
-use super::MetaGenerator;
-
-pub struct MatchMetaGenerator {
-    game_match: MatchRowModel,
+pub trait MatchMetaGenerator {
+    fn generate_meta_for(&self, game_match: &MatchRowModel) -> Map<String, Value>;
 }
 
-impl MatchMetaGenerator {
-    pub fn from_match_model(game_match: MatchRowModel) -> MatchMetaGenerator {
-        MatchMetaGenerator { game_match }
-    }
-}
+pub struct DefaultMatchMetaGenerator {}
 
-impl MetaGenerator for MatchMetaGenerator {
-    fn generate_meta(&self) -> Map<String, Value> {
+impl MatchMetaGenerator for DefaultMatchMetaGenerator {
+    fn generate_meta_for(&self, game_match: &MatchRowModel) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.game_match.id.clone()));
+        meta.insert(String::from("id"), Value::from(game_match.id.clone()));
         meta.insert(
             String::from("black_player_id"),
-            Value::from(self.game_match.black_player_id.clone()),
+            Value::from(game_match.black_player_id.clone()),
         );
         meta.insert(
             String::from("white_player_id"),
-            Value::from(self.game_match.white_player_id.clone()),
+            Value::from(game_match.white_player_id.clone()),
         );
         meta.insert(
             String::from("black_score"),
-            Value::from(self.game_match.black_score.clone()),
+            Value::from(game_match.black_score.clone()),
         );
         meta.insert(
             String::from("white_score"),
-            Value::from(self.game_match.white_score.clone()),
+            Value::from(game_match.white_score.clone()),
         );
         meta
     }

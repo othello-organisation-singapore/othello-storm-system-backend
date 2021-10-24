@@ -14,8 +14,8 @@ use crate::database_models::{
 use crate::errors::ErrorType;
 use crate::game_match::{GameMatchCreator, GameMatchTransformer, IGameMatch};
 use crate::meta_generator::{
-    generate_matches_meta, generate_rounds_meta, generate_standings_meta, MetaGenerator,
-    RoundDetailsMetaGenerator,
+    generate_matches_meta, generate_rounds_meta, generate_standings_meta,
+    RoundDetailsMetaGenerator, RoundMetaGenerator,
 };
 use crate::pairings_generator::PairingsGeneratorCreator;
 use crate::properties::{RoundType, TournamentType};
@@ -52,8 +52,8 @@ impl ResponseCommand for GetRoundCommand {
         let tournament_id = round.tournament_id.clone();
         let matches = MatchRowModel::get_all_from_round(&self.round_id, connection)?;
 
-        let round_meta_generator = RoundDetailsMetaGenerator::from_round_model(round);
-        let mut round_meta = round_meta_generator.generate_meta();
+        let round_meta_generator = RoundDetailsMetaGenerator {};
+        let mut round_meta = round_meta_generator.generate_meta_for(&round);
         let matches_meta = generate_matches_meta(
             matches
                 .into_iter()
