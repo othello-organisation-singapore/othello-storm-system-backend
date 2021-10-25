@@ -84,6 +84,7 @@ fn main() {
                 routes::tournament_routes::create_tournament,
                 routes::tournament_routes::update_tournament,
                 routes::tournament_routes::delete_tournament,
+                routes::tournament_routes::get_tournament_summary,
                 routes::tournament_admin_routes::get_tournament_admins,
                 routes::tournament_admin_routes::get_tournament_potential_admins,
                 routes::tournament_admin_routes::add_admin,

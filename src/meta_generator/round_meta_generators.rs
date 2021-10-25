@@ -2,46 +2,29 @@ use serde_json::{Map, Value};
 
 use crate::database_models::RoundRowModel;
 
-use super::MetaGenerator;
-
-pub struct RoundPreviewMetaGenerator {
-    round: RoundRowModel,
+pub trait RoundMetaGenerator {
+    fn generate_meta_for(&self, round: &RoundRowModel) -> Map<String, Value>;
 }
 
-impl RoundPreviewMetaGenerator {
-    pub fn from_round_model(round: RoundRowModel) -> RoundPreviewMetaGenerator {
-        RoundPreviewMetaGenerator { round }
-    }
-}
+pub struct RoundPreviewMetaGenerator {}
 
-impl MetaGenerator for RoundPreviewMetaGenerator {
-    fn generate_meta(&self) -> Map<String, Value> {
+impl RoundMetaGenerator for RoundPreviewMetaGenerator {
+    fn generate_meta_for(&self, round: &RoundRowModel) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.round.id.clone()));
-        meta.insert(String::from("name"), Value::from(self.round.name.clone()));
+        meta.insert(String::from("id"), Value::from(round.id.clone()));
+        meta.insert(String::from("name"), Value::from(round.name.clone()));
         meta
     }
 }
 
-pub struct RoundDetailsMetaGenerator {
-    round: RoundRowModel,
-}
+pub struct RoundDetailsMetaGenerator {}
 
-impl RoundDetailsMetaGenerator {
-    pub fn from_round_model(round: RoundRowModel) -> RoundDetailsMetaGenerator {
-        RoundDetailsMetaGenerator { round }
-    }
-}
-
-impl MetaGenerator for RoundDetailsMetaGenerator {
-    fn generate_meta(&self) -> Map<String, Value> {
+impl RoundMetaGenerator for RoundDetailsMetaGenerator {
+    fn generate_meta_for(&self, round: &RoundRowModel) -> Map<String, Value> {
         let mut meta = Map::new();
-        meta.insert(String::from("id"), Value::from(self.round.id.clone()));
-        meta.insert(String::from("name"), Value::from(self.round.name.clone()));
-        meta.insert(
-            String::from("type"),
-            Value::from(self.round.round_type.clone()),
-        );
+        meta.insert(String::from("id"), Value::from(round.id.clone()));
+        meta.insert(String::from("name"), Value::from(round.name.clone()));
+        meta.insert(String::from("type"), Value::from(round.round_type.clone()));
         meta
     }
 }

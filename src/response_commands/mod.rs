@@ -18,13 +18,15 @@ pub use tournament_commands::{
     CreateTournamentCommand, DeleteTournamentCommand, GetAllCreatedTournamentsCommand,
     GetAllTournamentsCommand, GetTournamentCommand, UpdateTournamentCommand,
 };
+pub use tournament_summary_commands::GetTournamentSummaryCommand;
 pub use user_commands::{CreateUserCommand, GetUserCommand, UpdateUserCommand};
 
 mod command_trait;
 mod general_commands;
+mod helpers;
 mod player_commands;
 mod round_match_commands;
 mod tournament_admin_commands;
 mod tournament_commands;
+mod tournament_summary_commands;
 mod user_commands;
-mod helpers;

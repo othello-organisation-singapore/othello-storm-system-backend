@@ -88,3 +88,9 @@ pub fn delete_tournament(token: Token, id: i32) -> Json<JsonValue> {
     let connection = get_pooled_connection();
     response_commands::DeleteTournamentCommand { jwt: token.jwt, id }.execute(&connection)
 }
+
+#[get("/<id>/summary")]
+pub fn get_tournament_summary(id: i32) -> Json<JsonValue> {
+    let connection = get_pooled_connection();
+    response_commands::GetTournamentSummaryCommand { id }.execute(&connection)
+}
